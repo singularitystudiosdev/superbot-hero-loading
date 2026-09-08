@@ -5022,6 +5022,32 @@ document.querySelectorAll(".composer").forEach((c) => {
     return replyText;
   };
 
+  // tour → phone: the scripted import tour mirrors its beats onto the phone
+  // so the two surfaces stay in lockstep — sends switch the phone to Superbot
+  // and post the same user bubble, replies stream the same text
+  window.phTourSend = function (text) {
+    // applyApp → renderPhThread re-renders the PC's threadStore, which
+    // already holds this send — appending here would duplicate it
+    syncEcho = true;
+    applyApp(PH_APPS.findIndex((a) => a.name === "Superbot"));
+    syncEcho = false;
+    const msgs = chat.querySelector(".ph-msgs");
+    msgs.scrollTop = msgs.scrollHeight;
+  };
+  window.phTourReply = function (text, ttft) {
+    const msgs = chat.querySelector(".ph-msgs");
+    const el = add("div", "ph-replytxt");
+    el.style.marginTop = "18px";
+    msgs.appendChild(el);
+    panelStreamReply(PH_FX[PH_APPS[phApp].name], el, text, () => {
+      const act = add("div", "ph-actrow");
+      act.innerHTML = PH_ACT;
+      msgs.appendChild(act);
+      msgs.scrollTop = msgs.scrollHeight;
+    }, performance.now() - (ttft || 0));
+    msgs.scrollTop = msgs.scrollHeight;
+  };
+
   // settle-sync: the two load timelines end on different apps (phone →
   // Superbot, PC → Claude). Once BOTH have finished, align the phone on the
   // PC's settle state so every later change starts from a synced baseline.
@@ -5426,6 +5452,7 @@ function chatScriptFor(title) {
     const key = chatKey(p, liveChat.get(p.key));
     if (!threadStore.has(key)) threadStore.set(key, []);
     threadStore.get(key).push({ who: "user", text });
+    if (p.key === "gg" && window.phTourSend) window.phTourSend(text); // mirror to the phone
     return th;
   }
 
@@ -5525,6 +5552,7 @@ function chatScriptFor(title) {
       const key = chatKey(P.gg, liveChat.get("gg"));
       if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text: CHIP_DONE });
       panelAddReply(P.gg, th2, CHIP_DONE, null, true, performance.now());
+      if (window.phTourReply) window.phTourReply(CHIP_DONE, 220); // mirror to the phone
     });
     th.appendChild(chip);
   }
@@ -5580,11 +5608,14 @@ function chatScriptFor(title) {
   async function tourBody(gen) {
     // PHASE A — the dock hop: claude (just settled, 0.9s dwell) → hermes
     await sleep(900); if (!alive(gen)) return;
-    dockUi(4, gen); // hermes
+    dockUi(4, gen); // hermes — the phone hops along
+    if (window.syncFromRail) window.syncFromRail(4);
     await sleep(800); if (!alive(gen)) return;
-    dockUi(1, gen); // chatgpt
+    dockUi(1, gen); // chatgpt — the phone hops along
+    if (window.syncFromRail) window.syncFromRail(1);
     await sleep(900); if (!alive(gen)) return;
-    dockUi(-1, gen); // superbot (the mascot; the pill fades)
+    dockUi(-1, gen); // superbot (the mascot; the pill fades) — phone follows
+    if (window.syncFromRail) window.syncFromRail(-1);
     await sleep(700); if (!alive(gen)) return;
     // PHASE B — the import request, typed like a user
     await demoType(P.gg, TOUR_A, gen); if (!alive(gen)) return;
@@ -5598,23 +5629,27 @@ function chatScriptFor(title) {
     const keyA = chatKey(P.gg, liveChat.get("gg"));
     threadStore.get(keyA).push({ who: "bot", text: REPLY_A });
     panelAddReply(P.gg, thA, REPLY_A, null, true, performance.now());
+    if (window.phTourReply) window.phTourReply(REPLY_A, 220); // mirror to the phone
     await sleep(500); // let the reply finish typing
     // PHASE C — 1.7s later the user checks claude: chats are loaded. The
     // current chat renders at dock so the thread is never an empty panel
     // while the recents cascade in.
     await sleep(1700); if (!alive(gen)) return;
-    dockUi(2, gen); // claude
+    dockUi(2, gen); // claude — the phone hops along
+    if (window.syncFromRail) window.syncFromRail(2);
     openCurrentChat(P.claude, CLAUDE_CHAT);
     await importChats(gen); if (!alive(gen)) return;
     await sleep(600); // ~0.9s on claude once the rows land (user ask)
     if (!alive(gen)) return;
     // PHASE D — chatgpt: all imported, different chats (~1.05s sit, a little
     // over half the original 1.9s dwell per the user ask)
-    dockUi(1, gen); // chatgpt
+    dockUi(1, gen); // chatgpt — the phone hops along
+    if (window.syncFromRail) window.syncFromRail(1);
     openCurrentChat(P.chatgpt, CHATGPT_CHAT);
     await sleep(1050); if (!alive(gen)) return;
     // PHASE E — back to superbot: the rules audit
-    dockUi(-1, gen); // superbot
+    dockUi(-1, gen); // superbot — phone follows
+    if (window.syncFromRail) window.syncFromRail(-1);
     await sleep(700); if (!alive(gen)) return;
     await demoType(P.gg, TOUR_B, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
@@ -5627,6 +5662,7 @@ function chatScriptFor(title) {
     const keyB = chatKey(P.gg, liveChat.get("gg"));
     threadStore.get(keyB).push({ who: "bot", text: REPLY_B });
     panelAddReply(P.gg, thB, REPLY_B, null, true, performance.now());
+    if (window.phTourReply) window.phTourReply(REPLY_B, 220); // mirror to the phone
     await sleep(REPLY_B.length * 8 + 300); // let the reply finish typing
     if (!alive(gen)) return;
     // the tour's last beat: the chip is live, and the mouse hands the button
