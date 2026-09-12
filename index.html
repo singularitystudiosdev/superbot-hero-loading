@@ -2130,9 +2130,12 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
 .think-kit-replay:hover { background: #ffffff; }
 .think-kit-replay:active { transform: scale(0.97); }
 .think-kit-replay:disabled { opacity: 0.45; cursor: default; }
-.bc-think-text { flex: 0 1 auto; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 18px; transition: opacity 180ms ease, max-width var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1); }
+/* the swap between thoughts: the old line lifts, blurs and fades out; the
+   new one settles in from just below while its chars type */
+.bc-think-text { flex: 0 1 auto; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 18px; transform: translateY(0); transition: opacity 240ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1), filter 240ms ease, max-width var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1); }
+.bc-think-text._in { transform: translateY(4px); transition: none; }
 .bc-think._live .bc-think-text { background: linear-gradient(90deg, #a9adb8 0%, #a9adb8 35%, #eef0f4 50%, #a9adb8 65%, #a9adb8 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; } /* the grey sheen rides the words while thinking; emoji keep their own colour */
-.bc-think-text._out { opacity: 0; }
+.bc-think-text._out { opacity: 0; transform: translateY(-4px); filter: blur(2px); }
 /* the typewriter: every char lands as its own span and fades in over 420ms
    while the next ones arrive, so the line reads as a smooth wash rather than
    a hard cursor */
@@ -5614,6 +5617,7 @@ function chatScriptFor(title) {
   const ICON_ORDER = ["bubble", "sparkle", "dots", "bolt", "ring", "asterisk", "none"];
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, T(ms)));
+  const jitter = (lo, hi) => lo + Math.random() * (hi - lo); // the row keeps its own rhythm, never 1:1 with a send
   const alive = (gen) => gen === fxGen;
   const P = {};
   CHAT_PANELS.forEach((p) => { P[p.key] = p; });
@@ -5719,14 +5723,19 @@ function chatScriptFor(title) {
       },
       async say(text) {
         const my = ++sayGen;
-        if (textEl.textContent) { // the previous line fades out first
+        if (textEl.textContent) { // the previous line lifts and fades out first
           textEl.classList.add("_out");
-          await sleep(REDUCED_MOTION ? 0 : 190);
+          await sleep(REDUCED_MOTION ? 0 : 260);
           if (!alive(gen) || my !== sayGen) return;
         }
         textEl.textContent = "";
+        if (REDUCED_MOTION) { textEl.classList.remove("_out"); textEl.textContent = text; return; }
+        // the new line starts a touch below (no transition), then eases up
+        // into place as its first chars land
+        textEl.classList.add("_in");
         textEl.classList.remove("_out");
-        if (REDUCED_MOTION) { textEl.textContent = text; return; }
+        void textEl.offsetHeight;
+        textEl.classList.remove("_in");
         for (let i = 0; i < text.length; i++) {
           if (!alive(gen) || my !== sayGen) return;
           const c = add("span", "demo-ch");
@@ -5800,7 +5809,9 @@ function chatScriptFor(title) {
       follow(th);
       const t0 = performance.now();
       const thought = ownThought || (stepThoughts && stepThoughts[i]);
-      if (thought) tab.say(thought); // the row keeps thinking alongside the call (not awaited)
+      // the row's thought lands a beat AFTER the call starts, by a different
+      // amount each time, so it never moves in lockstep with the tool rows
+      if (thought) setTimeout(() => { if (alive(gen)) tab.say(thought); }, T(jitter(260, 820)));
       await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
       await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0) * (KIT.speed || 1))); if (!alive(gen)) return;
       row.classList.remove("_run");
@@ -5839,6 +5850,7 @@ function chatScriptFor(title) {
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.gg, ASK);
     const set = thoughts();
+    await sleep(jitter(320, 640)); if (!alive(gen)) return; // the row wakes a beat after the send, not with it
     const tab = openThinkTab(gen);
     await tab.open(); if (!alive(gen)) return;
     await tab.say(set.open); if (!alive(gen)) return;
@@ -5869,8 +5881,9 @@ function chatScriptFor(title) {
     await demoType(P.gg, stage.ask, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     demoSend(P.gg, stage.ask);
+    await sleep(jitter(420, 940)); if (!alive(gen)) return; // the thought follows the send after a varying beat
     await tab.say(stage.thought); if (!alive(gen)) return;
-    await sleep(500); if (!alive(gen)) return;
+    await sleep(jitter(300, 700)); if (!alive(gen)) return;
     await runTools(th, tab, gen, stage.steps, null); if (!alive(gen)) return;
     await sleep(200); if (!alive(gen)) return;
     await reply(th, stage.reply);
