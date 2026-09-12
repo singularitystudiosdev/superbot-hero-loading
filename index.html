@@ -2084,13 +2084,18 @@ body {
    above the input row */
 .bc-think-in { display: flex; align-items: center; gap: 9px; margin: 0 10px; padding: 11px 6px 9px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #b6b9c3; } /* the thought reads a step greyer than the input text (user, 2026-09-12) */
 .bc-think-in svg { width: 14px; height: 14px; flex-shrink: 0; stroke: #c3c6ce; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
-/* tap to open / close: the thought collapses to the glyph and a chevron and
-   back (the row keeps its height, so the bar does not jump) */
+/* tap to open / close: closed, the row collapses to a slim strip with just
+   the chevron (padding, glyph and text all ease away, so the bar shrinks
+   with it); tap the strip to open it again */
+.bc-think-in { transition: padding var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1); }
 .bc-think-chev { margin-left: auto; display: inline-flex; opacity: 0.55; transition: transform 320ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms ease; }
 .bc-think-chev svg { width: 11px; height: 11px; stroke: #c3c6ce; }
 .bc-think:hover .bc-think-chev { opacity: 0.9; }
+.bc-think-ic { max-width: 20px; overflow: hidden; transition: max-width var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease; }
+.bc-think._closed .bc-think-in { padding-top: 1px; padding-bottom: 1px; }
+.bc-think._closed .bc-think-ic { max-width: 0; opacity: 0; }
 .bc-think._closed .bc-think-chev { transform: rotate(180deg); }
-.bc-think._closed .bc-think-text { max-width: 0; opacity: 0; }
+.bc-think._closed .bc-think-text { max-width: 0; opacity: 0; min-height: 14px; }
 /* icon variants (the kit picks one): dots pulse and the ring spins while the
    tab is live; "none" drops the glyph and the text moves over */
 .bc-think-in._noicon { gap: 0; }
@@ -5483,8 +5488,9 @@ function chatScriptFor(title) {
 // while it runs and settling to its result) while the row swaps in a
 // one-line thought per call; a reply lands; two more asks follow (a
 // McFlurry, then delivery) each with their own calls and reply, so the
-// thread fills past the bar and scrolls; the closing thought types in and
-// the sheen stops. A double
+// thread fills past the bar and scrolls; then follow-up turns cycle for as
+// long as the kit's Keep chatting is on (the closing thought and the end of
+// the sheen come only when it is switched off). A double
 // tap during the LOAD animation fast-forwards
 // it to this point (skipIntro); the demo itself always plays at normal
 // speed. The phone mirrors the send. Replay-safe: reset()'s fxGen bump
@@ -5499,7 +5505,7 @@ function chatScriptFor(title) {
   // defaults (2026-09-12, the user's pick): ring icon, medium thoughts, 0.8x,
   // the bar opens/closes around the thinking row over 450ms. (fit/when from
   // the earlier overlay tab are ignored now that the row is baked into the bar.)
-  const KIT = Object.assign({ icon: "ring", length: "medium", speed: 0.8, resizeMs: 450, open: true }, stored);
+  const KIT = Object.assign({ icon: "ring", length: "medium", speed: 0.8, resizeMs: 450, loop: true, open: true }, stored);
   const saveKit = () => { try { localStorage.setItem(KIT_KEY, JSON.stringify(KIT)); } catch (e) { console.error("[think-kit] save failed", e); } };
   const T = (ms) => ms / (KIT.speed || 1); // every beat scales with the speed slider
   // the thoughts, one line each (the tab never wraps), in three lengths: the
@@ -5568,6 +5574,33 @@ function chatScriptFor(title) {
       reply: "Done. Order #48213 is on its way to 24 Pine St, about 14 minutes.",
     },
   ];
+  // after the scripted turns the chat keeps going (user, 2026-09-12: "chat
+  // continuously appears"): these turns cycle for as long as the kit's Keep
+  // chatting switch is on, so the thread keeps scrolling under the bar
+  const LOOP_STAGES = [
+    { ask: "Track the order", thought: "Pulling the courier's location 📍",
+      steps: [["pin", "Checking the **courier**", "**2 blocks** away, about 6 minutes", "Almost there"]],
+      reply: "The courier is 2 blocks away, about 6 minutes." },
+    { ask: "Add extra sauce", thought: "Checking if the order can still change",
+      steps: [["tag", "Checking if the **order** can change", "Order is **locked** once the courier picks up", "Too late to change it"]],
+      reply: "Too late, the courier already has it. I can add a note for next time." },
+    { ask: "What did I spend on food this week", thought: "Adding up this week's food orders",
+      steps: [["search", "Reading this week's **receipts**", "**4 orders**, $61.20 in total", "Four orders this week"], ["list", "Grouping by **place**", "McDonald's twice, sushi once, groceries once", "Mostly McDonald's 🍔"]],
+      reply: "Four orders this week, $61.20 in total. McDonald's twice, sushi once, groceries once." },
+    { ask: "Did it arrive", thought: "Checking the delivery status",
+      steps: [["pin", "Checking the **delivery**", "Delivered at **7:42 PM**, left at the door", "Delivered a minute ago"]],
+      reply: "Delivered at 7:42 PM, left at the door." },
+    { ask: "Rate the courier 5 stars", thought: "Sending a 5 star rating",
+      steps: [["tag", "Rating the **courier**", "**5 stars** sent, $3 tip added", "Rated and tipped"]],
+      reply: "Rated 5 stars with a $3 tip." },
+    { ask: "Remind me to eat healthier tomorrow", thought: "Setting a reminder for the morning",
+      steps: [["list", "Creating a **reminder**", "Reminder set for **9 AM** tomorrow", "Set for 9 AM"]],
+      reply: "Done, I'll remind you at 9 AM tomorrow." },
+    { ask: "Order the same thing next Friday", thought: "Scheduling the same order for Friday",
+      steps: [["list", "Scheduling the **order**", "**Big Mac Meal** and **Oreo McFlurry**, Friday 7 PM", "Friday at 7 PM 🍔"], ["tag", "Checking the **card** on file", "Card ending **4421**, expires next year", "Card is fine"]],
+      reply: "Scheduled for next Friday at 7 PM, same order. I'll confirm before it goes." },
+  ];
+  const THREAD_CAP = 80; // the oldest nodes fall off so a long loop never bloats the thread
   // the tab's icon variants: line glyphs at 14px; "none" drops the glyph
   const TAB_ICONS = {
     bubble: '<svg viewBox="0 0 12 12"><path d="M2.2 2.2h7.6a1.2 1.2 0 0 1 1.2 1.2v3.4a1.2 1.2 0 0 1-1.2 1.2H5.6L3.2 10.2V8H2.2A1.2 1.2 0 0 1 1 6.8V3.4a1.2 1.2 0 0 1 1.2-1.2z"/></svg>',
@@ -5796,19 +5829,38 @@ function chatScriptFor(title) {
     await reply(th, REPLY_1); if (!alive(gen)) return;
     // the later turns: ask, thought, tool calls, reply
     for (const stage of STAGES) {
-      await sleep(1100); if (!alive(gen)) return;
-      await demoType(P.gg, stage.ask, gen); if (!alive(gen)) return;
-      await sleep(320); if (!alive(gen)) return;
-      demoSend(P.gg, stage.ask);
-      await tab.say(stage.thought); if (!alive(gen)) return;
-      await sleep(500); if (!alive(gen)) return;
-      await runTools(th, tab, gen, stage.steps, null); if (!alive(gen)) return;
-      await sleep(200); if (!alive(gen)) return;
-      await reply(th, stage.reply); if (!alive(gen)) return;
+      await runStage(th, tab, gen, stage); if (!alive(gen)) return;
+    }
+    // then the chat keeps going: the follow-up turns cycle while Keep
+    // chatting is on; switching it off lets the current turn finish
+    let n = 0;
+    while (alive(gen) && KIT.loop) {
+      await runStage(th, tab, gen, LOOP_STAGES[n % LOOP_STAGES.length]); if (!alive(gen)) return;
+      n++;
+      pruneThread(th);
     }
     await sleep(300); if (!alive(gen)) return;
     await tab.say(set.end); // the closing thought, then the sheen stops; the row stays up
     tab.done();
+  }
+
+  // one turn: the user types the ask, the row thinks, the calls run, the reply lands
+  async function runStage(th, tab, gen, stage) {
+    await sleep(1100); if (!alive(gen)) return;
+    await demoType(P.gg, stage.ask, gen); if (!alive(gen)) return;
+    await sleep(320); if (!alive(gen)) return;
+    demoSend(P.gg, stage.ask);
+    await tab.say(stage.thought); if (!alive(gen)) return;
+    await sleep(500); if (!alive(gen)) return;
+    await runTools(th, tab, gen, stage.steps, null); if (!alive(gen)) return;
+    await sleep(200); if (!alive(gen)) return;
+    await reply(th, stage.reply);
+  }
+
+  // the thread is pinned to its tail, so the oldest nodes can go once the
+  // loop has run for a while; the store keeps the full transcript
+  function pruneThread(th) {
+    while (th.children.length > THREAD_CAP) th.removeChild(th.firstElementChild);
   }
 
   // a reply in the thread: the panel's own reply block, typed with Superbot's
@@ -5915,6 +5967,27 @@ function chatScriptFor(title) {
     });
     rowR.append(labR, rangeR);
     kit.appendChild(rowR);
+
+    // keep chatting: the follow-up turns cycle forever while on
+    const rowK = add("div", "think-kit-row");
+    const labK = add("div", "think-kit-lab");
+    const labKa = add("span"); labKa.textContent = "Keep chatting";
+    const labKb = add("span"); labKb.textContent = "after the order";
+    labK.append(labKa, labKb);
+    const segK = add("div", "think-kit-seg");
+    segK.style.gridTemplateColumns = "repeat(2, 1fr)";
+    const loopBtns = [[true, "On"], [false, "Off"]].map(([value, text]) => {
+      const b = add("button"); b.type = "button"; b.textContent = text;
+      b.classList.toggle("_on", KIT.loop === value);
+      b.addEventListener("click", () => {
+        KIT.loop = value; saveKit();
+        loopBtns.forEach((o) => o.classList.toggle("_on", o === b));
+      });
+      segK.appendChild(b);
+      return b;
+    });
+    rowK.append(labK, segK);
+    kit.appendChild(rowK);
 
     // replay
     const replay = add("button", "think-kit-replay"); replay.type = "button"; replay.textContent = "Replay";
