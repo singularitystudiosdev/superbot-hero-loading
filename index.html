@@ -2062,95 +2062,32 @@ body {
   .phone-area { display: none; }
 }
 
-/* ---- burger tour (the scripted demo after the settle, 2026-09-12) --------
-   .demo-thought — the model's visible reasoning: a "Thinking" head that
-   shimmers on the storm ramp while the body streams, then reads "Thought for
-   Ns" and folds the body away (click re-opens it). .demo-tools — the
-   tool-call log: one row per call (emoji + label + a pulsing storm dot); a
-   finished row drops the dot, swaps its label for the RESULT and dims — no
-   check marks. .demo-card — the order receipt on a raised surface with a
-   1px storm outline. Bold runs (<b>) carry the emphasis in rows and replies.
-   body.tour-lock swallows pointer input while the tour plays. */
-.demo-thought { align-self: flex-start; max-width: 520px; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; animation: demo-step-in 0.2s ease-out; }
+/* ---- the thinking line (the scripted demo after the settle, 2026-09-12) ---
+   The user asks, the model thinks out loud. The block opens (its body sits in
+   a grid track that eases 0fr → 1fr), each word fades in from a soft blur on
+   a steady cadence, and once the thought is done the head reads "Thought for
+   Ns" and the body folds back the way it opened (click the head to re-open).
+   The head shimmers plain grey while thinking. body.tour-lock swallows
+   pointer input while the demo plays. */
+.demo-thought { align-self: flex-start; width: 100%; max-width: 520px; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; animation: demo-in 0.3s ease-out; }
 .demo-thought-head { display: inline-flex; align-items: center; gap: 6px; color: #8b90a0; cursor: pointer; user-select: none; }
-.demo-thought-head svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; transition: transform 250ms ease; }
+.demo-thought-head svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; transition: transform 320ms cubic-bezier(0.2, 0, 0, 1); }
 .demo-thought._open .demo-thought-head svg { transform: rotate(180deg); }
-.demo-thought._live .demo-thought-label { background: linear-gradient(90deg, #8b90a0 0%, #8b90a0 35%, #eef0f4 50%, #8b90a0 65%, #8b90a0 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; } /* standard grey sheen while thinking (user ask 2026-09-12) — no brand colour here */
-.demo-thought-body { margin-top: 7px; padding-left: 11px; border-left: 2px solid rgba(255, 255, 255, 0.1); color: #8b90a0; font-weight: 400; line-height: 1.5; max-height: 220px; overflow: hidden; transition: max-height 350ms ease, opacity 250ms ease, margin-top 350ms ease; }
-.demo-thought:not(._open) .demo-thought-body { max-height: 0; opacity: 0; margin-top: 0; }
+.demo-thought._live .demo-thought-label { background: linear-gradient(90deg, #8b90a0 0%, #8b90a0 35%, #eef0f4 50%, #8b90a0 65%, #8b90a0 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
+.demo-thought-fold { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 460ms cubic-bezier(0.2, 0, 0, 1), opacity 340ms ease; }
+.demo-thought._open .demo-thought-fold { grid-template-rows: 1fr; opacity: 1; }
+.demo-thought-body { min-height: 0; overflow: hidden; }
+.demo-thought-text { margin-top: 8px; padding-left: 11px; border-left: 2px solid rgba(255, 255, 255, 0.1); color: #8b90a0; font-weight: 400; line-height: 1.55; }
+.demo-word { opacity: 0; filter: blur(4px); animation: demo-word-in 640ms cubic-bezier(0.2, 0.6, 0.2, 1) forwards; }
+@keyframes demo-word-in { to { opacity: 1; filter: blur(0); } }
+@keyframes demo-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 @keyframes demo-shimmer { from { background-position: 0% 0; } to { background-position: -220% 0; } }
-/* the question card (Cursor's ask-question format): the question as the
-   title, one radio row per option, a Submit pill. The demo picks an option
-   (._sel fills the radio) and presses Submit (._press); the answered card
-   keeps the title and the chosen row only, dimmed, and drops the button. */
-.demo-ask { position: relative; align-self: flex-start; width: 100%; max-width: 420px; margin-top: 14px; padding: 12px 14px 12px; border-radius: 14px; background: #1a1a1c; border: 1px solid rgba(255, 255, 255, 0.12); font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e6e8ee; box-sizing: border-box; animation: demo-step-in 0.25s ease-out; }
-.demo-ask-title { font-weight: 700; font-size: 13.5px; color: #f2f3f7; }
-.demo-ask-opts { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
-.demo-ask-opt { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 9px; color: #c9ccd4; transition: background 180ms ease, color 180ms ease; }
-.demo-ask-opt .demo-radio { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.35); box-sizing: border-box; flex-shrink: 0; position: relative; transition: border-color 180ms ease; }
-.demo-ask-opt .demo-radio::after { content: ""; position: absolute; inset: 2.5px; border-radius: 50%; background: #f2f3f7; transform: scale(0); transition: transform 180ms cubic-bezier(.34,1.56,.64,1); }
-.demo-ask-opt .demo-opt-sub { margin-left: auto; color: #8b90a0; font-size: 11.5px; }
-.demo-ask-opt._sel { background: rgba(255, 255, 255, 0.08); color: #f2f3f7; }
-.demo-ask-opt._sel .demo-radio { border-color: #f2f3f7; }
-.demo-ask-opt._sel .demo-radio::after { transform: scale(1); }
-.demo-ask-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
-.demo-ask-submit { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0d0d0d; background: #e6e8ee; border: none; border-radius: 999px; padding: 6px 13px; cursor: pointer; transition: transform 120ms ease, background 120ms ease; }
-.demo-ask-submit._press { transform: scale(0.94); background: #ffffff; }
-.demo-ask._answered { border-color: rgba(255, 255, 255, 0.08); }
-.demo-ask._answered .demo-ask-title { color: #c9ccd4; }
-.demo-ask._answered .demo-ask-opt:not(._sel), .demo-ask._answered .demo-ask-foot { display: none; }
-.demo-ask._answered .demo-ask-opt._sel { background: none; padding-left: 0; color: #e6e8ee; }
-/* the progress frame (user ask 2026-09-12: "shows this progress within a
-   frame and each step has a progress bar that is filling"): a raised panel
-   with a header (what is happening + n of N), one row per tool call — emoji,
-   label, and under it a 2px track whose storm fill eases 0 → 100% across the
-   step. On completion the label swaps to its result, the fill settles and
-   dims, and the row's text goes quiet; when the last one lands the counter
-   reads Done and the frame's border lifts for a beat. No dots, no checks. */
-.demo-tools { align-self: flex-start; width: 100%; max-width: 440px; margin-top: 14px; padding: 10px 14px 12px; border-radius: 14px; background: #141416; border: 1px solid rgba(255, 255, 255, 0.08); box-sizing: border-box; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; animation: demo-step-in 0.25s ease-out; transition: border-color 400ms ease, padding-bottom 480ms cubic-bezier(0.2, 0, 0, 1); }
-.demo-tools._done { border-color: rgba(255, 255, 255, 0.16); }
-.demo-tools-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); color: #c9ccd4; font-weight: 600; transition: padding-bottom 480ms cubic-bezier(0.2, 0, 0, 1), border-color 480ms ease; }
-.demo-tools-count { font-variant-numeric: tabular-nums; color: #8b90a0; font-weight: 500; transition: color 300ms ease; }
-.demo-tools._done .demo-tools-count { color: #f2f3f7; font-weight: 600; }
-.demo-tools._done .demo-tools-head { cursor: pointer; }
-/* the fold: the rows sit in a 1fr grid track that eases to 0fr, the header's
-   divider and the frame's bottom padding go with it, so the whole card
-   settles into a single "Ordering from McDonald's · Done" line */
-.demo-tools-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 480ms cubic-bezier(0.2, 0, 0, 1), opacity 320ms ease; }
-.demo-tools-rows { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; min-height: 0; overflow: hidden; }
-.demo-tools._folded .demo-tools-body { grid-template-rows: 0fr; opacity: 0; }
-.demo-tools._folded { padding-bottom: 10px; }
-.demo-tools._folded .demo-tools-head { padding-bottom: 0; border-color: transparent; }
-.demo-step { display: flex; flex-direction: column; gap: 6px; color: #d4d7de; animation: demo-step-in 0.2s ease-out; transition: color 300ms ease; }
-.demo-step-line { display: flex; align-items: center; gap: 8px; min-height: 16px; }
-.demo-step b, .bcs-reply b, .ph-replytxt b { font-weight: 700; color: #f2f3f7; }
-.demo-step .demo-emoji { width: 18px; text-align: center; font-size: 13px; line-height: 1; }
-/* the bar: a 3px track; the fill is a storm ramp twice the bar's width that
-   drifts slowly and continuously (no glint band), so the colour moves across
-   as one clean flow. A finished bar stops drifting and settles dimmer. */
-.demo-bar { position: relative; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.07); overflow: hidden; margin-left: 26px; }
-.demo-fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #c026d3, #6a1fd8, #2b6bff); background-size: 200% 100%; animation: demo-flow 2.6s linear infinite; transition: opacity 500ms ease; }
-.demo-step._done { color: #8b90a0; }
-.demo-step._done b { color: #c9ccd4; }
-.demo-step._done .demo-fill { opacity: 0.5; animation: none; background-position: 0 0; }
-@keyframes demo-flow { from { background-position: 0% 0; } to { background-position: -200% 0; } }
-/* the receipt: the photo of the actual order on the left, the details right */
-.demo-card { display: flex; align-items: stretch; gap: 12px; }
-.demo-card-photo { width: 64px; height: 64px; flex-shrink: 0; align-self: center; border-radius: 10px; object-fit: cover; background: #0d0d0d; }
-.demo-card-body { flex: 1; min-width: 0; }
-@keyframes demo-step-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
-.demo-card { position: relative; align-self: flex-start; min-width: 300px; margin-top: 14px; padding: 11px 14px 10px; border-radius: 14px; background: #1a1a1c; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #e6e8ee; animation: demo-step-in 0.25s ease-out; }
-.demo-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(135deg, #2b6bff, #6a1fd8, #c026d3, #ff3d9a); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0.7; pointer-events: none; }
-.demo-card-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; font-weight: 700; font-size: 13px; }
-.demo-card-sub { margin-top: 4px; color: #9aa0b4; font-size: 11.5px; }
-.demo-card-eta { display: flex; justify-content: space-between; gap: 18px; margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #c9ccd4; font-size: 11.5px; }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .demo-thought, .demo-step, .demo-card, .demo-ask, .demo-tools { animation: none; }
+  .demo-thought { animation: none; }
   .demo-thought._live .demo-thought-label { animation: none; }
-  .demo-thought-body { transition: none; }
-  .demo-fill { transition: none !important; animation: none; }
-  .demo-tools, .demo-tools-head, .demo-tools-body { transition: none; }
+  .demo-thought-fold, .demo-thought-head svg { transition: none; }
+  .demo-word { animation: none; opacity: 1; filter: none; }
 }
 </style>
 </head>
@@ -2745,6 +2682,7 @@ function familyRun(ctx) {
   function stage(el, frames, opts, gen) {
     if (gen !== fxGen) return Promise.reject(new Error("stale"));
     const a = el.animate(frames, { fill: "both", ...opts });
+    a.playbackRate = ffRate(); // a skipped intro runs every stage at the fast-forward rate
     live.add(a);
     return a.finished.then(() => {
       try { a.commitStyles(); } catch (e) {}
@@ -2753,6 +2691,8 @@ function familyRun(ctx) {
     }, () => live.delete(a));
   }
   uiStage = stage; // bridge for the module-scope dockUi
+  // skip support: a double tap mid-intro speeds up every stage already in flight
+  (window.__ffHooks = window.__ffHooks || []).push(() => live.forEach((a) => { a.playbackRate = ffRate(); }));
 
   const EFFECTS = [
     // ---- fv-size family: start at the 54px IDE-icon size, grow to the 250px hero card ----
@@ -2777,6 +2717,7 @@ function familyRun(ctx) {
           },
           { transform: "scale(1)", filter: "brightness(1)" },
         ], { duration: 920, fill: "forwards" });
+        flip.playbackRate = ffRate();
         live.add(flip);
         flip.finished.then(() => {
           try { flip.commitStyles(); } catch (e) {}
@@ -3062,7 +3003,7 @@ function familyRun(ctx) {
     // STAGE 6 — the scripted burger-order demo that plays after the settle.
     // Runs once per settle epoch; reset()'s fxGen bump cancels it between
     // beats, and a replay clears its nodes before re-running.
-    if (window.runBurgerTour) window.runBurgerTour(gen);
+    if (window.runDemoTour) window.runDemoTour(gen);
   }
 
   function runFinisher() {
@@ -3107,9 +3048,10 @@ function familyRun(ctx) {
 
   function tickFn() {
     const dMs = frameDelta();
-    clock += dMs;
+    const dFF = dMs * ffRate(); // fast-forward (double tap) scales the clock
+    clock += dFF;
     const spinShape = clamp01(clock / MERGE_T);
-    ang += (dMs / 1000) * omegaAt(Math.min(clock, MERGE_T));
+    ang += (dFF / 1000) * omegaAt(Math.min(clock, MERGE_T));
 
     // sequential pop-in, one at a time, full size from the first frame
     for (let i = 0; i < N; i++) {
@@ -3127,6 +3069,8 @@ function familyRun(ctx) {
 
   function reset() {
     fxGen++; // invalidate any in-flight finisher
+    window.__ff = 1; // a replay runs at normal speed again
+    if (window.rearmTourSkip) window.rearmTourSkip();
     live.forEach((a) => { try { a.cancel(); } catch (e) {} }); // kill every WAAPI stage
     live.clear();
     phase = "pop";
@@ -3222,6 +3166,28 @@ const ctx = {
     if (status) status.textContent = label ? label + " · " + Math.round(p) + "%" : "";
   },
 };
+
+// skip: a double click / double tap anywhere fast-forwards the load animation
+// (both clocks and every tracked WAAPI stage run at 40x) and tells the demo
+// to finish its beats at once. r still replays at normal speed (reset()
+// restores the rate). Typing in a mock composer never triggers it.
+window.__ff = 1;
+window.ffRate = () => window.__ff || 1;
+window.__ffHooks = window.__ffHooks || [];
+window.skipIntro = function () {
+  if (window.__ff > 1) { if (window.skipTour) window.skipTour(); return; }
+  window.__ff = 40;
+  window.__ffHooks.forEach((h) => { try { h(); } catch (e) { console.error("[skipIntro]", e); } });
+  if (window.skipTour) window.skipTour();
+};
+const skipAllowed = (e) => !(e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA"));
+document.addEventListener("dblclick", (e) => { if (skipAllowed(e)) window.skipIntro(); });
+let lastTapAt = 0;
+document.addEventListener("touchend", (e) => {
+  const now = performance.now();
+  if (now - lastTapAt < 320 && skipAllowed(e)) window.skipIntro();
+  lastTapAt = now;
+}, { passive: true });
 
 const runner = familyRun(ctx);
 fitStage();
@@ -5124,10 +5090,7 @@ document.querySelectorAll(".composer").forEach((c) => {
       msgs.appendChild(act);
       msgs.scrollTop = msgs.scrollHeight;
     };
-    // the tour's replies carry **bold** runs: its rich typer renders them at
-    // Superbot's char-fade cadence; plain text falls back to the panel streamer
-    if (window.demoTypeRich) window.demoTypeRich(el, text, 7, done, () => { msgs.scrollTop = msgs.scrollHeight; });
-    else panelStreamReply(PH_FX[PH_APPS[phApp].name], el, text, done, performance.now() - (ttft || 0));
+    panelStreamReply(PH_FX[PH_APPS[phApp].name], el, text, done, performance.now() - (ttft || 0));
     msgs.scrollTop = msgs.scrollHeight;
   };
 
@@ -5150,8 +5113,10 @@ document.querySelectorAll(".composer").forEach((c) => {
 
 
   const live = new Set();
+  (window.__ffHooks = window.__ffHooks || []).push(() => live.forEach((a) => { a.playbackRate = window.ffRate(); })); // double-tap skip
   function play(el, frames, opts) {
     const a = el.animate(frames, { fill: "both", ...opts });
+    a.playbackRate = window.ffRate();
     live.add(a);
     return a.finished.then(() => {
       try { a.commitStyles(); } catch (e) {}
@@ -5257,8 +5222,9 @@ document.querySelectorAll(".composer").forEach((c) => {
     const now = performance.now();
     const d = Math.min(now - lastRef.v, 34);
     lastRef.v = now;
-    clock += d;
-    ang += (d / 1000) * omegaAt(Math.min(clock, MERGE_T));
+    const dFF = d * window.ffRate(); // fast-forward (double tap) scales the clock
+    clock += dFF;
+    ang += (dFF / 1000) * omegaAt(Math.min(clock, MERGE_T));
     // sequential pop-in, one at a time, full size from the first frame (desktop popAt)
     for (let i = 0; i < PH_N; i++) {
       if (clock >= popAt(i) && !tiles[i]._popped) { tiles[i]._popped = true; tiles[i].style.opacity = "1"; }
@@ -5436,86 +5402,34 @@ function chatScriptFor(title) {
   return out;
 }
 
-// ---- burger tour: the scripted demo that plays after the settle ------------
-// Choreography (Claude has just docked): dwell 0.9s → superbot; the user
-// types "Order me a burger from mcdonalds"; a visible thinking block streams
-// the model's reasoning and folds to "Thought for Ns"; the bot asks ONE
-// question as a Cursor-style question card (which saved address) and the
-// demo picks Home and submits; a second
-// thinking block; five tool calls land one under another (each row shows its
-// running label, then swaps to its RESULT and dims — no check marks); the
-// order card slides in; the confirmation streams with bold emphasis. The
-// phone mirrors every send and reply. Replay-safe: reset()'s fxGen bump
-// cancels the tour between beats and a fresh run clears every node it
-// stamped .demo-t before re-running.
+// ---- the thinking line: the scripted demo that plays after the settle -----
+// Claude has just docked: dwell 0.9s → superbot; the user types "Order me a
+// burger from mcdonalds"; a thinking block opens, its reasoning fades in
+// word by word, and once the thought is done the head reads "Thought for Ns"
+// and the block folds. A double tap anywhere skips ahead (skipTour): every
+// wait resolves at once, the text lands whole and the block folds. The phone
+// mirrors the send. Replay-safe: reset()'s fxGen bump cancels the demo
+// between beats and a fresh run clears every node it stamped .demo-t.
 (function () {
   const ASK = "Order me a burger from mcdonalds";
-  const THOUGHT_1 = "They want a burger from McDonald's. Two saved addresses and no default, so I'll ask which one before I order.";
-  // the one question, in Cursor's ask-question format: title + options +
-  // Submit, never reply text (user ask). The demo picks `pick` and submits.
-  const QUESTION = { title: "Where should I send it?", options: [["🏠", "Home", "24 Pine St"], ["🏢", "Work", "350 5th Ave"]], pick: 0 };
-  const THOUGHT_2 = "Home is 24 Pine St. The nearest open McDonald's is on 5th Ave, about 15 minutes out. Their usual there is a Big Mac Meal with no pickles, so I'll order that on the saved card.";
-  const STEPS = [ // [emoji, running label, result]: short, bold on the key noun, no dashes (user ask)
-    ["📍", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now"],
-    ["📋", "Opening the **menu**", "**Big Mac Meal**, your usual"],
-    ["🍔", "Adding it to the **cart**", "**Big Mac Meal**, medium fries, Coke, no pickles"],
-    ["💳", "Paying with your **saved card**", "**$9.49** on the card ending **4421**"],
-    ["🛵", "Placing the **order**", "Order **#48213** placed, courier on the way"],
-  ];
-  // the receipt photo: "Big Mac hamburger.jpg" by Evan-Amos, Wikimedia Commons, CC0 (public domain), fetched 2026-09-12
-  const ORDER = { photo: "hero-assets/big-mac.jpg", item: "🍔 Big Mac Meal", price: "$9.49", sub: "Medium fries · Coke · No pickles", store: "McDonald's · 5th Ave → 24 Pine St", eta: "🛵 ~14 min" };
-  const REPLY = "**Done!** 🍔 **Big Mac Meal** headed to **24 Pine St**, there in **~14 min** 🛵"; // one line (user ask); the card above carries the price and store
-  const TOOLS_TITLE = "Ordering from McDonald's";
-  const STEP_MS = 1700, THOUGHT_WORD_MS = 38, TYPE_MS = 7, LABEL_MS = 4; // bars fill over 1.7s (user ask: slower)
-  const KEYSTROKE = [31, 62]; // per-char keystroke jitter — human cadence
+  const THOUGHT = "They want a burger from McDonald's. Two saved addresses and no default, so I'll ask which one before I order.";
+  const WORD_MS = 70; // a steady cadence, no jitter: each word fades in over 640ms while the next ones land
+  const KEYSTROKE = [31, 62]; // per-char keystroke jitter for the user's typing
 
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // skip: one promise every wait races against; reset() re-arms it
+  let skipping = false, skipResolve = null, skipP = null;
+  function rearm() { skipping = false; skipP = new Promise((r) => { skipResolve = r; }); }
+  rearm();
+  window.rearmTourSkip = rearm;
+  window.skipTour = () => { skipping = true; if (skipResolve) skipResolve(); };
+  const sleep = (ms) => skipping ? Promise.resolve() : Promise.race([new Promise((r) => setTimeout(r, ms)), skipP]);
   const alive = (gen) => gen === fxGen;
   const P = {};
   CHAT_PANELS.forEach((p) => { P[p.key] = p; });
-  // every piece of copy the tour reveals types in with the char fade (user
-  // ask 2026-09-12: "a clean typewriter fade in effect" for thinking and text)
-  const typeP = (el, text, ms, onTick) => new Promise((r) => window.demoTypeRich(el, text, ms, r, onTick));
   const lock = () => document.body.classList.add("tour-lock");
   const unlock = () => document.body.classList.remove("tour-lock");
-  const plain = (text) => text.replace(/\*\*(.+?)\*\*/g, "$1");
+  const follow = (th) => { th.scrollTop = th.scrollHeight; };
   const CHEVRON = '<svg viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg>';
-
-  // "**bold**" runs → text nodes and <b> elements (no innerHTML of copy)
-  function richInto(el, text) {
-    el.textContent = "";
-    text.split(/(\*\*.+?\*\*)/g).forEach((part) => {
-      if (!part) return;
-      if (part.startsWith("**") && part.endsWith("**")) {
-        const b = add("b");
-        b.textContent = part.slice(2, -2);
-        el.appendChild(b);
-      } else el.appendChild(document.createTextNode(part));
-    });
-  }
-
-  // Superbot's char-fade typer, bold-aware: each char lands as a fading span
-  // (inside a <b> when the run is bold); the finished reply is normalized to
-  // plain nodes. onTick lets the phone keep its thread scrolled.
-  window.demoTypeRich = function (el, text, ms, done, onTick) {
-    const runs = text.split(/(\*\*.+?\*\*)/g).filter(Boolean).map((part) =>
-      part.startsWith("**") && part.endsWith("**") ? { bold: true, text: part.slice(2, -2) } : { bold: false, text: part });
-    if (REDUCED_MOTION) { richInto(el, text); if (done) done(); return; }
-    let r = 0, i = 0, holder = null;
-    const tick = () => {
-      if (r >= runs.length) { richInto(el, text); if (done) done(); return; }
-      const run = runs[r];
-      if (i === 0) { holder = run.bold ? add("b") : el; if (run.bold) el.appendChild(holder); }
-      const s = add("span", "bc-fade-chunk");
-      s.textContent = run.text[i];
-      holder.appendChild(s);
-      if (onTick) onTick();
-      i++;
-      if (i >= run.text.length) { r++; i = 0; }
-      setTimeout(tick, ms);
-    };
-    tick();
-  };
 
   // keystroke the composer one char at a time, focus ring on like a real user
   async function demoType(p, text, gen) {
@@ -5523,15 +5437,16 @@ function chatScriptFor(title) {
     const inp = root && root.querySelector(p.inSel);
     if (!inp) return;
     inp.focus();
-    if (REDUCED_MOTION) { inp.value = text; await sleep(250); return; }
+    if (REDUCED_MOTION || skipping) { inp.value = text; await sleep(250); return; }
     for (let i = 1; i <= text.length; i++) {
       if (!alive(gen)) return;
+      if (skipping) { inp.value = text; return; }
       inp.value = text.slice(0, i);
       await sleep(KEYSTROKE[0] + Math.random() * (KEYSTROKE[1] - KEYSTROKE[0]));
     }
   }
 
-  // a tour "enter": user bubble in the thread, composer cleared, recents row
+  // a demo "enter": user bubble in the thread, composer cleared, recents row
   function demoSend(p, text) {
     const root = document.getElementById(p.root);
     const th = root.querySelector(p.thSel);
@@ -5550,196 +5465,64 @@ function chatScriptFor(title) {
     return th;
   }
 
-  // a bot reply in the Superbot thread: the panel's own block + reply nodes,
-  // typed with the bold-aware typer, stored as plain text, mirrored to the phone
-  function demoReply(th, text) {
-    const p = P.gg;
-    const key = chatKey(p, liveChat.get("gg"));
-    if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text: plain(text) });
-    const wrap = add("div", p.wrap + " bc-app demo-t");
-    const t = add("div", p.rtxt);
-    wrap.appendChild(t);
-    th.appendChild(wrap);
-    follow(th);
-    return new Promise((resolve) => {
-      window.demoTypeRich(t, text, TYPE_MS, resolve, () => follow(th));
-      if (window.phTourReply) window.phTourReply(text, 220);
-    });
-  }
-
-  // the thread scrolls (bcs-thread is the scroll region); every beat keeps
-  // the newest line in view, the way a live chat follows its tail
-  const follow = (th) => { th.scrollTop = th.scrollHeight; };
-
-  // the question card: rendered, then answered by the demo — the pick's radio
-  // fills, Submit presses, the card folds to the chosen row. The exchange is
-  // stored as a bot line + a user line so a re-render and the phone read it
-  // as a normal question and answer.
-  async function askQuestion(th, q, gen) {
-    const card = add("div", "demo-ask bc-app demo-t");
-    const title = add("div", "demo-ask-title");
-    const opts = add("div", "demo-ask-opts");
-    const rows = q.options.map(([emoji, name, sub]) => {
-      const row = add("div", "demo-ask-opt");
-      const radio = add("span", "demo-radio");
-      const label = add("span"); label.textContent = emoji + "  " + name;
-      const s = add("span", "demo-opt-sub"); s.textContent = sub;
-      row.append(radio, label, s);
-      opts.appendChild(row);
-      return row;
-    });
-    const foot = add("div", "demo-ask-foot");
-    const submit = add("button", "demo-ask-submit"); submit.type = "button"; submit.textContent = "Submit";
-    foot.appendChild(submit);
-    card.append(title, opts, foot);
-    th.appendChild(card);
-    follow(th);
-    await typeP(title, q.title, TYPE_MS); if (!alive(gen)) return; // the question types in
-    const key = chatKey(P.gg, liveChat.get("gg"));
-    if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text: q.title });
-    if (window.phTourReply) window.phTourReply(q.title, 220);
-    // the user reads the card, picks, submits
-    await sleep(REDUCED_MOTION ? 500 : 1300); if (!alive(gen)) return;
-    rows[q.pick].classList.add("_sel");
-    await sleep(REDUCED_MOTION ? 300 : 800); if (!alive(gen)) return;
-    submit.classList.add("_press");
-    await sleep(160); if (!alive(gen)) return;
-    submit.classList.remove("_press");
-    await sleep(120); if (!alive(gen)) return;
-    card.classList.add("_answered");
-    const answer = q.options[q.pick][1];
-    if (threadStore.has(key)) threadStore.get(key).push({ who: "user", text: answer });
-    if (window.phTourSend) window.phTourSend(answer); // the phone re-renders from the store: question line + answer bubble
-    follow(th);
-  }
-
-  // the visible reasoning: head shimmers while the body streams word by word,
-  // then the head reads "Thought for Ns" and the body folds away
+  // the thinking block: opens, fades its words in, then folds
   async function think(th, text, gen) {
-    const box = add("div", "demo-thought bc-app demo-t _open _live");
+    const box = add("div", "demo-thought bc-app demo-t _live");
     const head = add("div", "demo-thought-head");
     const label = add("span", "demo-thought-label");
     label.textContent = "Thinking";
     head.appendChild(label);
     head.insertAdjacentHTML("beforeend", CHEVRON);
+    const fold = add("div", "demo-thought-fold");
     const body = add("div", "demo-thought-body");
-    box.append(head, body);
+    const textEl = add("div", "demo-thought-text");
+    body.appendChild(textEl);
+    fold.appendChild(body);
+    box.append(head, fold);
     th.appendChild(box);
-    head.addEventListener("click", () => box.classList.toggle("_open"));
+    follow(th);
+    head.addEventListener("click", () => { if (!box.classList.contains("_live")) box.classList.toggle("_open"); });
     const t0 = performance.now();
+    // open: the grid track eases out once the block has painted closed
+    await sleep(40); if (!alive(gen)) return;
+    box.classList.add("_open");
     const words = text.split(" ");
-    if (REDUCED_MOTION) { body.textContent = text; await sleep(600); }
+    if (REDUCED_MOTION || skipping) { textEl.textContent = text; await sleep(600); }
     else {
-      // typewriter fade, one word at a time: each word lands as a fading span
+      await sleep(260); // the fold is most of the way open before the first word
       for (let i = 0; i < words.length; i++) {
         if (!alive(gen)) return;
-        const w = add("span", "bc-fade-chunk");
+        if (skipping) { textEl.textContent = text; break; }
+        const w = add("span", "demo-word");
         w.textContent = (i ? " " : "") + words[i];
-        body.appendChild(w);
+        textEl.appendChild(w);
         follow(th);
-        await sleep(THOUGHT_WORD_MS + Math.random() * 22);
+        await sleep(WORD_MS);
       }
-      body.textContent = text; // normalize to plain text once it has landed
     }
     if (!alive(gen)) return;
-    await sleep(350);
+    await sleep(skipping ? 0 : 1000); if (!alive(gen)) return; // a beat to read the finished thought
     box.classList.remove("_live");
     label.textContent = "Thought for " + Math.max(1, Math.round((performance.now() - t0) / 1000)) + "s";
-    box.classList.remove("_open");
+    box.classList.remove("_open"); // folds back the way it opened
+    await sleep(skipping ? 0 : 480);
     follow(th);
   }
 
-  // the progress frame: a header with the count, then one row per tool call;
-  // each row's bar eases to full across the step, then the label swaps to its
-  // result and the fill settles. The last one flips the frame to Done.
-  async function runTools(th, gen) {
-    const frame = add("div", "demo-tools bc-app demo-t");
-    const head = add("div", "demo-tools-head");
-    const title = add("span"); title.textContent = TOOLS_TITLE;
-    const count = add("span", "demo-tools-count");
-    count.textContent = "0 of " + STEPS.length;
-    head.append(title, count);
-    // the rows live in a grid body so the finished frame can fold them away
-    // (1fr → 0fr) under the header, cleanly, in one transition
-    const body = add("div", "demo-tools-body");
-    const rowsEl = add("div", "demo-tools-rows");
-    body.appendChild(rowsEl);
-    frame.append(head, body);
-    head.addEventListener("click", () => { if (frame.classList.contains("_done")) frame.classList.toggle("_folded"); });
-    th.appendChild(frame);
-    follow(th);
-    await sleep(REDUCED_MOTION ? 100 : 350); if (!alive(gen)) return;
-    let n = 0;
-    for (const [emoji, running, result] of STEPS) {
-      if (!alive(gen)) return;
-      const row = add("div", "demo-step");
-      const line = add("div", "demo-step-line");
-      const e = add("span", "demo-emoji"); e.textContent = emoji;
-      const l = add("span");
-      line.append(e, l);
-      const bar = add("div", "demo-bar");
-      const fill = add("div", "demo-fill");
-      bar.appendChild(fill);
-      row.append(line, bar);
-      rowsEl.appendChild(row);
-      follow(th);
-      // the fill: fast out of the gate, easing into the last stretch — the
-      // transition is armed after the row has painted at width 0; the label
-      // types in over the first part of the fill
-      void fill.offsetWidth;
-      fill.style.transition = REDUCED_MOTION ? "none" : "width " + STEP_MS + "ms cubic-bezier(0.22, 0.75, 0.25, 1)";
-      fill.style.width = "100%";
-      const t0 = performance.now();
-      await typeP(l, running, LABEL_MS); if (!alive(gen)) return;
-      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS + 120) - (performance.now() - t0))); if (!alive(gen)) return;
-      row.classList.add("_done");
-      await typeP(l, result, LABEL_MS); if (!alive(gen)) return; // the result types over the finished bar
-      count.textContent = (++n) + " of " + STEPS.length;
-    }
-    count.textContent = "Done";
-    frame.classList.add("_done");
-    // a beat to read the finished list, then the rows fold under the header
-    await sleep(REDUCED_MOTION ? 300 : 1100); if (!alive(gen)) return;
-    frame.classList.add("_folded");
-    await sleep(REDUCED_MOTION ? 50 : 520);
-    follow(th);
-  }
-
-  // the order receipt
-  function orderCard(th) {
-    const card = add("div", "demo-card bc-app demo-t");
-    const photo = add("img", "demo-card-photo");
-    photo.src = ORDER.photo; photo.alt = "Big Mac"; photo.draggable = false;
-    const bodyEl = add("div", "demo-card-body");
-    const head = add("div", "demo-card-head");
-    const item = add("span"); item.textContent = ORDER.item;
-    const price = add("span"); price.textContent = ORDER.price;
-    head.append(item, price);
-    const sub = add("div", "demo-card-sub"); sub.textContent = ORDER.sub;
-    const eta = add("div", "demo-card-eta");
-    const store = add("span"); store.textContent = ORDER.store;
-    const when = add("span"); when.textContent = ORDER.eta;
-    eta.append(store, when);
-    bodyEl.append(head, sub, eta);
-    card.append(photo, bodyEl);
-    th.appendChild(card);
-    follow(th);
-  }
-
-  // replay hygiene: every node and store entry the tour owns goes away so a
+  // replay hygiene: every node and store entry the demo owns goes away so a
   // rerun starts from the same clean state as the first
   function clearTourState() {
     document.querySelectorAll(".demo-t").forEach((el) => el.remove());
     threadStore.delete("gg:" + ASK);
   }
 
-  window.runBurgerTour = async function (gen) {
+  window.runDemoTour = async function (gen) {
     lock();
     clearTourState();
     try {
       await tourBody(gen);
     } finally {
-      unlock(); // reset() can kill the tour mid-flight; the page unlocks either way
+      unlock(); // reset() can kill the demo mid-flight; the page unlocks either way
     }
   };
 
@@ -5748,23 +5531,10 @@ function chatScriptFor(title) {
     dockUi(-1, gen); // superbot (the mascot; the pill fades) — phone follows
     if (window.syncFromRail) window.syncFromRail(-1);
     await sleep(700); if (!alive(gen)) return;
-    // the ask
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.gg, ASK);
-    // thinking → the one question (a card the demo answers)
-    await think(th, THOUGHT_1, gen); if (!alive(gen)) return;
-    await sleep(300); if (!alive(gen)) return;
-    await askQuestion(th, QUESTION, gen); if (!alive(gen)) return;
-    await sleep(500); if (!alive(gen)) return;
-    // thinking → the tool calls → the receipt → the confirmation
-    await think(th, THOUGHT_2, gen); if (!alive(gen)) return;
-    await sleep(300); if (!alive(gen)) return;
-    await runTools(th, gen); if (!alive(gen)) return;
-    await sleep(260); if (!alive(gen)) return;
-    orderCard(th);
-    await sleep(650); if (!alive(gen)) return;
-    await demoReply(th, REPLY);
+    await think(th, THOUGHT, gen);
   }
 })();
 </script>
