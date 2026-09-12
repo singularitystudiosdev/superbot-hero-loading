@@ -282,7 +282,8 @@ body {
 /* main column — thread top-aligned, composer pinned to the bottom (same
    geometry as .cl-main / .cl-thread) */
 .bcs-main { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; min-height: 0; min-width: 0; }
-.bcs-thread { display: flex; flex-direction: column; align-items: stretch; width: 560px; max-width: calc(100% - 48px); margin-top: 28px; text-align: left; box-sizing: border-box; }
+.bcs-thread { display: flex; flex-direction: column; align-items: stretch; width: 560px; max-width: calc(100% - 48px); margin-top: 28px; text-align: left; box-sizing: border-box; flex: 0 1 auto; min-height: 0; overflow-y: auto; padding-bottom: 14px; scrollbar-width: none; } /* the scroll region: a long exchange scrolls above the pinned composer instead of running into it (2026-09-12) */
+.bcs-thread::-webkit-scrollbar { display: none; }
 .bcs-bub {
   align-self: flex-end;
   background: #1a1a1c; border-radius: 12px;
@@ -2016,31 +2017,42 @@ body {
 }
 
 /* ---- burger tour (the scripted demo after the settle, 2026-09-12) --------
-   .demo-think — "Thinking..." with a slow storm shimmer across the text.
-   .demo-tools — the tool-call log: one row per call (emoji, label, status);
-   the running row's dot pulses on the storm ramp, a finished row keeps its
-   place with a storm ✓ and dims, so the chain reads as a checklist filling
-   in. .demo-card — the order receipt, a raised surface with a 1px storm
-   outline. body.tour-lock swallows pointer input while the tour plays. */
-.demo-think { align-self: flex-start; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; background: linear-gradient(90deg, #8b90a0, #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #8b90a0); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; }
+   .demo-thought — the model's visible reasoning: a "Thinking" head that
+   shimmers on the storm ramp while the body streams, then reads "Thought for
+   Ns" and folds the body away (click re-opens it). .demo-tools — the
+   tool-call log: one row per call (emoji + label + a pulsing storm dot); a
+   finished row drops the dot, swaps its label for the RESULT and dims — no
+   check marks. .demo-card — the order receipt on a raised surface with a
+   1px storm outline. Bold runs (<b>) carry the emphasis in rows and replies.
+   body.tour-lock swallows pointer input while the tour plays. */
+.demo-thought { align-self: flex-start; max-width: 520px; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; animation: demo-step-in 0.2s ease-out; }
+.demo-thought-head { display: inline-flex; align-items: center; gap: 6px; color: #8b90a0; cursor: pointer; user-select: none; }
+.demo-thought-head svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; transition: transform 250ms ease; }
+.demo-thought._open .demo-thought-head svg { transform: rotate(180deg); }
+.demo-thought._live .demo-thought-label { background: linear-gradient(90deg, #8b90a0, #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #8b90a0); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; }
+.demo-thought-body { margin-top: 7px; padding-left: 11px; border-left: 2px solid rgba(255, 255, 255, 0.1); color: #8b90a0; font-weight: 400; line-height: 1.5; max-height: 220px; overflow: hidden; transition: max-height 350ms ease, opacity 250ms ease, margin-top 350ms ease; }
+.demo-thought:not(._open) .demo-thought-body { max-height: 0; opacity: 0; margin-top: 0; }
 @keyframes demo-shimmer { from { background-position: 0% 0; } to { background-position: -220% 0; } }
-.demo-tools { align-self: flex-start; display: flex; flex-direction: column; gap: 7px; margin-top: 12px; }
+.demo-tools { align-self: flex-start; display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
 .demo-step { display: inline-flex; align-items: center; gap: 8px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #d4d7de; animation: demo-step-in 0.2s ease-out; transition: color 300ms ease; }
+.demo-step b, .bcs-reply b, .ph-replytxt b { font-weight: 700; color: #f2f3f7; }
 .demo-step .demo-emoji { width: 18px; text-align: center; font-size: 13px; line-height: 1; }
 .demo-step .demo-dot { width: 7px; height: 7px; margin-left: 2px; border-radius: 50%; background: linear-gradient(135deg, #2b6bff, #c026d3); animation: demo-pulse 1s ease-in-out infinite; }
 .demo-step._done { color: #8b90a0; }
-.demo-step._done .demo-dot { width: auto; height: auto; background: none; animation: none; }
-.demo-step._done .demo-dot::before { content: "✓"; font-size: 11px; font-weight: 700; background: linear-gradient(90deg, #2b6bff, #c026d3); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.demo-step._done b { color: #c9ccd4; }
+.demo-step._done .demo-dot { display: none; }
 @keyframes demo-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
 @keyframes demo-step-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
-.demo-card { position: relative; align-self: flex-start; min-width: 250px; margin-top: 14px; padding: 11px 14px 10px; border-radius: 14px; background: #1a1a1c; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #e6e8ee; animation: demo-step-in 0.25s ease-out; }
+.demo-card { position: relative; align-self: flex-start; min-width: 260px; margin-top: 14px; padding: 11px 14px 10px; border-radius: 14px; background: #1a1a1c; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #e6e8ee; animation: demo-step-in 0.25s ease-out; }
 .demo-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(135deg, #2b6bff, #6a1fd8, #c026d3, #ff3d9a); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0.7; pointer-events: none; }
-.demo-card-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; font-weight: 600; font-size: 13px; }
+.demo-card-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; font-weight: 700; font-size: 13px; }
 .demo-card-sub { margin-top: 4px; color: #9aa0b4; font-size: 11.5px; }
 .demo-card-eta { display: flex; justify-content: space-between; gap: 18px; margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #c9ccd4; font-size: 11.5px; }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .demo-think, .demo-step, .demo-card { animation: none; }
+  .demo-thought, .demo-step, .demo-card { animation: none; }
+  .demo-thought._live .demo-thought-label { animation: none; }
+  .demo-thought-body { transition: none; }
   .demo-step .demo-dot { animation: none; opacity: 0.8; }
 }
 </style>
@@ -4995,12 +5007,16 @@ document.querySelectorAll(".composer").forEach((c) => {
     const el = add("div", "ph-replytxt");
     el.style.marginTop = "18px";
     msgs.appendChild(el);
-    panelStreamReply(PH_FX[PH_APPS[phApp].name], el, text, () => {
+    const done = () => {
       const act = add("div", "ph-actrow");
       act.innerHTML = PH_ACT;
       msgs.appendChild(act);
       msgs.scrollTop = msgs.scrollHeight;
-    }, performance.now() - (ttft || 0));
+    };
+    // the tour's replies carry **bold** runs: its rich typer renders them at
+    // Superbot's char-fade cadence; plain text falls back to the panel streamer
+    if (window.demoTypeRich) window.demoTypeRich(el, text, 7, done, () => { msgs.scrollTop = msgs.scrollHeight; });
+    else panelStreamReply(PH_FX[PH_APPS[phApp].name], el, text, done, performance.now() - (ttft || 0));
     msgs.scrollTop = msgs.scrollHeight;
   };
 
@@ -5311,24 +5327,31 @@ function chatScriptFor(title) {
 
 // ---- burger tour: the scripted demo that plays after the settle ------------
 // Choreography (Claude has just docked): dwell 0.9s → superbot; the user
-// types "Order me a burger from mcdonalds"; "Thinking..." (0.8s, fades);
-// five tool calls land one under the other as a checklist (find the store,
-// pull the menu, add to cart, pay, place the order); the order card slides
-// in; the confirmation streams in. The phone mirrors the send and the reply.
-// Replay-safe: reset()'s fxGen bump cancels the tour between beats and a
-// fresh run clears every node it stamped .demo-t before re-running.
+// types "Order me a burger from mcdonalds"; a visible thinking block streams
+// the model's reasoning and folds to "Thought for Ns"; the bot asks ONE
+// question (which saved address); the user types "Home please"; a second
+// thinking block; five tool calls land one under another (each row shows its
+// running label, then swaps to its RESULT and dims — no check marks); the
+// order card slides in; the confirmation streams with bold emphasis. The
+// phone mirrors every send and reply. Replay-safe: reset()'s fxGen bump
+// cancels the tour between beats and a fresh run clears every node it
+// stamped .demo-t before re-running.
 (function () {
   const ASK = "Order me a burger from mcdonalds";
-  const REPLY = "Done! 🍔 One Big Mac Meal is on its way from McDonald's on 5th Ave, $9.49 paid. It should be at your door in about 14 minutes 🛵💨";
-  const STEPS = [ // [emoji, label] — one row per tool call
-    ["📍", "Finding the nearest McDonald's..."],
-    ["📋", "Pulling up the menu..."],
-    ["🍔", "Adding a Big Mac Meal to the cart..."],
-    ["💳", "Paying with your saved card..."],
-    ["🛵", "Placing the order..."],
+  const THOUGHT_1 = "The user wants a burger from McDonald's. Before I can place anything I need a delivery address — they have Home and Work saved but no default, so I should ask which one rather than guess. Once I have that I can find the nearest open location and check what they usually order.";
+  const QUESTION = "**Where should I send it?** Home 🏠 or Work 🏢?"; // the one question: short and easy to read (user ask)
+  const ANSWER = "Home please";
+  const THOUGHT_2 = "Home is 24 Pine St. The closest open McDonald's is the one on 5th Ave, about 1.2 miles out, delivering in roughly 15 minutes right now. Their last three orders there were a Big Mac Meal with no pickles, so I'll go with that, pay with the saved card ending 4421, and place it.";
+  const STEPS = [ // [emoji, running label, result] — bold runs carry the emphasis
+    ["📍", "Finding the nearest **McDonald's** to 24 Pine St...", "Found **McDonald's · 5th Ave** — 1.2 mi, open until 2 AM"],
+    ["📋", "Pulling up the **menu**...", "Menu loaded — **Big Mac Meal** matches your usual order"],
+    ["🍔", "Adding a **Big Mac Meal** to the cart...", "In the cart — **Big Mac Meal**, medium fries, Coke, no pickles"],
+    ["💳", "Paying with your **saved card**...", "Paid **$9.49** with the card ending **4421**"],
+    ["🛵", "Placing the **order**...", "Order **#48213** placed — courier assigned"],
   ];
-  const ORDER = { item: "🍔 Big Mac Meal", price: "$9.49", sub: "Medium fries · Coke · No pickles", store: "McDonald's · 5th Ave", eta: "🛵 ~14 min" };
-  const THINK_MS = 800, STEP_MS = 760;
+  const ORDER = { item: "🍔 Big Mac Meal", price: "$9.49", sub: "Medium fries · Coke · No pickles", store: "McDonald's · 5th Ave → 24 Pine St", eta: "🛵 ~14 min" };
+  const REPLY = "**Done!** 🍔 Your **Big Mac Meal** is on its way to **24 Pine St** from McDonald's on 5th Ave. **$9.49** paid with your card, and it should be at your door in **about 14 minutes** 🛵💨";
+  const STEP_MS = 820, THOUGHT_WORD_MS = 38, TYPE_MS = 7;
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter — human cadence
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -5337,6 +5360,44 @@ function chatScriptFor(title) {
   CHAT_PANELS.forEach((p) => { P[p.key] = p; });
   const lock = () => document.body.classList.add("tour-lock");
   const unlock = () => document.body.classList.remove("tour-lock");
+  const plain = (text) => text.replace(/\*\*(.+?)\*\*/g, "$1");
+  const CHEVRON = '<svg viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg>';
+
+  // "**bold**" runs → text nodes and <b> elements (no innerHTML of copy)
+  function richInto(el, text) {
+    el.textContent = "";
+    text.split(/(\*\*.+?\*\*)/g).forEach((part) => {
+      if (!part) return;
+      if (part.startsWith("**") && part.endsWith("**")) {
+        const b = add("b");
+        b.textContent = part.slice(2, -2);
+        el.appendChild(b);
+      } else el.appendChild(document.createTextNode(part));
+    });
+  }
+
+  // Superbot's char-fade typer, bold-aware: each char lands as a fading span
+  // (inside a <b> when the run is bold); the finished reply is normalized to
+  // plain nodes. onTick lets the phone keep its thread scrolled.
+  window.demoTypeRich = function (el, text, ms, done, onTick) {
+    const runs = text.split(/(\*\*.+?\*\*)/g).filter(Boolean).map((part) =>
+      part.startsWith("**") && part.endsWith("**") ? { bold: true, text: part.slice(2, -2) } : { bold: false, text: part });
+    if (REDUCED_MOTION) { richInto(el, text); if (done) done(); return; }
+    let r = 0, i = 0, holder = null;
+    const tick = () => {
+      if (r >= runs.length) { richInto(el, text); if (done) done(); return; }
+      const run = runs[r];
+      if (i === 0) { holder = run.bold ? add("b") : el; if (run.bold) el.appendChild(holder); }
+      const s = add("span", "bc-fade-chunk");
+      s.textContent = run.text[i];
+      holder.appendChild(s);
+      if (onTick) onTick();
+      i++;
+      if (i >= run.text.length) { r++; i = 0; }
+      setTimeout(tick, ms);
+    };
+    tick();
+  };
 
   // keystroke the composer one char at a time, focus ring on like a real user
   async function demoType(p, text, gen) {
@@ -5367,35 +5428,79 @@ function chatScriptFor(title) {
     if (!threadStore.has(key)) threadStore.set(key, []);
     threadStore.get(key).push({ who: "user", text });
     if (p.key === "gg" && window.phTourSend) window.phTourSend(text); // mirror to the phone
+    follow(th);
     return th;
   }
 
-  function thinkLine(th) {
-    const el = add("div", "demo-think bc-app demo-t");
-    el.textContent = "Thinking...";
-    th.appendChild(el);
-    return el;
+  // a bot reply in the Superbot thread: the panel's own block + reply nodes,
+  // typed with the bold-aware typer, stored as plain text, mirrored to the phone
+  function demoReply(th, text) {
+    const p = P.gg;
+    const key = chatKey(p, liveChat.get("gg"));
+    if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text: plain(text) });
+    const wrap = add("div", p.wrap + " bc-app demo-t");
+    const t = add("div", p.rtxt);
+    wrap.appendChild(t);
+    th.appendChild(wrap);
+    follow(th);
+    return new Promise((resolve) => {
+      window.demoTypeRich(t, text, TYPE_MS, resolve, () => follow(th));
+      if (window.phTourReply) window.phTourReply(text, 220);
+    });
   }
 
-  function fadeRemove(el) {
-    if (!el || !el.parentNode) return;
-    const a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: "ease", fill: "forwards" });
-    a.finished.then(() => el.remove()).catch(() => {});
+  // the thread scrolls (bcs-thread is the scroll region); every beat keeps
+  // the newest line in view, the way a live chat follows its tail
+  const follow = (th) => { th.scrollTop = th.scrollHeight; };
+
+  // the visible reasoning: head shimmers while the body streams word by word,
+  // then the head reads "Thought for Ns" and the body folds away
+  async function think(th, text, gen) {
+    const box = add("div", "demo-thought bc-app demo-t _open _live");
+    const head = add("div", "demo-thought-head");
+    const label = add("span", "demo-thought-label");
+    label.textContent = "Thinking";
+    head.appendChild(label);
+    head.insertAdjacentHTML("beforeend", CHEVRON);
+    const body = add("div", "demo-thought-body");
+    box.append(head, body);
+    th.appendChild(box);
+    head.addEventListener("click", () => box.classList.toggle("_open"));
+    const t0 = performance.now();
+    const words = text.split(" ");
+    if (REDUCED_MOTION) { body.textContent = text; await sleep(600); }
+    else {
+      for (let i = 0; i < words.length; i++) {
+        if (!alive(gen)) return;
+        body.textContent = words.slice(0, i + 1).join(" ");
+        follow(th);
+        await sleep(THOUGHT_WORD_MS + Math.random() * 22);
+      }
+    }
+    if (!alive(gen)) return;
+    await sleep(350);
+    box.classList.remove("_live");
+    label.textContent = "Thought for " + Math.max(1, Math.round((performance.now() - t0) / 1000)) + "s";
+    box.classList.remove("_open");
+    follow(th);
   }
 
   // the tool-call log: rows land one under the other; the running row pulses,
-  // a finished row keeps its place with a ✓
+  // a finished row swaps to its result and dims
   async function runTools(th, gen) {
     const log = add("div", "demo-tools bc-app demo-t");
     th.appendChild(log);
-    for (const [emoji, label] of STEPS) {
+    for (const [emoji, running, result] of STEPS) {
       if (!alive(gen)) return;
       const row = add("div", "demo-step");
       const e = add("span", "demo-emoji"); e.textContent = emoji;
-      const l = add("span"); l.textContent = label;
+      const l = add("span");
+      richInto(l, running);
       row.append(e, l, add("span", "demo-dot"));
       log.appendChild(row);
+      follow(th);
       await sleep(REDUCED_MOTION ? 220 : STEP_MS);
+      richInto(l, result);
       row.classList.add("_done");
     }
   }
@@ -5414,6 +5519,7 @@ function chatScriptFor(title) {
     eta.append(store, when);
     card.append(head, sub, eta);
     th.appendChild(card);
+    follow(th);
   }
 
   // replay hygiene: every node and store entry the tour owns goes away so a
@@ -5438,21 +5544,27 @@ function chatScriptFor(title) {
     dockUi(-1, gen); // superbot (the mascot; the pill fades) — phone follows
     if (window.syncFromRail) window.syncFromRail(-1);
     await sleep(700); if (!alive(gen)) return;
+    // the ask
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.gg, ASK);
-    const think = thinkLine(th);
-    await sleep(THINK_MS); if (!alive(gen)) return;
-    fadeRemove(think);
+    // thinking → the one question
+    await think(th, THOUGHT_1, gen); if (!alive(gen)) return;
+    await sleep(300); if (!alive(gen)) return;
+    await demoReply(th, QUESTION); if (!alive(gen)) return;
+    // the user answers
+    await sleep(900); if (!alive(gen)) return;
+    await demoType(P.gg, ANSWER, gen); if (!alive(gen)) return;
+    await sleep(320); if (!alive(gen)) return;
+    demoSend(P.gg, ANSWER);
+    // thinking → the tool calls → the receipt → the confirmation
+    await think(th, THOUGHT_2, gen); if (!alive(gen)) return;
+    await sleep(300); if (!alive(gen)) return;
     await runTools(th, gen); if (!alive(gen)) return;
     await sleep(260); if (!alive(gen)) return;
     orderCard(th);
     await sleep(650); if (!alive(gen)) return;
-    const key = chatKey(P.gg, liveChat.get("gg"));
-    threadStore.get(key).push({ who: "bot", text: REPLY });
-    panelAddReply(P.gg, th, REPLY, null, true, performance.now());
-    if (window.phTourReply) window.phTourReply(REPLY, 220); // mirror to the phone
-    await sleep(REPLY.length * 8 + 300);
+    await demoReply(th, REPLY);
   }
 })();
 </script>
