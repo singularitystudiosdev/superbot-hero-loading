@@ -2064,21 +2064,22 @@ body {
 
 /* ---- the thinking tab (the scripted demo after the settle, 2026-09-12) ----
    The model's active thinking rides ON the chat bar: a silver-edged tab
-   docked to the composer's top-left corner (its bottom edge sits on the
-   composer's top edge, no bottom radius), like the reference tab but quieter.
-   It opens from 0 height, "Thinking" shimmers silver in the head, the words
-   fade in below and the tab's height is re-measured after every word so it
-   grows smoothly whenever the text takes another line. Once the thought is
-   done the head reads "Thought for Ns" and the tab folds back into the bar.
-   It lives in .bcs-main, not in .bc-softwrap, so the composer's rest filter
-   never dims it. body.tour-lock swallows pointer input while the demo plays. */
-.bc-think { position: absolute; left: 50%; bottom: calc(18px + 46px - 1px); z-index: 3; width: 0; height: 0; opacity: 0; overflow: hidden; border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #1e1e22, #141417); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 1px 0 0 rgba(255, 255, 255, 0.11), inset -1px 0 0 rgba(255, 255, 255, 0.11), 0 -10px 28px -14px rgba(0, 0, 0, 0.85); transform: translate(-50%, 8px); transition: width 380ms cubic-bezier(0.2, 0.8, 0.2, 1), height 380ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1); pointer-events: none; }
-.bc-think._on { opacity: 1; transform: translate(-50%, 0); }
-.bc-think-in { width: max-content; max-width: 460px; box-sizing: border-box; padding: 9px 16px 11px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #d6d8de; }
-.bc-think-head { display: flex; align-items: center; gap: 7px; color: #c3c6ce; }
-.bc-think-head svg { width: 12px; height: 12px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
-.bc-think._live .bc-think-label { background: linear-gradient(90deg, #a9adb8 0%, #a9adb8 35%, #ffffff 50%, #a9adb8 65%, #a9adb8 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
-.bc-think-text { margin-top: 5px; max-width: 428px; min-height: 19px; color: #b6b9c3; font-weight: 400; line-height: 1.5; white-space: nowrap; transition: opacity 180ms ease; }
+   docked to the composer's top-left corner (sunk a few px into the bar, no
+   bottom radius), like the reference tab but quieter. One row: the bubble
+   glyph and a one-line thought that types in char by char with a fade and a
+   silver sheen while live. It rises once, only ever grows wider, and stays
+   up; each tool call swaps in its own thought. It lives in .bcs-main, not in
+   .bc-softwrap, so the composer's rest filter never dims it. body.tour-lock
+   swallows pointer input while the demo plays. */
+.bc-think { position: absolute; left: calc(50% - 266px); bottom: calc(18px + 46px - 3px); z-index: 3; /* sunk 3px into the bar: at the panel's 0.667 scale a 1px overlap left a hairline of the composer ring showing (user, 2026-09-12) */ width: 0; height: 0; opacity: 0; overflow: hidden; border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #1e1e22, #141417); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 1px 0 0 rgba(255, 255, 255, 0.11), inset -1px 0 0 rgba(255, 255, 255, 0.11), 0 -10px 28px -14px rgba(0, 0, 0, 0.85); transform: translateY(8px); transition: width 380ms cubic-bezier(0.2, 0.8, 0.2, 1), height 380ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1); pointer-events: none; }
+.bc-think._on { opacity: 1; transform: translateY(0); }
+/* one row, like the reference: the bubble glyph then the thought. The tab's
+   width only ever grows (fit() keeps the widest line), so a shorter thought
+   never compacts the frame. */
+.bc-think-in { display: flex; align-items: center; gap: 9px; width: max-content; max-width: 520px; box-sizing: border-box; padding: 10px 16px 13px; /* the extra 2px at the bottom is the part sunk into the bar */ font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e2e4ea; }
+.bc-think-in svg { width: 14px; height: 14px; flex-shrink: 0; stroke: #c3c6ce; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.bc-think-text { white-space: nowrap; line-height: 1.4; min-height: 18px; transition: opacity 180ms ease; }
+.bc-think._live .bc-think-text { background: linear-gradient(90deg, #c3c6ce 0%, #c3c6ce 35%, #ffffff 50%, #c3c6ce 65%, #c3c6ce 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; } /* the silver sheen rides the words while thinking; emoji keep their own colour */
 .bc-think-text._out { opacity: 0; }
 /* the typewriter: every char lands as its own span and fades in over 420ms
    while the next ones arrive, so the line reads as a smooth wash rather than
@@ -2090,7 +2091,7 @@ body {
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .bc-think, .bc-think-text { transition: none; }
-  .bc-think._live .bc-think-label { animation: none; }
+  .bc-think._live .bc-think-text { animation: none; }
   .demo-ch { animation: none; opacity: 1; }
 }
 /* ---- the tool calls (after the thought folds, 2026-09-12) -----------------
@@ -5425,12 +5426,12 @@ function chatScriptFor(title) {
 
 // ---- the thinking line: the scripted demo that plays after the settle -----
 // Claude has just docked: dwell 0.9s → superbot; the user types "Order me a
-// burger from mcdonalds"; a thinking tab rises, centred on the composer, and
-// STAYS up: one short line types in with a char fade, then four plain
-// tool-call lines scan the McDonald's menu (each shimmering while it runs and
-// settling to its result) while the tab swaps in a one-line thought per
-// call; at the end the head reads "Thought for Ns" and the closing thought
-// types in. A double
+// burger from mcdonalds"; a thinking tab rises on the composer's left corner
+// and STAYS up: one short line (with an emoji) types in with a char fade,
+// then four plain tool-call lines scan the McDonald's menu (each shimmering
+// while it runs and settling to its result) while the tab swaps in a
+// one-line thought per call, growing but never shrinking; the closing
+// thought types in and the sheen stops. A double
 // tap during the LOAD animation fast-forwards
 // it to this point (skipIntro); the demo itself always plays at normal
 // speed. The phone mirrors the send. Replay-safe: reset()'s fxGen bump
@@ -5440,8 +5441,8 @@ function chatScriptFor(title) {
   const ASK = "Order me a burger from mcdonalds";
   // the thoughts, one short line each (the tab never wraps): the opening one,
   // one per tool call while it runs, and the closing one
-  const THOUGHT = "Find the nearest McDonald's and check the menu.";
-  const THOUGHT_END = "Big Mac Meal it is.";
+  const THOUGHT = "Find the nearest McDonald's and check the menu 🔍";
+  const THOUGHT_END = "Big Mac Meal it is 🍔";
   const CHAR_MS = 22; // a steady typewriter cadence; each char fades in over 420ms
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter for the user's typing
   // the tool calls that follow the thought: [icon, running label, result,
@@ -5454,10 +5455,10 @@ function chatScriptFor(title) {
     tag: '<svg viewBox="0 0 12 12"><path d="M1.8 1.8h4l4.6 4.6-4 4-4.6-4.6z"/><circle cx="4.1" cy="4.1" r=".8" fill="currentColor" stroke="none"/></svg>',
   };
   const STEPS = [
-    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now", "Closest one is on 5th Ave."],
-    ["search", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top", "Looking through the burgers."],
-    ["list", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke", "A meal makes more sense."],
-    ["tag", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today", "Checking for a deal first."],
+    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now", "Closest one is on 5th Ave 📍"],
+    ["search", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top", "Looking through the burgers 🍔"],
+    ["list", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke", "A meal makes more sense 🍟"],
+    ["tag", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today", "Checking for a deal first 🏷️"],
   ];
   const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char
 
@@ -5503,28 +5504,28 @@ function chatScriptFor(title) {
     return th;
   }
 
-  // the thinking tab: centred on the composer, it opens once and stays up.
-  // say(text) fades the current line out and types the next one in char by
-  // char; the tab's width and height are re-measured as the chars land, so
-  // it grows and shrinks around the line smoothly. done() swaps the head to
-  // "Thought for Ns" and stops the shimmer.
+  // the thinking tab: docked on the composer's left corner, one row (bubble
+  // glyph + thought), it opens once and stays up. say(text) fades the current
+  // line out and types the next one in char by char; the tab is re-measured
+  // as the chars land and only ever grows, so the frame never compacts.
+  // done() stops the sheen.
   function openThinkTab(gen) {
     const main = document.getElementById(P.gg.root).querySelector(".bcs-main");
     const tab = add("div", "bc-think demo-t _live");
     const inner = add("div", "bc-think-in");
-    const head = add("div", "bc-think-head");
-    head.insertAdjacentHTML("beforeend", BUBBLE);
-    const label = add("span", "bc-think-label");
-    label.textContent = "Thinking";
-    head.appendChild(label);
+    inner.insertAdjacentHTML("beforeend", BUBBLE);
     const textEl = add("div", "bc-think-text");
-    inner.append(head, textEl);
+    inner.appendChild(textEl);
     tab.appendChild(inner);
     main.appendChild(tab);
     const wrap = main.querySelector(".bc-softwrap");
     if (wrap) wrap.classList.add("_awake"); // the bar stays lit under the tab
-    const t0 = performance.now();
-    const fit = () => { tab.style.width = inner.offsetWidth + "px"; tab.style.height = inner.offsetHeight + "px"; };
+    let widest = 0;
+    const fit = () => {
+      widest = Math.max(widest, inner.offsetWidth); // grow only, never compact
+      tab.style.width = widest + "px";
+      tab.style.height = inner.offsetHeight + "px";
+    };
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
     const api = {
       async open() {
@@ -5553,8 +5554,7 @@ function chatScriptFor(title) {
         }
       },
       done() {
-        tab.classList.remove("_live");
-        label.textContent = "Thought for " + Math.max(1, Math.round((performance.now() - t0) / 1000)) + "s";
+        tab.classList.remove("_live"); // the sheen stops; the thought stays
         fit();
       },
     };
@@ -5656,8 +5656,8 @@ function chatScriptFor(title) {
     await sleep(900); if (!alive(gen)) return; // a beat to read the opening thought
     await runTools(th, tab, gen); if (!alive(gen)) return; // the menu scan, as plain tool-call lines
     await sleep(200); if (!alive(gen)) return;
-    tab.done(); // the head reads "Thought for Ns"; the tab stays up
-    await tab.say(THOUGHT_END);
+    await tab.say(THOUGHT_END); // the closing thought, then the sheen stops; the tab stays up
+    tab.done();
   }
 })();
 </script>
