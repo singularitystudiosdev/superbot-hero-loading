@@ -2076,14 +2076,21 @@ body {
    eases 0fr → 1fr (--fit-ms, the kit's Resize), so the whole bar grows to
    make room and shrinks back, ring and glow following. ._away (the thread
    scrolled up into history) folds it the same way. */
-.bc-think { display: grid; grid-template-rows: 0fr; opacity: 0; --fit-ms: 450ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity calc(var(--fit-ms) * 0.7) ease; pointer-events: none; }
+.bc-think { display: grid; grid-template-rows: 0fr; opacity: 0; --fit-ms: 450ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity calc(var(--fit-ms) * 0.7) ease; cursor: pointer; user-select: none; }
 .bc-think._on { grid-template-rows: 1fr; opacity: 1; }
 .bc-think._on._away { grid-template-rows: 0fr; opacity: 0; }
 .bc-think-body { min-height: 0; overflow: hidden; }
 /* one row, like the reference: the glyph then the thought, on a hairline
    above the input row */
-.bc-think-in { display: flex; align-items: center; gap: 9px; margin: 0 10px; padding: 11px 6px 9px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e2e4ea; }
+.bc-think-in { display: flex; align-items: center; gap: 9px; margin: 0 10px; padding: 11px 6px 9px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #b6b9c3; } /* the thought reads a step greyer than the input text (user, 2026-09-12) */
 .bc-think-in svg { width: 14px; height: 14px; flex-shrink: 0; stroke: #c3c6ce; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+/* tap to open / close: the thought collapses to the glyph and a chevron and
+   back (the row keeps its height, so the bar does not jump) */
+.bc-think-chev { margin-left: auto; display: inline-flex; opacity: 0.55; transition: transform 320ms cubic-bezier(0.2, 0, 0, 1), opacity 200ms ease; }
+.bc-think-chev svg { width: 11px; height: 11px; stroke: #c3c6ce; }
+.bc-think:hover .bc-think-chev { opacity: 0.9; }
+.bc-think._closed .bc-think-chev { transform: rotate(180deg); }
+.bc-think._closed .bc-think-text { max-width: 0; opacity: 0; }
 /* icon variants (the kit picks one): dots pulse and the ring spins while the
    tab is live; "none" drops the glyph and the text moves over */
 .bc-think-in._noicon { gap: 0; }
@@ -2118,8 +2125,8 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
 .think-kit-replay:hover { background: #ffffff; }
 .think-kit-replay:active { transform: scale(0.97); }
 .think-kit-replay:disabled { opacity: 0.45; cursor: default; }
-.bc-think-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 18px; transition: opacity 180ms ease; }
-.bc-think._live .bc-think-text { background: linear-gradient(90deg, #c3c6ce 0%, #c3c6ce 35%, #ffffff 50%, #c3c6ce 65%, #c3c6ce 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; } /* the silver sheen rides the words while thinking; emoji keep their own colour */
+.bc-think-text { flex: 0 1 auto; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 18px; transition: opacity 180ms ease, max-width var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1); }
+.bc-think._live .bc-think-text { background: linear-gradient(90deg, #a9adb8 0%, #a9adb8 35%, #eef0f4 50%, #a9adb8 65%, #a9adb8 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; } /* the grey sheen rides the words while thinking; emoji keep their own colour */
 .bc-think-text._out { opacity: 0; }
 /* the typewriter: every char lands as its own span and fades in over 420ms
    while the next ones arrive, so the line reads as a smooth wash rather than
@@ -2129,6 +2136,7 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
 @keyframes demo-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 @keyframes demo-shimmer { from { background-position: 0% 0; } to { background-position: -220% 0; } }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
+body.tour-lock .bc-think, body.tour-lock .bc-think * { pointer-events: auto !important; } /* the thought can be tapped open/closed even while the demo plays */
 @media (prefers-reduced-motion: reduce) {
   .bc-think, .bc-think-text { transition: none; }
   .bc-think._live .bc-think-text { animation: none; }
@@ -5625,10 +5633,14 @@ function chatScriptFor(title) {
     const inner = add("div", "bc-think-in");
     const iconEl = add("span", "bc-think-ic");
     const textEl = add("div", "bc-think-text");
-    inner.append(iconEl, textEl);
+    const chev = add("span", "bc-think-chev");
+    chev.innerHTML = '<svg viewBox="0 0 12 12" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5 9 4.5"/></svg>';
+    inner.append(iconEl, textEl, chev);
     body.appendChild(inner);
     tab.appendChild(body);
     composer.prepend(tab);
+    // tap the thought to close it to the glyph and chevron, tap again to open
+    tab.addEventListener("click", (e) => { e.stopPropagation(); tab.classList.toggle("_closed"); });
     const setIcon = (name) => {
       iconEl.innerHTML = TAB_ICONS[name] || "";
       iconEl.className = "bc-think-ic _" + name;
