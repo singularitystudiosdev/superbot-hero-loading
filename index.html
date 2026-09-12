@@ -2089,6 +2089,40 @@ body.tour-lock, body.tour-lock * { pointer-events: none !important; }
   .demo-thought-fold, .demo-thought-head svg { transition: none; }
   .demo-word { animation: none; opacity: 1; filter: none; }
 }
+/* ---- the tool-call frame (after the thought folds, 2026-09-12) -----------
+   A raised panel with a header (what is happening + n of N), one row per
+   tool call: emoji, a label that types in, and under it a 3px track whose
+   storm fill eases 0 → 100% across the step while its colours drift as one
+   slow flow (no glint). On completion the label swaps to its result and the
+   fill settles dimmer; when the last one lands the counter reads Done, the
+   frame's border lifts, and after a beat the rows fold under the header
+   (grid 1fr → 0fr). Click the header to reopen. No dots, no check marks. */
+.demo-tools { align-self: flex-start; width: 100%; max-width: 440px; margin-top: 14px; padding: 10px 14px 12px; border-radius: 14px; background: #141416; border: 1px solid rgba(255, 255, 255, 0.08); box-sizing: border-box; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; animation: demo-in 0.3s ease-out; transition: border-color 400ms ease, padding-bottom 480ms cubic-bezier(0.2, 0, 0, 1); }
+.demo-tools._done { border-color: rgba(255, 255, 255, 0.16); }
+.demo-tools-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); color: #c9ccd4; font-weight: 600; transition: padding-bottom 480ms cubic-bezier(0.2, 0, 0, 1), border-color 480ms ease; }
+.demo-tools-count { font-variant-numeric: tabular-nums; color: #8b90a0; font-weight: 500; transition: color 300ms ease; }
+.demo-tools._done .demo-tools-count { color: #f2f3f7; font-weight: 600; }
+.demo-tools._done .demo-tools-head { cursor: pointer; }
+.demo-tools-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 480ms cubic-bezier(0.2, 0, 0, 1), opacity 320ms ease; }
+.demo-tools-rows { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; min-height: 0; overflow: hidden; }
+.demo-tools._folded .demo-tools-body { grid-template-rows: 0fr; opacity: 0; }
+.demo-tools._folded { padding-bottom: 10px; }
+.demo-tools._folded .demo-tools-head { padding-bottom: 0; border-color: transparent; }
+.demo-step { display: flex; flex-direction: column; gap: 6px; color: #d4d7de; animation: demo-in 0.2s ease-out; transition: color 300ms ease; }
+.demo-step-line { display: flex; align-items: center; gap: 8px; min-height: 16px; }
+.demo-step b { font-weight: 700; color: #f2f3f7; }
+.demo-step .demo-emoji { width: 18px; text-align: center; font-size: 13px; line-height: 1; }
+.demo-bar { position: relative; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.07); overflow: hidden; margin-left: 26px; }
+.demo-fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #c026d3, #6a1fd8, #2b6bff); background-size: 200% 100%; animation: demo-flow 2.6s linear infinite; transition: opacity 500ms ease; }
+.demo-step._done { color: #8b90a0; }
+.demo-step._done b { color: #c9ccd4; }
+.demo-step._done .demo-fill { opacity: 0.5; animation: none; background-position: 0 0; }
+@keyframes demo-flow { from { background-position: 0% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .demo-tools, .demo-step { animation: none; }
+  .demo-tools, .demo-tools-head, .demo-tools-body { transition: none; }
+  .demo-fill { transition: none !important; animation: none; }
+}
 </style>
 </head>
 <body>
@@ -5406,16 +5440,28 @@ function chatScriptFor(title) {
 // Claude has just docked: dwell 0.9s → superbot; the user types "Order me a
 // burger from mcdonalds"; a thinking block opens, its reasoning fades in
 // word by word, and once the thought is done the head reads "Thought for Ns"
-// and the block folds. A double tap during the LOAD animation fast-forwards
+// and the block folds; then the tool-call frame scans the McDonald's menu
+// (four calls, each with a filling bar) and folds under its header once
+// every call has landed. A double tap during the LOAD animation fast-forwards
 // it to this point (skipIntro); the demo itself always plays at normal
 // speed. The phone mirrors the send. Replay-safe: reset()'s fxGen bump
 // cancels the demo between beats and a fresh run clears every node it
 // stamped .demo-t.
 (function () {
   const ASK = "Order me a burger from mcdonalds";
-  const THOUGHT = "They want a burger from McDonald's. Two saved addresses and no default, so I'll ask which one before I order.";
+  const THOUGHT = "They want a burger from McDonald's. I'll find the nearest one and scan its menu before I order anything.";
   const WORD_MS = 70; // a steady cadence, no jitter: each word fades in over 640ms while the next ones land
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter for the user's typing
+  // the tool calls that follow the thought: [emoji, running label, result],
+  // short, bold on the key noun, no dashes
+  const TOOLS_TITLE = "Scanning McDonald's menu";
+  const STEPS = [
+    ["📍", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now"],
+    ["🍔", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top"],
+    ["🍟", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke"],
+    ["🏷️", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today"],
+  ];
+  const STEP_MS = 1700, LABEL_MS = 4; // each bar fills over 1.7s; labels type at 4ms a char
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const alive = (gen) => gen === fxGen;
@@ -5502,6 +5548,96 @@ function chatScriptFor(title) {
     follow(th);
   }
 
+  // "**bold**" runs → text nodes and <b> elements (no innerHTML of copy)
+  function richInto(el, text) {
+    el.textContent = "";
+    text.split(/(\*\*.+?\*\*)/g).forEach((part) => {
+      if (!part) return;
+      if (part.startsWith("**") && part.endsWith("**")) {
+        const b = add("b");
+        b.textContent = part.slice(2, -2);
+        el.appendChild(b);
+      } else el.appendChild(document.createTextNode(part));
+    });
+  }
+
+  // the typewriter fade for a label: each char lands as a fading span (inside
+  // a <b> when the run is bold); the finished text is normalized to plain nodes
+  function typeRich(el, text, ms) {
+    return new Promise((resolve) => {
+      const runs = text.split(/(\*\*.+?\*\*)/g).filter(Boolean).map((part) =>
+        part.startsWith("**") && part.endsWith("**") ? { bold: true, text: part.slice(2, -2) } : { bold: false, text: part });
+      el.textContent = "";
+      if (REDUCED_MOTION) { richInto(el, text); resolve(); return; }
+      let r = 0, i = 0, holder = null;
+      const tick = () => {
+        if (r >= runs.length) { richInto(el, text); resolve(); return; }
+        const run = runs[r];
+        if (i === 0) { holder = run.bold ? add("b") : el; if (run.bold) el.appendChild(holder); }
+        const s = add("span", "bc-fade-chunk");
+        s.textContent = run.text[i];
+        holder.appendChild(s);
+        i++;
+        if (i >= run.text.length) { r++; i = 0; }
+        setTimeout(tick, ms);
+      };
+      tick();
+    });
+  }
+
+  // the tool-call frame: a header with the count, one row per call; each
+  // row's bar eases to full across the step while its label types in, then
+  // the result types over the finished bar. The last one flips the frame to
+  // Done and, after a beat, folds the rows under the header.
+  async function runTools(th, gen) {
+    const frame = add("div", "demo-tools bc-app demo-t");
+    const head = add("div", "demo-tools-head");
+    const title = add("span"); title.textContent = TOOLS_TITLE;
+    const count = add("span", "demo-tools-count");
+    count.textContent = "0 of " + STEPS.length;
+    head.append(title, count);
+    const body = add("div", "demo-tools-body");
+    const rowsEl = add("div", "demo-tools-rows");
+    body.appendChild(rowsEl);
+    frame.append(head, body);
+    head.addEventListener("click", () => { if (frame.classList.contains("_done")) frame.classList.toggle("_folded"); });
+    th.appendChild(frame);
+    follow(th);
+    await sleep(REDUCED_MOTION ? 100 : 350); if (!alive(gen)) return;
+    let n = 0;
+    for (const [emoji, running, result] of STEPS) {
+      if (!alive(gen)) return;
+      const row = add("div", "demo-step");
+      const line = add("div", "demo-step-line");
+      const e = add("span", "demo-emoji"); e.textContent = emoji;
+      const l = add("span");
+      line.append(e, l);
+      const bar = add("div", "demo-bar");
+      const fill = add("div", "demo-fill");
+      bar.appendChild(fill);
+      row.append(line, bar);
+      rowsEl.appendChild(row);
+      follow(th);
+      // the fill: fast out of the gate, easing into the last stretch; the
+      // transition is armed after the row has painted at width 0
+      void fill.offsetWidth;
+      fill.style.transition = REDUCED_MOTION ? "none" : "width " + STEP_MS + "ms cubic-bezier(0.22, 0.75, 0.25, 1)";
+      fill.style.width = "100%";
+      const t0 = performance.now();
+      await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
+      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS + 120) - (performance.now() - t0))); if (!alive(gen)) return;
+      row.classList.add("_done");
+      await typeRich(l, result, LABEL_MS); if (!alive(gen)) return;
+      count.textContent = (++n) + " of " + STEPS.length;
+    }
+    count.textContent = "Done";
+    frame.classList.add("_done");
+    await sleep(REDUCED_MOTION ? 300 : 1100); if (!alive(gen)) return; // a beat to read the finished list
+    frame.classList.add("_folded");
+    await sleep(REDUCED_MOTION ? 50 : 520);
+    follow(th);
+  }
+
   // replay hygiene: every node and store entry the demo owns goes away so a
   // rerun starts from the same clean state as the first
   function clearTourState() {
@@ -5528,7 +5664,9 @@ function chatScriptFor(title) {
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.gg, ASK);
-    await think(th, THOUGHT, gen);
+    await think(th, THOUGHT, gen); if (!alive(gen)) return;
+    await sleep(300); if (!alive(gen)) return;
+    await runTools(th, gen); // the menu scan, in the framed progress panel
   }
 })();
 </script>
