@@ -5472,9 +5472,11 @@ function chatScriptFor(title) {
 // burger from mcdonalds"; a thinking tab rises, centred on the composer,
 // and STAYS up: one short line (with an emoji) types in with a char fade,
 // then four plain tool-call lines scan the McDonald's menu (each shimmering
-// while it runs and settling to its result) while the tab swaps in a
-// one-line thought per call, growing but never shrinking; the closing
-// thought types in and the sheen stops. A double
+// while it runs and settling to its result) while the row swaps in a
+// one-line thought per call; a reply lands; two more asks follow (a
+// McFlurry, then delivery) each with their own calls and reply, so the
+// thread fills past the bar and scrolls; the closing thought types in and
+// the sheen stops. A double
 // tap during the LOAD animation fast-forwards
 // it to this point (skipIntro); the demo itself always plays at normal
 // speed. The phone mirrors the send. Replay-safe: reset()'s fxGen bump
@@ -5532,6 +5534,32 @@ function chatScriptFor(title) {
     ["tag", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today"],
   ];
   const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char (both scale with speed)
+  // the rest of the exchange, so the thread fills past the bar and scrolls
+  // (user, 2026-09-12: "show the chat going down the bottom"). Each later
+  // stage: the user's ask, the row's thought while it runs, its tool calls
+  // [icon, running, result, thought], and the reply that lands in the thread.
+  const REPLY_1 = "Big Mac Meal is $9.49 at 5th Ave, no deal today. Want anything with it?";
+  const STAGES = [
+    {
+      ask: "Add a McFlurry too",
+      thought: "Adding a McFlurry, checking the flavours",
+      steps: [
+        ["list", "Checking **McFlurry** flavours", "**Oreo** and **M&M's** available today", "Oreo is the safe pick"],
+        ["search", "Adding an **Oreo McFlurry** to the cart", "Cart: **Big Mac Meal**, **Oreo McFlurry**, $13.48", "Cart is at $13.48 now"],
+      ],
+      reply: "Added an Oreo McFlurry. The cart is $13.48. Where should it go?",
+    },
+    {
+      ask: "Send it to home",
+      thought: "Home is 24 Pine St, placing the order",
+      steps: [
+        ["pin", "Setting delivery to **24 Pine St**", "**24 Pine St**, about 14 minutes out", "14 minutes to the door 📍"],
+        ["tag", "Paying with the **saved card**", "**$13.48** on the card ending 4421", "Paid, placing it now"],
+        ["search", "Placing the **order**", "Order **#48213** placed, courier assigned", "Courier is on the way"],
+      ],
+      reply: "Done. Order #48213 is on its way to 24 Pine St, about 14 minutes.",
+    },
+  ];
   // the tab's icon variants: line glyphs at 14px; "none" drops the glyph
   const TAB_ICONS = {
     bubble: '<svg viewBox="0 0 12 12"><path d="M2.2 2.2h7.6a1.2 1.2 0 0 1 1.2 1.2v3.4a1.2 1.2 0 0 1-1.2 1.2H5.6L3.2 10.2V8H2.2A1.2 1.2 0 0 1 1 6.8V3.4a1.2 1.2 0 0 1 1.2-1.2z"/></svg>',
@@ -5693,13 +5721,12 @@ function chatScriptFor(title) {
 
   // the tool calls: one line each. The label types in and shimmers while the
   // call runs; when it lands the result types over it and the row settles dim.
-  async function runTools(th, tab, gen) {
+  async function runTools(th, tab, gen, steps, stepThoughts) {
     const list = add("div", "demo-tools bc-app demo-t");
     th.appendChild(list);
     follow(th);
-    const stepThoughts = thoughts().steps;
-    for (let i = 0; i < STEPS.length; i++) {
-      const [icon, running, result] = STEPS[i];
+    for (let i = 0; i < steps.length; i++) {
+      const [icon, running, result, ownThought] = steps[i];
       if (!alive(gen)) return;
       const row = add("div", "demo-step _run");
       row.insertAdjacentHTML("beforeend", ICON[icon]);
@@ -5708,7 +5735,8 @@ function chatScriptFor(title) {
       list.appendChild(row);
       follow(th);
       const t0 = performance.now();
-      tab.say(stepThoughts[i]); // the tab keeps thinking alongside the call (not awaited)
+      const thought = ownThought || (stepThoughts && stepThoughts[i]);
+      if (thought) tab.say(thought); // the row keeps thinking alongside the call (not awaited)
       await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
       await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0) * (KIT.speed || 1))); if (!alive(gen)) return;
       row.classList.remove("_run");
@@ -5751,10 +5779,38 @@ function chatScriptFor(title) {
     await tab.open(); if (!alive(gen)) return;
     await tab.say(set.open); if (!alive(gen)) return;
     await sleep(900); if (!alive(gen)) return; // a beat to read the opening thought
-    await runTools(th, tab, gen); if (!alive(gen)) return; // the menu scan, as plain tool-call lines
+    await runTools(th, tab, gen, STEPS, set.steps); if (!alive(gen)) return; // the menu scan, as plain tool-call lines
     await sleep(200); if (!alive(gen)) return;
-    await tab.say(set.end); // the closing thought, then the sheen stops; the tab stays up
+    await reply(th, REPLY_1); if (!alive(gen)) return;
+    // the later turns: ask, thought, tool calls, reply
+    for (const stage of STAGES) {
+      await sleep(1100); if (!alive(gen)) return;
+      await demoType(P.gg, stage.ask, gen); if (!alive(gen)) return;
+      await sleep(320); if (!alive(gen)) return;
+      demoSend(P.gg, stage.ask);
+      await tab.say(stage.thought); if (!alive(gen)) return;
+      await sleep(500); if (!alive(gen)) return;
+      await runTools(th, tab, gen, stage.steps, null); if (!alive(gen)) return;
+      await sleep(200); if (!alive(gen)) return;
+      await reply(th, stage.reply); if (!alive(gen)) return;
+    }
+    await sleep(300); if (!alive(gen)) return;
+    await tab.say(set.end); // the closing thought, then the sheen stops; the row stays up
     tab.done();
+  }
+
+  // a reply in the thread: the panel's own reply block, typed with Superbot's
+  // char fade, stored, mirrored to the phone; resolves once it has typed
+  async function reply(th, text) {
+    const p = P.gg;
+    const key = chatKey(p, liveChat.get("gg"));
+    if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text });
+    panelAddReply(p, th, text, null, true, performance.now());
+    if (window.phTourReply) window.phTourReply(text, 220);
+    follow(th);
+    const typed = text.length * 7 + 400; // the gg fx types at 7ms a char (unscaled)
+    const t0 = performance.now();
+    while (performance.now() - t0 < typed) { await sleep(120 * (KIT.speed || 1)); follow(th); } // keep the tail in view while it types
   }
 
   // ---- the kit -------------------------------------------------------------
