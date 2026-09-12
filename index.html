@@ -257,30 +257,16 @@ body {
   font: 700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #e6e8ee;
 }
-/* '.gg' — the storm ramp clipped to the glyphs (2026-09-12: every rainbow on
-   this page moved to xdxdxd.dsh.sh's palette, site.css --storm-1..--storm-4:
-   blue #2b6bff → purple #6a1fd8 → magenta #c026d3 → pink #ff3d9a; the teal
-   --storm-0 stays out of the loops, since pink→blue already blends through
-   purple and pink→teal would pass through grey). Four stops tiled at a 36px
-   period, closed on the first stop so the tile is seamless; the loop slides
-   background-position by exactly one period (the 36px tile at 13px text
-   rasterizes without a visible snap). No hue-rotate anywhere: a hue filter
-   would walk the ramp back into green and yellow. */
+/* '.gg' — a static purple → blue ramp clipped to the glyphs (2026-09-12,
+   user: "make this just a purple and blue gradient, not moving"). The two
+   stops are xdxdxd.dsh.sh's --storm-2 #6a1fd8 and --storm-1 #2b6bff; no
+   animation, no hue-rotate. */
 .bcs-word em {
   font-style: normal;
-  background: repeating-linear-gradient(90deg,
-    #2b6bff 0px, #6a1fd8 9px, #c026d3 18px, #ff3d9a 27px, #2b6bff 36px);
+  background: linear-gradient(90deg, #6a1fd8, #2b6bff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: gg-slide 6s linear infinite;
-}
-@keyframes gg-slide {
-  from { background-position-x: 0px; }
-  to { background-position-x: 36px; } /* one full period: the tile repeats, so the seam is identity */
-}
-@media (prefers-reduced-motion: reduce) {
-  .bcs-word em { animation: none; } /* static gradient: one blue→purple→magenta→pink window */
 }
 .bcs-brandicons { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; color: #9aa0ad; }
 .bcs-brandicons .cl-ic { width: 10px; height: 10px; }
@@ -356,8 +342,9 @@ body {
   background: var(--rainbow);
   z-index: -1;
 }
-.bc-softwrap .composer::before { filter: blur(16px); opacity: 0.6; animation: spin var(--speed) linear infinite; }
-.bc-softwrap .composer::after { inset: -10px; border-radius: calc(var(--radius) + 8px); filter: blur(40px); opacity: 0.35; animation: spin var(--speed) linear infinite; }
+/* bloom opacities are 30% of the demo's 0.6 / 0.35 (2026-09-12, user: "make the glow 70% less here") */
+.bc-softwrap .composer::before { filter: blur(16px); opacity: 0.18; animation: spin var(--speed) linear infinite; }
+.bc-softwrap .composer::after { inset: -10px; border-radius: calc(var(--radius) + 8px); filter: blur(40px); opacity: 0.105; animation: spin var(--speed) linear infinite; }
 .bc-plus { color: #8b90a0; display: inline-flex; flex-shrink: 0; }
 .bc-plus .cl-ic { width: 14px; height: 14px; }
 .bc-ph { flex: 1; color: #8b90a0; font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -410,22 +397,15 @@ body {
   border-radius: 24%; object-fit: cover;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
-/* '(all)' suffix on the Superbot row — the .gg storm ramp clipped to the
-   text, same mechanism as .bcs-word em: the same 36px storm tile + the same
-   gg-slide keyframes (one period per loop, so the seam is identity). Lives
-   only on the option row — the selected chip renders the bare name, never
-   the suffix. */
+/* '(all)' suffix on the Superbot row — the same static purple → blue ramp
+   as .bcs-word em. Lives only on the option row — the selected chip renders
+   the bare name, never the suffix. */
 .bc-plat-all {
   font-weight: 600;
-  background: repeating-linear-gradient(90deg,
-    #2b6bff 0px, #6a1fd8 9px, #c026d3 18px, #ff3d9a 27px, #2b6bff 36px);
+  background: linear-gradient(90deg, #6a1fd8, #2b6bff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: gg-slide 6s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .bc-plat-all { animation: none; } /* static gradient: one blue→purple→magenta→pink window */
 }
 
 /* reduced motion: the composer and both bloom layers hold their static
