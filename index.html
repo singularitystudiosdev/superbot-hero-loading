@@ -2073,6 +2073,7 @@ body {
    swallows pointer input while the demo plays. */
 .bc-think { position: absolute; left: 50%; bottom: calc(18px + 46px - 3px); z-index: 3; /* centred on the bar; sunk 3px into it: at the panel's 0.667 scale a 1px overlap left a hairline of the composer ring showing (user, 2026-09-12) */ width: 0; height: 0; opacity: 0; overflow: hidden; border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #1e1e22, #141417); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 1px 0 0 rgba(255, 255, 255, 0.11), inset -1px 0 0 rgba(255, 255, 255, 0.11), 0 -10px 28px -14px rgba(0, 0, 0, 0.85); transform: translate(-50%, 8px); will-change: width, transform, opacity; --fit-ms: 450ms; transition: width var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), height var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity 340ms ease, transform 460ms cubic-bezier(0.22, 1, 0.36, 1); pointer-events: none; } /* --fit-ms is the kit's "resize" speed */
 .bc-think._on { opacity: 1; transform: translate(-50%, 0); }
+.bc-think._on._away { opacity: 0; transform: translate(-50%, 8px); } /* the thread is scrolled up into history: the tab slips back until the chat is at the bottom again (user, 2026-09-12) */
 /* one row, like the reference: the glyph then the thought. The tab's width
    follows the line (kit "Fit line", the default) or only ever grows (kit
    "Grow only"). */
@@ -5600,6 +5601,14 @@ function chatScriptFor(title) {
     setIcon(KIT.icon);
     const wrap = main.querySelector(".bc-softwrap");
     if (wrap) wrap.classList.add("_awake"); // the bar stays lit under the tab
+    // the tab shows only while the chat is all the way down: scrolling up
+    // into history slips it away, coming back to the bottom brings it back
+    const thread = main.querySelector(".bcs-thread");
+    const onScroll = () => {
+      const atBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 6;
+      tab.classList.toggle("_away", !atBottom);
+    };
+    if (thread) { thread.addEventListener("scroll", onScroll, { passive: true }); onScroll(); }
     let widest = 0;
     tab.style.setProperty("--fit-ms", (KIT.resizeMs || 450) + "ms");
     // measure a line: the full text is laid out for a single frame (the box
@@ -5666,6 +5675,7 @@ function chatScriptFor(title) {
         applyW(m.w); applyH(m.h);
       },
       setResize(ms) { tab.style.setProperty("--fit-ms", ms + "ms"); },
+      dispose() { if (thread) thread.removeEventListener("scroll", onScroll); },
       refit() { // fit mode changed: re-fit the current line under the new rule
         const cur = textEl.textContent;
         widest = 0;
@@ -5746,6 +5756,7 @@ function chatScriptFor(title) {
   // replay hygiene: every node and store entry the demo owns goes away so a
   // rerun starts from the same clean state as the first
   function clearTourState() {
+    if (window.__thinkTab) { window.__thinkTab.dispose(); window.__thinkTab = null; }
     document.querySelectorAll(".demo-t").forEach((el) => el.remove());
     threadStore.delete("gg:" + ASK);
   }
