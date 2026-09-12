@@ -2089,39 +2089,22 @@ body.tour-lock, body.tour-lock * { pointer-events: none !important; }
   .demo-thought-fold, .demo-thought-head svg { transition: none; }
   .demo-word { animation: none; opacity: 1; filter: none; }
 }
-/* ---- the tool-call frame (after the thought folds, 2026-09-12) -----------
-   A raised panel with a header (what is happening + n of N), one row per
-   tool call: emoji, a label that types in, and under it a 3px track whose
-   storm fill eases 0 → 100% across the step while its colours drift as one
-   slow flow (no glint). On completion the label swaps to its result and the
-   fill settles dimmer; when the last one lands the counter reads Done, the
-   frame's border lifts, and after a beat the rows fold under the header
-   (grid 1fr → 0fr). Click the header to reopen. No dots, no check marks. */
-.demo-tools { align-self: flex-start; width: 100%; max-width: 440px; margin-top: 14px; padding: 10px 14px 12px; border-radius: 14px; background: #141416; border: 1px solid rgba(255, 255, 255, 0.08); box-sizing: border-box; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; animation: demo-in 0.3s ease-out; transition: border-color 400ms ease, padding-bottom 480ms cubic-bezier(0.2, 0, 0, 1); }
-.demo-tools._done { border-color: rgba(255, 255, 255, 0.16); }
-.demo-tools-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); color: #c9ccd4; font-weight: 600; transition: padding-bottom 480ms cubic-bezier(0.2, 0, 0, 1), border-color 480ms ease; }
-.demo-tools-count { font-variant-numeric: tabular-nums; color: #8b90a0; font-weight: 500; transition: color 300ms ease; }
-.demo-tools._done .demo-tools-count { color: #f2f3f7; font-weight: 600; }
-.demo-tools._done .demo-tools-head { cursor: pointer; }
-.demo-tools-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 480ms cubic-bezier(0.2, 0, 0, 1), opacity 320ms ease; }
-.demo-tools-rows { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; min-height: 0; overflow: hidden; }
-.demo-tools._folded .demo-tools-body { grid-template-rows: 0fr; opacity: 0; }
-.demo-tools._folded { padding-bottom: 10px; }
-.demo-tools._folded .demo-tools-head { padding-bottom: 0; border-color: transparent; }
-.demo-step { display: flex; flex-direction: column; gap: 6px; color: #d4d7de; animation: demo-in 0.2s ease-out; transition: color 300ms ease; }
-.demo-step-line { display: flex; align-items: center; gap: 8px; min-height: 16px; }
-.demo-step b { font-weight: 700; color: #f2f3f7; }
-.demo-step .demo-emoji { width: 18px; text-align: center; font-size: 13px; line-height: 1; }
-.demo-bar { position: relative; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, 0.07); overflow: hidden; margin-left: 26px; }
-.demo-fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #c026d3, #6a1fd8, #2b6bff); background-size: 200% 100%; animation: demo-flow 2.6s linear infinite; transition: opacity 500ms ease; }
+/* ---- the tool calls (after the thought folds, 2026-09-12) -----------------
+   Clean lines, nothing else: one row per call, a small line icon and a label
+   that types in. While the call runs the label carries the same grey sheen
+   as "Thinking"; when it lands the label swaps to its result and the row
+   settles dim. No frame, no bars, no counters, no check marks. */
+.demo-tools { align-self: flex-start; display: flex; flex-direction: column; gap: 9px; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; }
+.demo-step { display: flex; align-items: center; gap: 8px; min-height: 16px; color: #8b90a0; animation: demo-in 0.2s ease-out; transition: color 300ms ease; }
+.demo-step svg { width: 12px; height: 12px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+.demo-step._run { color: #c9ccd4; }
+.demo-step._run .demo-step-label { background: linear-gradient(90deg, #a5a9b6 0%, #a5a9b6 35%, #f2f3f7 50%, #a5a9b6 65%, #a5a9b6 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
+.demo-step._run .demo-step-label b, .demo-step._run .demo-step-label .bc-fade-chunk { color: inherit; }
+.demo-step b { font-weight: 600; color: #c9ccd4; }
 .demo-step._done { color: #8b90a0; }
-.demo-step._done b { color: #c9ccd4; }
-.demo-step._done .demo-fill { opacity: 0.5; animation: none; background-position: 0 0; }
-@keyframes demo-flow { from { background-position: 0% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .demo-tools, .demo-step { animation: none; }
-  .demo-tools, .demo-tools-head, .demo-tools-body { transition: none; }
-  .demo-fill { transition: none !important; animation: none; }
+  .demo-step { animation: none; }
+  .demo-step._run .demo-step-label { animation: none; }
 }
 </style>
 </head>
@@ -5440,9 +5423,9 @@ function chatScriptFor(title) {
 // Claude has just docked: dwell 0.9s → superbot; the user types "Order me a
 // burger from mcdonalds"; a thinking block opens, its reasoning fades in
 // word by word, and once the thought is done the head reads "Thought for Ns"
-// and the block folds; then the tool-call frame scans the McDonald's menu
-// (four calls, each with a filling bar) and folds under its header once
-// every call has landed. A double tap during the LOAD animation fast-forwards
+// and the block folds; then four plain tool-call lines scan the McDonald's
+// menu, each shimmering while it runs and settling to its result. A double
+// tap during the LOAD animation fast-forwards
 // it to this point (skipIntro); the demo itself always plays at normal
 // speed. The phone mirrors the send. Replay-safe: reset()'s fxGen bump
 // cancels the demo between beats and a fresh run clears every node it
@@ -5452,16 +5435,21 @@ function chatScriptFor(title) {
   const THOUGHT = "They want a burger from McDonald's. I'll find the nearest one and scan its menu before I order anything.";
   const WORD_MS = 70; // a steady cadence, no jitter: each word fades in over 640ms while the next ones land
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter for the user's typing
-  // the tool calls that follow the thought: [emoji, running label, result],
-  // short, bold on the key noun, no dashes
-  const TOOLS_TITLE = "Scanning McDonald's menu";
+  // the tool calls that follow the thought: [icon, running label, result],
+  // short, bold on the key noun, no dashes. Icons are small line glyphs.
+  const ICON = {
+    pin: '<svg viewBox="0 0 12 12"><path d="M6 10.8S2.6 7.6 2.6 5.2a3.4 3.4 0 0 1 6.8 0C9.4 7.6 6 10.8 6 10.8z"/><circle cx="6" cy="5.2" r="1.2"/></svg>',
+    search: '<svg viewBox="0 0 12 12"><circle cx="5.2" cy="5.2" r="3.3"/><path d="M7.7 7.7 10.4 10.4"/></svg>',
+    list: '<svg viewBox="0 0 12 12"><path d="M4 3h6M4 6h6M4 9h6"/><circle cx="1.9" cy="3" r=".6" fill="currentColor" stroke="none"/><circle cx="1.9" cy="6" r=".6" fill="currentColor" stroke="none"/><circle cx="1.9" cy="9" r=".6" fill="currentColor" stroke="none"/></svg>',
+    tag: '<svg viewBox="0 0 12 12"><path d="M1.8 1.8h4l4.6 4.6-4 4-4.6-4.6z"/><circle cx="4.1" cy="4.1" r=".8" fill="currentColor" stroke="none"/></svg>',
+  };
   const STEPS = [
-    ["📍", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now"],
-    ["🍔", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top"],
-    ["🍟", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke"],
-    ["🏷️", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today"],
+    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now"],
+    ["search", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top"],
+    ["list", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke"],
+    ["tag", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today"],
   ];
-  const STEP_MS = 1700, LABEL_MS = 4; // each bar fills over 1.7s; labels type at 4ms a char
+  const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const alive = (gen) => gen === fxGen;
@@ -5585,56 +5573,28 @@ function chatScriptFor(title) {
     });
   }
 
-  // the tool-call frame: a header with the count, one row per call; each
-  // row's bar eases to full across the step while its label types in, then
-  // the result types over the finished bar. The last one flips the frame to
-  // Done and, after a beat, folds the rows under the header.
+  // the tool calls: one line each. The label types in and shimmers while the
+  // call runs; when it lands the result types over it and the row settles dim.
   async function runTools(th, gen) {
-    const frame = add("div", "demo-tools bc-app demo-t");
-    const head = add("div", "demo-tools-head");
-    const title = add("span"); title.textContent = TOOLS_TITLE;
-    const count = add("span", "demo-tools-count");
-    count.textContent = "0 of " + STEPS.length;
-    head.append(title, count);
-    const body = add("div", "demo-tools-body");
-    const rowsEl = add("div", "demo-tools-rows");
-    body.appendChild(rowsEl);
-    frame.append(head, body);
-    head.addEventListener("click", () => { if (frame.classList.contains("_done")) frame.classList.toggle("_folded"); });
-    th.appendChild(frame);
+    const list = add("div", "demo-tools bc-app demo-t");
+    th.appendChild(list);
     follow(th);
-    await sleep(REDUCED_MOTION ? 100 : 350); if (!alive(gen)) return;
-    let n = 0;
-    for (const [emoji, running, result] of STEPS) {
+    for (const [icon, running, result] of STEPS) {
       if (!alive(gen)) return;
-      const row = add("div", "demo-step");
-      const line = add("div", "demo-step-line");
-      const e = add("span", "demo-emoji"); e.textContent = emoji;
-      const l = add("span");
-      line.append(e, l);
-      const bar = add("div", "demo-bar");
-      const fill = add("div", "demo-fill");
-      bar.appendChild(fill);
-      row.append(line, bar);
-      rowsEl.appendChild(row);
+      const row = add("div", "demo-step _run");
+      row.insertAdjacentHTML("beforeend", ICON[icon]);
+      const l = add("span", "demo-step-label");
+      row.appendChild(l);
+      list.appendChild(row);
       follow(th);
-      // the fill: fast out of the gate, easing into the last stretch; the
-      // transition is armed after the row has painted at width 0
-      void fill.offsetWidth;
-      fill.style.transition = REDUCED_MOTION ? "none" : "width " + STEP_MS + "ms cubic-bezier(0.22, 0.75, 0.25, 1)";
-      fill.style.width = "100%";
       const t0 = performance.now();
       await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
-      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS + 120) - (performance.now() - t0))); if (!alive(gen)) return;
+      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0))); if (!alive(gen)) return;
+      row.classList.remove("_run");
       row.classList.add("_done");
       await typeRich(l, result, LABEL_MS); if (!alive(gen)) return;
-      count.textContent = (++n) + " of " + STEPS.length;
+      await sleep(REDUCED_MOTION ? 60 : 180);
     }
-    count.textContent = "Done";
-    frame.classList.add("_done");
-    await sleep(REDUCED_MOTION ? 300 : 1100); if (!alive(gen)) return; // a beat to read the finished list
-    frame.classList.add("_folded");
-    await sleep(REDUCED_MOTION ? 50 : 520);
     follow(th);
   }
 
@@ -5666,7 +5626,7 @@ function chatScriptFor(title) {
     const th = demoSend(P.gg, ASK);
     await think(th, THOUGHT, gen); if (!alive(gen)) return;
     await sleep(300); if (!alive(gen)) return;
-    await runTools(th, gen); // the menu scan, in the framed progress panel
+    await runTools(th, gen); // the menu scan, as plain tool-call lines
   }
 })();
 </script>
