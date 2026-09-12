@@ -2035,32 +2035,6 @@ body {
   .phone-area { display: none; }
 }
 
-/* ---- import tour (scripted add-on demo after the settle) -----------------
-   .demo-think — Cursor's "Thinking..." status: soft shimmer over the text,
-   tinted with a slow full-rainbow sweep (the gg wordmark's palette). Fades
-   out via WAAPI when the agent moves on. .demo-step — the tool-use line: a
-   pulsing magnifier plus a label that swaps per import stage. .demo-chip —
-   the inline follow-up prompt styled like the panel's pill language. */
-.demo-think { align-self: flex-start; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; background: linear-gradient(90deg, #8b90a0, #d97757, #e6c35c, #6fd08a, #6ea8ff, #b48ce8, #8b90a0); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-rainbow 1.8s linear infinite; }
-@keyframes demo-rainbow { from { background-position: 0% 0; } to { background-position: -220% 0; } }
-.demo-step { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #9aa0b4; animation: demo-step-in 0.18s ease-out; }
-.demo-step svg { width: 12px; height: 12px; animation: demo-pulse 1.1s ease-in-out infinite; }
-@keyframes demo-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
-@keyframes demo-step-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
-.demo-chip { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; margin-top: 14px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e6e8ee; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 7px 13px; cursor: pointer; animation: demo-step-in 0.22s ease-out; }
-.demo-chip:hover { background: rgba(255, 255, 255, 0.11); border-color: rgba(255, 255, 255, 0.22); }
-.demo-chip svg { width: 11px; height: 11px; flex-shrink: 0; }
-/* during the tour the page swallows all pointer input (keyboard replay still
-   works); body.tour-lock is added at tour start and dropped at the unlock */
-body.tour-lock, body.tour-lock * { pointer-events: none !important; }
-/* the handoff affordance: a mouse cursor parked on the chip, pressing down
-   and up so the user knows the button is theirs to click */
-.demo-mouse { position: fixed; z-index: 999; width: 22px; height: 22px; pointer-events: none; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45)); }
-.demo-mouse svg { width: 100%; height: 100%; display: block; }
-@media (prefers-reduced-motion: reduce) {
-  .demo-think, .demo-step, .demo-chip { animation: none; }
-  .demo-step svg { animation: none; opacity: 0.8; }
-}
 </style>
 </head>
 <body>
@@ -2955,10 +2929,6 @@ function familyRun(ctx) {
         return true;
       },
     };
-    // STAGE 6 — the scripted import tour (the add-on demo that plays after
-    // the settle). Runs once per settle epoch; reset()'s fxGen bump cancels
-    // it between steps, and a replay cleans its nodes before re-running.
-    if (window.runImportTour) window.runImportTour(gen);
   }
 
   function runFinisher() {
@@ -4996,32 +4966,6 @@ document.querySelectorAll(".composer").forEach((c) => {
     return replyText;
   };
 
-  // tour → phone: the scripted import tour mirrors its beats onto the phone
-  // so the two surfaces stay in lockstep — sends switch the phone to Superbot
-  // and post the same user bubble, replies stream the same text
-  window.phTourSend = function (text) {
-    // applyApp → renderPhThread re-renders the PC's threadStore, which
-    // already holds this send — appending here would duplicate it
-    syncEcho = true;
-    applyApp(PH_APPS.findIndex((a) => a.name === "Superbot"));
-    syncEcho = false;
-    const msgs = chat.querySelector(".ph-msgs");
-    msgs.scrollTop = msgs.scrollHeight;
-  };
-  window.phTourReply = function (text, ttft) {
-    const msgs = chat.querySelector(".ph-msgs");
-    const el = add("div", "ph-replytxt");
-    el.style.marginTop = "18px";
-    msgs.appendChild(el);
-    panelStreamReply(PH_FX[PH_APPS[phApp].name], el, text, () => {
-      const act = add("div", "ph-actrow");
-      act.innerHTML = PH_ACT;
-      msgs.appendChild(act);
-      msgs.scrollTop = msgs.scrollHeight;
-    }, performance.now() - (ttft || 0));
-    msgs.scrollTop = msgs.scrollHeight;
-  };
-
   // settle-sync: the two load timelines end on different apps (phone →
   // Superbot, PC → Claude). Once BOTH have finished, align the phone on the
   // PC's settle state so every later change starts from a synced baseline.
@@ -5295,21 +5239,12 @@ if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
 </script>
 
 <script>
-// ---- import tour: the scripted add-on demo that plays after the settle -----
-// Choreography (Claude has just docked): dwell 0.9s → hermes 0.8s → chatgpt
-// 0.9s → superbot, typewriter into the composer "Import all my chats and
-// stuff in", rainbow "Thinking..." (0.8s, then fades), magnifier steps
-// (Searching apps / Importing Chats / Importing Skills / Importing Rules),
-// reply "All imported! You are all setup!", 1.7s later claude + chatgpt (and
-// every other platform) show their imported chats, back to superbot for the
-// rules-audit exchange ending on the "Want me to remove 17 unused rules?"
-// chip. The page stays interactive throughout and fully so afterwards.
-// Replay-safe: reset()'s fxGen bump cancels the tour between steps and a
-// fresh run clears every node it stamped .demo-t before re-running.
-// ---- lorem filler for the imported chats -----------------------------------
-// The imported chats are deliberately placeholder content: every recents row
-// gets a lorem title and every opened chat plays a hash-varied lorem
-// back-and-forth (1-3 exchanges, always ending on the bot).
+// ---- lorem filler for opened chats -----------------------------------------
+// A recents row without seeded markup plays a hash-varied lorem
+// back-and-forth (1-3 exchanges, always ending on the bot). The scripted
+// import tour that used to run after the settle was removed 2026-09-12
+// (user ask: "remove all these chats"); the page now settles and stays
+// interactive with no demo conversation.
 const LOREM = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.",
   "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -5323,39 +5258,11 @@ const LOREM = [
   "At vero eos et accusamus et iusto odio dignissimos ducimus qui blanditiis.",
 ];
 
-// 54 distinct recents titles — hand-written so no two rows share a phrase or
-// a long prefix (the derived prefixes read as duplicates in the sidebar)
-const LOREM_TITLES = [
-  "Lorem ipsum dolor", "Sed do eiusmod", "Ut enim ad minim",
-  "Quis nostrud exercitation", "Duis aute irure", "Excepteur sint occaecat",
-  "Sed ut perspiciatis", "Nemo enim ipsam", "Neque porro quisquam",
-  "Quis autem vel", "At vero eos", "Et iusto odio",
-  "Nam libero tempore", "Temporibus autem quibusdam", "Itaque earum rerum",
-  "Hic tenetur sapiente", "Delectus ut reiciendis", "Voluptatibus maiores alias",
-  "Totam rem aperiam", "Eaque ipsa quae", "Inventore veritatis quasi",
-  "Architecto beatae vitae", "Ipsum quia dolor", "Consectetur adipiscing elit",
-  "Eius modi incidunt", "Labore et dolore", "Aliquam quaerat voluptatem",
-  "Ut ad minima veniam", "Quis nostrum exercitationem", "Corporis suscipit laboriosam",
-  "Nisi ut aliquid ex ea", "Commodi consequatur quibus", "Vel illum qui dolorem",
-  "Iure reprehenderit in ea", "Voluptate velit esse quam", "Et harum quidem rerum",
-  "Facilis est expedita", "Distinctio nam libero", "Tempore soluta nobis",
-  "Eligendi optio cumque", "Impedit quo minus id", "Maxime placeat facere",
-  "Possimus omnis voluptas", "Assumenda omnis dolor repellendus", "Repellendus autem odit",
-  "Et quidem rerum necessitatibus", "Necessitatibus saepe eveniet", "Voluptates repudiandae sint",
-  "Molestiae recusandae aspernatur", "Fugiat voluptas nulla pariatur", "Laborum et dolorum fuga",
-  "Etiam processus dynamicus", "Mirum est notare quam", "Littera gothica nunc",
-];
-
-// exchange depth per imported title, assigned in importChats so the demo
-// walks 2 → 1 → 3 pairs down each platform's list (user ask); unknown titles
-// (sends) fall back to a hash-varied 1-3
-const LOREM_SEQ = new Map();
-
 // a deterministic lorem exchange per title: 1-3 user/bot pairs, ends on bot
 function chatScriptFor(title) {
   let h = 0;
   for (let i = 0; i < title.length; i++) h = (h * 31 + title.charCodeAt(i)) >>> 0;
-  const pairs = LOREM_SEQ.get(title) ?? 1 + ((h >> 3) % 3);
+  const pairs = 1 + ((h >> 3) % 3);
   const out = [];
   for (let i = 0; i < pairs; i++) {
     out.push({ who: "user", text: LOREM[(h + i * 3) % LOREM.length] });
@@ -5364,292 +5271,6 @@ function chatScriptFor(title) {
   return out;
 }
 
-(function () {
-  // the tour's canonical copy — strings and beats live here, not in the flow
-  const TOUR_A = "Import all my chats and stuff in";
-  const REPLY_A = "All imported! You are all setup!";
-  const TOUR_B = "My claude has gotten really stupid lately";
-  const REPLY_B = "I found you have 36 rules running right now, and 17 haven't been used once!";
-  const CHIP_Q = "Remove 17 unused rules";
-  const CHIP_CONFIRM = "Delete the 17";
-  const CHIP_DONE = "Removed! Claude will run about x2.5 faster now! Anything else I can help with?";
-  const STEPS_A = [["Searching apps...", 620], ["Importing Chats...", 620], ["Importing Skills...", 620], ["Importing Rules...", 620]];
-  const STEPS_B = [["Scanning rules...", 520], ["Reading rule files...", 520]]; // the 1.6s re-think
-  const THINK_MS = 800, THINK_MS_B = 600;
-  const KEystroke = [31, 62]; // per-char keystroke jitter — human cadence, 30% slower (user ask)
-  const CLAUDE_CHAT = {
-    title: "Perspiciatis omnis iste",
-    msgs: [LOREM[0], LOREM[1], LOREM[2], LOREM[3]],
-  };
-  const CHATGPT_CHAT = {
-    title: "Natus error sit voluptatem",
-    msgs: [LOREM[4], LOREM[5]], // one back-and-forth, vs claude's two (user ask)
-  };
-  const IMPORTS = [ // [panel key, chat count] — 3–15 each, claude the spotlight;
-    // superbot stays out: its recents keep only its own two tour sends
-    ["claude", 12], ["chatgpt", 9], ["cursor", 6], ["devin", 3],
-    ["hermes", 5], ["gemini", 7], ["grok", 4],
-  ];
-
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const alive = (gen) => gen === fxGen;
-  const P = {};
-  CHAT_PANELS.forEach((p) => { P[p.key] = p; });
-  const MAGNIFIER = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="5.2" cy="5.2" r="3.4"/><path d="M8 8l2.6 2.6"/></svg>';
-  const BROOM = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2.2 3.2h7.6M4.8 3.2V2h2.4v1.2M3.4 3.2l.5 6.3c0 .5.4.9.9.9h2.4c.5 0 .9-.4.9-.9l.5-6.3"/></svg>';
-
-  // keystroke the composer one char at a time, focus ring on like a real user
-  async function demoType(p, text, gen) {
-    const root = document.getElementById(p.root);
-    const inp = root && root.querySelector(p.inSel);
-    if (!inp) return;
-    inp.focus();
-    if (REDUCED_MOTION) { inp.value = text; await sleep(250); return; }
-    for (let i = 1; i <= text.length; i++) {
-      if (!alive(gen)) return;
-      inp.value = text.slice(0, i);
-      await sleep(KEystroke[0] + Math.random() * (KEystroke[1] - KEystroke[0]));
-    }
-  }
-
-  // a tour "enter": user bubble in the thread, composer cleared, recents row
-  function demoSend(p, text) {
-    const root = document.getElementById(p.root);
-    const th = root.querySelector(p.thSel);
-    const b = add("div", p.bub + " bc-app demo-t");
-    b.textContent = text;
-    th.appendChild(b);
-    const inp = root.querySelector(p.inSel);
-    if (inp) { inp.value = ""; inp.blur(); }
-    panelAddRecent(p, text);
-    if (!liveChat.get(p.key)) liveChat.set(p.key, text);
-    const key = chatKey(p, liveChat.get(p.key));
-    if (!threadStore.has(key)) threadStore.set(key, []);
-    threadStore.get(key).push({ who: "user", text });
-    if (p.key === "gg" && window.phTourSend) window.phTourSend(text); // mirror to the phone
-    return th;
-  }
-
-  function thinkLine(th, label) {
-    th.querySelectorAll(".demo-think, .demo-step").forEach((el) => el.remove());
-    const el = add("div", "demo-think bc-app demo-t");
-    el.textContent = label;
-    th.appendChild(el);
-    return el;
-  }
-
-  // one tool-use line: the previous status line is replaced, Cursor-style
-  function stepLine(th, label) {
-    th.querySelectorAll(".demo-think, .demo-step").forEach((el) => el.remove());
-    const el = add("div", "demo-step bc-app demo-t");
-    el.innerHTML = MAGNIFIER;
-    const s = add("span");
-    s.textContent = label;
-    el.appendChild(s);
-    th.appendChild(el);
-    return el;
-  }
-
-  function fadeRemove(el) {
-    if (!el || !el.parentNode) return;
-    const a = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: "ease", fill: "forwards" });
-    a.finished.then(() => el.remove()).catch(() => {});
-  }
-
-  function runSteps(th, steps, gen) {
-    return steps.reduce((chain, [label, ms]) => chain.then(async () => {
-      if (!alive(gen)) return;
-      stepLine(th, label);
-      await sleep(ms);
-    }), Promise.resolve());
-  }
-
-  function addChatRow(p, title, top) {
-    const root = document.getElementById(p.root);
-    const list = root && root.querySelector(p.listSel);
-    if (!list) return null;
-    const row = add("div", p.rowCls + " demo-t");
-    row.dataset.title = title;
-    if (p.rowTxt) { const s = add("span", p.rowTxt); s.textContent = title; row.appendChild(s); }
-    else row.textContent = title;
-    const firstRow = list.querySelector("." + p.rowCls.split(" ")[0]);
-    if (top && firstRow && firstRow !== row) list.insertBefore(row, firstRow);
-    else list.appendChild(row);
-    if (!REDUCED_MOTION) row.animate(
-      [{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }],
-      { duration: 200, easing: "ease-out" });
-    return row;
-  }
-
-  // every platform's recents fill in — the "all imported" payoff
-  async function importChats(gen) {
-    let poolIdx = 0;
-    for (const [key, count] of IMPORTS) {
-      const p = P[key];
-      for (let i = 0; i < count; i++) {
-        if (!alive(gen)) return;
-        // poolIdx walks a 54-entry unique-title array, so no two rows match
-        const title = LOREM_TITLES[poolIdx % LOREM_TITLES.length];
-        LOREM_SEQ.set(title, [2, 1, 3][i % 3]);
-        addChatRow(p, title, false);
-        poolIdx++;
-        await sleep(6); // quick cascade — the claude visit stays ~0.9s total
-      }
-    }
-  }
-
-  // the chat that is open when its platform shows up in the tour
-  function openCurrentChat(p, chat) {
-    const key = chatKey(p, chat.title);
-    threadStore.set(key, chat.msgs.map((text, i) => ({ who: i % 2 ? "bot" : "user", text })));
-    liveChat.set(p.key, chat.title);
-    const row = addChatRow(p, chat.title, true);
-    if (row && p.rowOn) {
-      const root = document.getElementById(p.root);
-      root.querySelectorAll(p.rowSel).forEach((o) => o.classList.remove(p.rowOn));
-      row.classList.add(p.rowOn);
-    }
-    renderThread(p, chat.title);
-  }
-
-  // the end-state chip: a real button that runs the cleanup exchange inline
-  function addChip(th) {
-    const chip = add("button", "demo-chip bc-app demo-t");
-    chip.type = "button";
-    chip.innerHTML = BROOM;
-    const s = add("span");
-    s.textContent = CHIP_Q;
-    chip.appendChild(s);
-    chip.addEventListener("click", () => {
-      chip.remove();
-      const th2 = demoSend(P.gg, CHIP_CONFIRM);
-      const key = chatKey(P.gg, liveChat.get("gg"));
-      if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text: CHIP_DONE });
-      panelAddReply(P.gg, th2, CHIP_DONE, null, true, performance.now());
-      if (window.phTourReply) window.phTourReply(CHIP_DONE, 220); // mirror to the phone
-    });
-    th.appendChild(chip);
-  }
-
-  // replay hygiene: every node and store entry the tour owns goes away so a
-  // rerun starts from the same clean state as the first
-  function clearTourState() {
-    document.querySelectorAll(".demo-t").forEach((el) => el.remove());
-    [TOUR_A, TOUR_B, CHIP_CONFIRM].forEach((t) => { threadStore.delete("gg:" + t); });
-    [CLAUDE_CHAT.title, CHATGPT_CHAT.title].forEach((t) => {
-      threadStore.delete("claude:" + t);
-      threadStore.delete("chatgpt:" + t);
-    });
-    if (liveChat.get("claude") === CLAUDE_CHAT.title) liveChat.set("claude", P.claude._seedTitle || "");
-    if (liveChat.get("chatgpt") === CHATGPT_CHAT.title) liveChat.set("chatgpt", P.chatgpt._seedTitle || "");
-  }
-
-  const MOUSE_SVG = '<svg viewBox="0 0 24 24"><path d="M6 2.5l13.2 12.1-6.3.7 3.3 6.4-2.7 1.3-3.2-6.5-4.3 3.8z" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2" stroke-linejoin="round"/></svg>';
-  const lock = () => document.body.classList.add("tour-lock");
-  const unlock = () => document.body.classList.remove("tour-lock");
-
-  // the handoff: park a cursor on the chip and press down/up twice — the
-  // button is the user's to click, not the demo's
-  async function playClickCue(chip) {
-    const rect = chip.getBoundingClientRect();
-    const cur = add("div", "demo-mouse demo-t");
-    cur.innerHTML = MOUSE_SVG;
-    document.body.appendChild(cur);
-    cur.style.left = Math.round(rect.left + rect.width * 0.62) + "px";
-    cur.style.top = Math.round(rect.top + rect.height * 0.72) + "px";
-    await cur.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: "forwards" }).finished;
-    await sleep(250);
-    for (let i = 0; i < 2; i++) {
-      await cur.animate(
-        [{ transform: "translate(0,0) scale(1)" }, { transform: "translate(-1px,3px) scale(0.86)" }, { transform: "translate(0,0) scale(1)" }],
-        { duration: 420, easing: "ease-in-out" }).finished;
-      await sleep(160);
-    }
-    await cur.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).finished;
-    cur.remove();
-  }
-
-  window.runImportTour = async function (gen) {
-    lock();
-    clearTourState();
-    try {
-      await tourBody(gen);
-    } finally {
-      unlock(); // reset() can kill the tour mid-flight; the page unlocks either way
-    }
-  };
-
-  async function tourBody(gen) {
-    // PHASE A — the dock hop: claude (just settled, 0.9s dwell) → hermes
-    await sleep(900); if (!alive(gen)) return;
-    dockUi(4, gen); // hermes — the phone hops along
-    if (window.syncFromRail) window.syncFromRail(4);
-    await sleep(800); if (!alive(gen)) return;
-    dockUi(1, gen); // chatgpt — the phone hops along
-    if (window.syncFromRail) window.syncFromRail(1);
-    await sleep(900); if (!alive(gen)) return;
-    dockUi(-1, gen); // superbot (the mascot; the pill fades) — phone follows
-    if (window.syncFromRail) window.syncFromRail(-1);
-    await sleep(700); if (!alive(gen)) return;
-    // PHASE B — the import request, typed like a user
-    await demoType(P.gg, TOUR_A, gen); if (!alive(gen)) return;
-    await sleep(320); if (!alive(gen)) return;
-    const thA = demoSend(P.gg, TOUR_A);
-    const thinkA = thinkLine(thA, "Thinking...");
-    await sleep(THINK_MS); if (!alive(gen)) return;
-    fadeRemove(thinkA); // the rainbow line fades away, then the steps run
-    await runSteps(thA, STEPS_A, gen); if (!alive(gen)) return;
-    thA.querySelectorAll(".demo-step").forEach((el) => el.remove());
-    const keyA = chatKey(P.gg, liveChat.get("gg"));
-    threadStore.get(keyA).push({ who: "bot", text: REPLY_A });
-    panelAddReply(P.gg, thA, REPLY_A, null, true, performance.now());
-    if (window.phTourReply) window.phTourReply(REPLY_A, 220); // mirror to the phone
-    await sleep(500); // let the reply finish typing
-    // PHASE C — 1.7s later the user checks claude: chats are loaded. The
-    // current chat renders at dock so the thread is never an empty panel
-    // while the recents cascade in.
-    await sleep(1700); if (!alive(gen)) return;
-    dockUi(2, gen); // claude — the phone hops along
-    if (window.syncFromRail) window.syncFromRail(2);
-    openCurrentChat(P.claude, CLAUDE_CHAT);
-    await importChats(gen); if (!alive(gen)) return;
-    await sleep(600); // ~0.9s on claude once the rows land (user ask)
-    if (!alive(gen)) return;
-    // PHASE D — chatgpt: all imported, different chats (~1.05s sit, a little
-    // over half the original 1.9s dwell per the user ask)
-    dockUi(1, gen); // chatgpt — the phone hops along
-    if (window.syncFromRail) window.syncFromRail(1);
-    openCurrentChat(P.chatgpt, CHATGPT_CHAT);
-    await sleep(1050); if (!alive(gen)) return;
-    // PHASE E — back to superbot: the rules audit
-    dockUi(-1, gen); // superbot — phone follows
-    if (window.syncFromRail) window.syncFromRail(-1);
-    await sleep(700); if (!alive(gen)) return;
-    await demoType(P.gg, TOUR_B, gen); if (!alive(gen)) return;
-    await sleep(320); if (!alive(gen)) return;
-    const thB = demoSend(P.gg, TOUR_B);
-    const thinkB = thinkLine(thB, "Thinking...");
-    await sleep(THINK_MS_B); if (!alive(gen)) return;
-    fadeRemove(thinkB);
-    await runSteps(thB, STEPS_B, gen); if (!alive(gen)) return;
-    thB.querySelectorAll(".demo-step").forEach((el) => el.remove());
-    const keyB = chatKey(P.gg, liveChat.get("gg"));
-    threadStore.get(keyB).push({ who: "bot", text: REPLY_B });
-    panelAddReply(P.gg, thB, REPLY_B, null, true, performance.now());
-    if (window.phTourReply) window.phTourReply(REPLY_B, 220); // mirror to the phone
-    await sleep(REPLY_B.length * 8 + 300); // let the reply finish typing
-    if (!alive(gen)) return;
-    // the tour's last beat: the chip is live, and the mouse hands the button
-    // to the user before the page unlocks
-    addChip(thB);
-    await sleep(700); if (!alive(gen)) return;
-    const chipEl = thB.querySelector(".demo-chip");
-    if (chipEl) {
-      if (REDUCED_MOTION) await sleep(900);
-      else await playClickCue(chipEl);
-    }
-  }
-})();
 </script>
 </body>
 </html>
