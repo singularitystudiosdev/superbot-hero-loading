@@ -312,7 +312,7 @@ body {
   filter: saturate(0.35) brightness(0.6);
   transition: filter 450ms ease;
 }
-.bc-softwrap:focus-within { filter: none; }
+.bc-softwrap:focus-within, .bc-softwrap._awake { filter: none; } /* ._awake: the composer stays lit while the thinking tab rides on it (2026-09-12) */
 .bc-softwrap .composer {
   --surface: #1a1a1c;
   --radius: 16px;
@@ -2062,31 +2062,32 @@ body {
   .phone-area { display: none; }
 }
 
-/* ---- the thinking line (the scripted demo after the settle, 2026-09-12) ---
-   The user asks, the model thinks out loud. The block opens (its body sits in
-   a grid track that eases 0fr → 1fr), each word fades in from a soft blur on
-   a steady cadence, and once the thought is done the head reads "Thought for
-   Ns" and the body folds back the way it opened (click the head to re-open).
-   The head shimmers plain grey while thinking. body.tour-lock swallows
-   pointer input while the demo plays. */
-.demo-thought { align-self: flex-start; width: 100%; max-width: 520px; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; animation: demo-in 0.3s ease-out; }
-.demo-thought-head { display: inline-flex; align-items: center; gap: 6px; color: #8b90a0; cursor: pointer; user-select: none; }
-.demo-thought-head svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; transition: transform 320ms cubic-bezier(0.2, 0, 0, 1); }
-.demo-thought._open .demo-thought-head svg { transform: rotate(180deg); }
-.demo-thought._live .demo-thought-label { background: linear-gradient(90deg, #8b90a0 0%, #8b90a0 35%, #eef0f4 50%, #8b90a0 65%, #8b90a0 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
-.demo-thought-fold { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 460ms cubic-bezier(0.2, 0, 0, 1), opacity 340ms ease; }
-.demo-thought._open .demo-thought-fold { grid-template-rows: 1fr; opacity: 1; }
-.demo-thought-body { min-height: 0; overflow: hidden; }
-.demo-thought-text { margin-top: 8px; padding-left: 11px; border-left: 2px solid rgba(255, 255, 255, 0.1); color: #8b90a0; font-weight: 400; line-height: 1.55; }
+/* ---- the thinking tab (the scripted demo after the settle, 2026-09-12) ----
+   The model's active thinking rides ON the chat bar: a silver-edged tab
+   docked to the composer's top-left corner (its bottom edge sits on the
+   composer's top edge, no bottom radius), like the reference tab but quieter.
+   It opens from 0 height, "Thinking" shimmers silver in the head, the words
+   fade in below and the tab's height is re-measured after every word so it
+   grows smoothly whenever the text takes another line. Once the thought is
+   done the head reads "Thought for Ns" and the tab folds back into the bar.
+   It lives in .bcs-main, not in .bc-softwrap, so the composer's rest filter
+   never dims it. body.tour-lock swallows pointer input while the demo plays. */
+.bc-think { position: absolute; left: calc(50% - 266px); bottom: calc(18px + 46px - 1px); z-index: 3; max-width: 440px; height: 0; opacity: 0; overflow: hidden; border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #1e1e22, #141417); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 1px 0 0 rgba(255, 255, 255, 0.11), inset -1px 0 0 rgba(255, 255, 255, 0.11), 0 -10px 28px -14px rgba(0, 0, 0, 0.85); transition: height 300ms cubic-bezier(0.2, 0, 0, 1), opacity 240ms ease; pointer-events: none; }
+.bc-think._on { opacity: 1; }
+.bc-think-in { width: max-content; max-width: 440px; box-sizing: border-box; padding: 9px 14px 11px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #d6d8de; }
+.bc-think-head { display: flex; align-items: center; gap: 7px; color: #c3c6ce; }
+.bc-think-head svg { width: 12px; height: 12px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
+.bc-think._live .bc-think-label { background: linear-gradient(90deg, #a9adb8 0%, #a9adb8 35%, #ffffff 50%, #a9adb8 65%, #a9adb8 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
+.bc-think-text { margin-top: 6px; max-width: 412px; color: #b6b9c3; font-weight: 400; line-height: 1.5; }
+.bc-think-text:empty { display: none; }
 .demo-word { opacity: 0; filter: blur(4px); animation: demo-word-in 640ms cubic-bezier(0.2, 0.6, 0.2, 1) forwards; }
 @keyframes demo-word-in { to { opacity: 1; filter: blur(0); } }
 @keyframes demo-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 @keyframes demo-shimmer { from { background-position: 0% 0; } to { background-position: -220% 0; } }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .demo-thought { animation: none; }
-  .demo-thought._live .demo-thought-label { animation: none; }
-  .demo-thought-fold, .demo-thought-head svg { transition: none; }
+  .bc-think { transition: none; }
+  .bc-think._live .bc-think-label { animation: none; }
   .demo-word { animation: none; opacity: 1; filter: none; }
 }
 /* ---- the tool calls (after the thought folds, 2026-09-12) -----------------
@@ -5421,9 +5422,10 @@ function chatScriptFor(title) {
 
 // ---- the thinking line: the scripted demo that plays after the settle -----
 // Claude has just docked: dwell 0.9s → superbot; the user types "Order me a
-// burger from mcdonalds"; a thinking block opens, its reasoning fades in
-// word by word, and once the thought is done the head reads "Thought for Ns"
-// and the block folds; then four plain tool-call lines scan the McDonald's
+// burger from mcdonalds"; a thinking tab opens on top of the composer, its
+// reasoning fades in word by word (the tab grows with each new line), and
+// once the thought is done the head reads "Thought for Ns" and the tab folds
+// back into the bar; then four plain tool-call lines scan the McDonald's
 // menu, each shimmering while it runs and settling to its result. A double
 // tap during the LOAD animation fast-forwards
 // it to this point (skipIntro); the demo itself always plays at normal
@@ -5458,7 +5460,7 @@ function chatScriptFor(title) {
   const lock = () => document.body.classList.add("tour-lock");
   const unlock = () => document.body.classList.remove("tour-lock");
   const follow = (th) => { th.scrollTop = th.scrollHeight; };
-  const CHEVRON = '<svg viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg>';
+  const BUBBLE = '<svg viewBox="0 0 12 12"><path d="M2.2 2.2h7.6a1.2 1.2 0 0 1 1.2 1.2v3.4a1.2 1.2 0 0 1-1.2 1.2H5.6L3.2 10.2V8H2.2A1.2 1.2 0 0 1 1 6.8V3.4a1.2 1.2 0 0 1 1.2-1.2z"/></svg>';
 
   // keystroke the composer one char at a time, focus ring on like a real user
   async function demoType(p, text, gen) {
@@ -5493,47 +5495,51 @@ function chatScriptFor(title) {
     return th;
   }
 
-  // the thinking block: opens, fades its words in, then folds
-  async function think(th, text, gen) {
-    const box = add("div", "demo-thought bc-app demo-t _live");
-    const head = add("div", "demo-thought-head");
-    const label = add("span", "demo-thought-label");
+  // the thinking tab: docked on the composer, opens from 0, grows with the
+  // text (height re-measured after every word), then folds back into the bar
+  async function think(text, gen) {
+    const main = document.getElementById(P.gg.root).querySelector(".bcs-main");
+    const tab = add("div", "bc-think demo-t _live");
+    const inner = add("div", "bc-think-in");
+    const head = add("div", "bc-think-head");
+    head.insertAdjacentHTML("beforeend", BUBBLE);
+    const label = add("span", "bc-think-label");
     label.textContent = "Thinking";
     head.appendChild(label);
-    head.insertAdjacentHTML("beforeend", CHEVRON);
-    const fold = add("div", "demo-thought-fold");
-    const body = add("div", "demo-thought-body");
-    const textEl = add("div", "demo-thought-text");
-    body.appendChild(textEl);
-    fold.appendChild(body);
-    box.append(head, fold);
-    th.appendChild(box);
-    follow(th);
-    head.addEventListener("click", () => { if (!box.classList.contains("_live")) box.classList.toggle("_open"); });
+    const textEl = add("div", "bc-think-text");
+    inner.append(head, textEl);
+    tab.appendChild(inner);
+    main.appendChild(tab);
+    const wrap = main.querySelector(".bc-softwrap");
+    if (wrap) wrap.classList.add("_awake"); // the bar stays lit under the tab
+    const grow = () => { tab.style.height = inner.offsetHeight + "px"; }; // eased by the height transition
+    const gone = () => { tab.remove(); if (wrap) wrap.classList.remove("_awake"); };
     const t0 = performance.now();
-    // open: the grid track eases out once the block has painted closed
-    await sleep(40); if (!alive(gen)) return;
-    box.classList.add("_open");
+    await sleep(30); if (!alive(gen)) return gone();
+    tab.classList.add("_on");
+    grow();
     const words = text.split(" ");
-    if (REDUCED_MOTION) { textEl.textContent = text; await sleep(600); }
+    if (REDUCED_MOTION) { textEl.textContent = text; grow(); await sleep(900); }
     else {
-      await sleep(260); // the fold is most of the way open before the first word
+      await sleep(320); // the tab has opened before the first word lands
       for (let i = 0; i < words.length; i++) {
-        if (!alive(gen)) return;
+        if (!alive(gen)) return gone();
         const w = add("span", "demo-word");
         w.textContent = (i ? " " : "") + words[i];
         textEl.appendChild(w);
-        follow(th);
+        grow(); // a word that wraps to a new line grows the tab smoothly
         await sleep(WORD_MS);
       }
     }
-    if (!alive(gen)) return;
-    await sleep(1000); if (!alive(gen)) return; // a beat to read the finished thought
-    box.classList.remove("_live");
+    if (!alive(gen)) return gone();
+    await sleep(1000); if (!alive(gen)) return gone(); // a beat to read the finished thought
+    tab.classList.remove("_live");
     label.textContent = "Thought for " + Math.max(1, Math.round((performance.now() - t0) / 1000)) + "s";
-    box.classList.remove("_open"); // folds back the way it opened
-    await sleep(480);
-    follow(th);
+    await sleep(700); if (!alive(gen)) return gone();
+    tab.style.height = "0px"; // folds back into the bar
+    tab.classList.remove("_on");
+    await sleep(340);
+    gone();
   }
 
   // "**bold**" runs → text nodes and <b> elements (no innerHTML of copy)
@@ -5624,8 +5630,8 @@ function chatScriptFor(title) {
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.gg, ASK);
-    await think(th, THOUGHT, gen); if (!alive(gen)) return;
-    await sleep(300); if (!alive(gen)) return;
+    await think(THOUGHT, gen); if (!alive(gen)) return;
+    await sleep(200); if (!alive(gen)) return;
     await runTools(th, gen); // the menu scan, as plain tool-call lines
   }
 })();
