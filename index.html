@@ -2095,7 +2095,7 @@ body {
 .bc-think._closed .bc-think-in { padding-top: 1px; padding-bottom: 1px; }
 .bc-think._closed .bc-think-ic { max-width: 0; opacity: 0; }
 .bc-think._closed .bc-think-chev { transform: rotate(180deg); }
-.bc-think._closed .bc-think-text { max-width: 0; opacity: 0; min-height: 14px; }
+.bc-think._closed .bc-think-text { max-width: 0%; opacity: 0; min-height: 14px; } /* 0% not 0: the open state is 100%, and a %-to-% pair interpolates everywhere */
 /* icon variants (the kit picks one): dots pulse and the ring spins while the
    tab is live; "none" drops the glyph and the text moves over */
 .bc-think-in._noicon { gap: 0; }
@@ -5619,7 +5619,10 @@ function chatScriptFor(title) {
   CHAT_PANELS.forEach((p) => { P[p.key] = p; });
   const lock = () => document.body.classList.add("tour-lock");
   const unlock = () => document.body.classList.remove("tour-lock");
-  const follow = (th) => { th.scrollTop = th.scrollHeight; };
+  // keep the newest line in view, unless the reader has scrolled up into
+  // history (the row's scroll listener publishes that); they come back down
+  // on their own and the chat follows again
+  const follow = (th) => { if (window.__threadPinned !== false) th.scrollTop = th.scrollHeight; };
 
   // keystroke the composer one char at a time, focus ring on like a real user
   async function demoType(p, text, gen) {
@@ -5672,7 +5675,8 @@ function chatScriptFor(title) {
     body.appendChild(inner);
     tab.appendChild(body);
     composer.prepend(tab);
-    // tap the thought to close it to the glyph and chevron, tap again to open
+    // tap the thought to close it to the chevron strip, tap again to open;
+    // the thread's tail is re-pinned as the bar changes height (ResizeObserver above)
     tab.addEventListener("click", (e) => { e.stopPropagation(); tab.classList.toggle("_closed"); });
     const setIcon = (name) => {
       iconEl.innerHTML = TAB_ICONS[name] || "";
@@ -5685,11 +5689,26 @@ function chatScriptFor(title) {
     // the row shows only while the chat is all the way down: scrolling up
     // into history folds it away, coming back to the bottom opens it again
     const thread = main.querySelector(".bcs-thread");
+    let pinned = true; // was the chat at the bottom the last time it scrolled?
+    // "at the bottom" allows a little slack: while a reply is typing the
+    // thread grows between the reader's scroll and its scroll event, and a
+    // strict check read that as "scrolled up" and left the chat stranded
+    const isAtBottom = () => thread.scrollHeight - thread.scrollTop - thread.clientHeight < 48;
     const onScroll = () => {
-      const atBottom = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 6;
-      tab.classList.toggle("_away", !atBottom);
+      pinned = isAtBottom();
+      window.__threadPinned = pinned; // follow() reads this: a scrolled-up reader is left alone
+      tab.classList.toggle("_away", !pinned);
     };
+    // the bar grows and shrinks as the row opens, closes and folds, which
+    // resizes the thread above it; a chat that was at the bottom stays at the
+    // bottom through every frame of that, so the newest lines never get cut
+    // off under the bar (the "thoughts don't move" glitch)
+    const ro = (thread && window.ResizeObserver) ? new ResizeObserver(() => {
+      if (pinned) thread.scrollTop = thread.scrollHeight;
+      tab.classList.toggle("_away", !isAtBottom());
+    }) : null;
     if (thread) { thread.addEventListener("scroll", onScroll, { passive: true }); onScroll(); }
+    if (ro) ro.observe(thread);
     tab.style.setProperty("--fit-ms", (KIT.resizeMs || 450) + "ms");
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
     const api = {
@@ -5721,7 +5740,7 @@ function chatScriptFor(title) {
       },
       setIcon, // the kit swaps the glyph live
       setResize(ms) { tab.style.setProperty("--fit-ms", ms + "ms"); },
-      dispose() { if (thread) thread.removeEventListener("scroll", onScroll); },
+      dispose() { if (thread) thread.removeEventListener("scroll", onScroll); if (ro) ro.disconnect(); window.__threadPinned = true; },
     };
     window.__thinkTab = api;
     return api;
