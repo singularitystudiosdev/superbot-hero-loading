@@ -246,7 +246,8 @@ body {
   min-height: 0;
   text-align: left;
 }
-/* brand row: raw bloom.png mascot + plain superbot wordmark left (light text
+/* brand row: the superbot storm tile (hero-assets/superbot-tile.svg, the
+   xdxdxd.dsh.sh selected-rail icon) + plain superbot wordmark left (light text
    on the dark sidebar — no tile, no ring, no app-icon dressing); magnifier +
    panel-toggle right (same 2 glyphs as .cl-brandicons) */
 .bcs-brandrow { display: flex; align-items: center; gap: 8px; padding: 0 2px 0 6px; }
@@ -256,43 +257,30 @@ body {
   font: 700 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: #e6e8ee;
 }
-/* '.gg' — classic rainbow clipped to the glyphs. Palette: SIX evenly spaced,
-   fully saturated HSL stops at 60deg steps (red→yellow→green→cyan→blue→violet,
-   tiled at a 36px period), so the small wordmark shows a classic ROYGBV window
-   and every interpolation is between NEIGHBORING hues — no muddy blends.
-   The loop animates the registered custom property --gg-hue (an <angle>) that
-   every stop reads via hsl(calc(var(--gg-hue) + k)). This beats both prior
-   mechanisms: exact hue math (a hue-rotate FILTER is a linear matrix that
-   skews hues toward magenta mid-cycle — the "too much pink" report), and no
-   background-position rasterization to snap or seam. The wrap 360deg→0deg is
-   identity in hsl (hsl(420deg) == hsl(60deg)), so the loop is provably
-   seamless and infinite. */
-@property --gg-hue {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
+/* '.gg' — the storm ramp clipped to the glyphs (2026-09-12: every rainbow on
+   this page moved to xdxdxd.dsh.sh's palette, site.css --storm-1..--storm-4:
+   blue #2b6bff → purple #6a1fd8 → magenta #c026d3 → pink #ff3d9a; the teal
+   --storm-0 stays out of the loops, since pink→blue already blends through
+   purple and pink→teal would pass through grey). Four stops tiled at a 36px
+   period, closed on the first stop so the tile is seamless; the loop slides
+   background-position by exactly one period (the 36px tile at 13px text
+   rasterizes without a visible snap). No hue-rotate anywhere: a hue filter
+   would walk the ramp back into green and yellow. */
 .bcs-word em {
   font-style: normal;
   background: repeating-linear-gradient(90deg,
-    hsl(var(--gg-hue) 100% 50%) 0px,
-    hsl(calc(var(--gg-hue) + 60deg) 100% 50%) 6px,
-    hsl(calc(var(--gg-hue) + 120deg) 100% 50%) 12px,
-    hsl(calc(var(--gg-hue) + 180deg) 100% 50%) 18px,
-    hsl(calc(var(--gg-hue) + 240deg) 100% 50%) 24px,
-    hsl(calc(var(--gg-hue) + 300deg) 100% 50%) 30px,
-    hsl(calc(var(--gg-hue) + 360deg) 100% 50%) 36px);
+    #2b6bff 0px, #6a1fd8 9px, #c026d3 18px, #ff3d9a 27px, #2b6bff 36px);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: gg-hue 6s linear infinite;
+  animation: gg-slide 6s linear infinite;
 }
-@keyframes gg-hue {
-  from { --gg-hue: 0deg; }
-  to { --gg-hue: 360deg; } /* hsl(360+k) paints identically to hsl(0+k): seam is identity */
+@keyframes gg-slide {
+  from { background-position-x: 0px; }
+  to { background-position-x: 36px; } /* one full period: the tile repeats, so the seam is identity */
 }
 @media (prefers-reduced-motion: reduce) {
-  .bcs-word em { animation: none; } /* static gradient: classic red→…→violet window */
+  .bcs-word em { animation: none; } /* static gradient: one blue→purple→magenta→pink window */
 }
 .bcs-brandicons { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; color: #9aa0ad; }
 .bcs-brandicons .cl-ic { width: 10px; height: 10px; }
@@ -320,12 +308,12 @@ body {
 .bcs-actions { display: flex; align-items: center; gap: 20px; margin-top: 16px; color: #8b90a0; }
 .bcs-actions .cl-ic { width: 12px; height: 12px; }
 
-/* composer: a single-line bar (Claude-style composer pill) wearing a
-   full-rainbow ring — the conic border-box/padding-box trick and both bloom
-   layers are the demo's, but the palette is the 12-stop fully saturated
-   hsl(0..360) wheel (wordmark palette: every blend between hue neighbors,
-   never muddy), dim at rest (saturate/brightness on the wrapper) and woken
-   by :focus-within. The wake filter lives on .bc-softwrap (the wrapper),
+/* composer: a single-line bar (Claude-style composer pill) wearing the
+   storm ring — the conic border-box/padding-box trick and both bloom
+   layers are the demo's, but the palette is the storm wheel (blue → purple →
+   magenta → pink → blue; every blend between neighboring storm stops, the
+   pink→blue seam lands on purple), dim at rest (saturate/brightness on the
+   wrapper) and woken by :focus-within. The wake filter lives on .bc-softwrap (the wrapper),
    NEVER on the composer itself — a filter there would re-create the
    stacking-context wash and pull the negative-z bloom layers above the box. */
 .bc-softwrap {
@@ -343,11 +331,7 @@ body {
   --radius: 16px;
   --speed: 3.5s;
   --rainbow: conic-gradient(from var(--angle),
-    hsl(0 100% 50%), hsl(30 100% 50%), hsl(60 100% 50%),
-    hsl(90 100% 50%), hsl(120 100% 50%), hsl(150 100% 50%),
-    hsl(180 100% 50%), hsl(210 100% 50%), hsl(240 100% 50%),
-    hsl(270 100% 50%), hsl(300 100% 50%), hsl(330 100% 50%),
-    hsl(360 100% 50%));
+    #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #2b6bff);
   position: relative;
   height: 46px;
   border-radius: var(--radius);
@@ -426,28 +410,22 @@ body {
   border-radius: 24%; object-fit: cover;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
-/* '(all)' suffix on the Superbot row — the .gg rainbow clipped to the text,
-   same mechanism as .bcs-word em: the registered --gg-hue angle + the same
-   gg-hue keyframes (the hsl wrap 360deg→0deg is identity, so the loop is
-   seamless). Lives only on the option row — the selected chip renders the
-   bare name, never the suffix. */
+/* '(all)' suffix on the Superbot row — the .gg storm ramp clipped to the
+   text, same mechanism as .bcs-word em: the same 36px storm tile + the same
+   gg-slide keyframes (one period per loop, so the seam is identity). Lives
+   only on the option row — the selected chip renders the bare name, never
+   the suffix. */
 .bc-plat-all {
   font-weight: 600;
   background: repeating-linear-gradient(90deg,
-    hsl(var(--gg-hue) 100% 50%) 0px,
-    hsl(calc(var(--gg-hue) + 60deg) 100% 50%) 6px,
-    hsl(calc(var(--gg-hue) + 120deg) 100% 50%) 12px,
-    hsl(calc(var(--gg-hue) + 180deg) 100% 50%) 18px,
-    hsl(calc(var(--gg-hue) + 240deg) 100% 50%) 24px,
-    hsl(calc(var(--gg-hue) + 300deg) 100% 50%) 30px,
-    hsl(calc(var(--gg-hue) + 360deg) 100% 50%) 36px);
+    #2b6bff 0px, #6a1fd8 9px, #c026d3 18px, #ff3d9a 27px, #2b6bff 36px);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: gg-hue 6s linear infinite;
+  animation: gg-slide 6s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .bc-plat-all { animation: none; } /* static gradient: classic red→…→violet window */
+  .bc-plat-all { animation: none; } /* static gradient: one blue→purple→magenta→pink window */
 }
 
 /* reduced motion: the composer and both bloom layers hold their static
@@ -513,8 +491,8 @@ body {
    rainbow-border-demo/index.html (shell + both bloom layers + spin),
    ported from the demo and armed on hover of the revealed bench icon. The
    ring is the composer's own: surface in the padding-box, the spinning
-   12-stop full-saturation hsl wheel in the border-box (wordmark palette,
-   neighbor-only blends), over a 1px transparent border. */
+   storm wheel in the border-box (wordmark palette: blue → purple → magenta →
+   pink → blue, neighbor-only blends), over a 1px transparent border. */
 @property --angle {
   syntax: '<angle>';
   initial-value: 0deg;
@@ -524,11 +502,7 @@ body {
   --surface: #1a1a1c; /* the composer's surface token — re-blackened with the shell */
   --speed: 3.5s;
   --rainbow: conic-gradient(from var(--angle),
-    hsl(0 100% 50%), hsl(30 100% 50%), hsl(60 100% 50%),
-    hsl(90 100% 50%), hsl(120 100% 50%), hsl(150 100% 50%),
-    hsl(180 100% 50%), hsl(210 100% 50%), hsl(240 100% 50%),
-    hsl(270 100% 50%), hsl(300 100% 50%), hsl(330 100% 50%),
-    hsl(360 100% 50%));
+    #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #2b6bff);
   border: 1px solid transparent; /* the ring's slot; border-box, no size shift */
 }
 .bloom::before,
@@ -2018,7 +1992,7 @@ body {
    inside an inherited custom property substitutes on the ancestor and the
    angle freezes. Only the color STOPS come down via --ph-ringstops. */
 .ph-compose._rainbow .ph-ring {
-  --ring: conic-gradient(from var(--angle), var(--ph-ringstops, hsl(0 100% 50%), hsl(60 100% 50%), hsl(120 100% 50%), hsl(180 100% 50%), hsl(240 100% 50%), hsl(300 100% 50%), hsl(360 100% 50%)));
+  --ring: conic-gradient(from var(--angle), var(--ph-ringstops, #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #2b6bff));
   background:
     linear-gradient(#1f1f1f, #1f1f1f) padding-box,
     var(--ring) border-box;
@@ -2093,12 +2067,11 @@ body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 <svg id="sync-cord" aria-hidden="true" data-shape="sag" data-look="glow" data-reveal="bloom">
   <defs>
     <linearGradient id="cord-rainbow" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">
-      <stop offset="0" stop-color="#ff6b6b" stop-opacity="0.55"/>
-      <stop offset="0.2" stop-color="#ffb156" stop-opacity="0.55"/>
-      <stop offset="0.4" stop-color="#ffe066" stop-opacity="0.55"/>
-      <stop offset="0.6" stop-color="#5fd068" stop-opacity="0.55"/>
-      <stop offset="0.8" stop-color="#4d96ff" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#b06bff" stop-opacity="0.55"/>
+      <!-- the storm ramp, PC → phone: blue → purple → magenta → pink (xdxdxd.dsh.sh --storm-gradient-x, minus the teal head) -->
+      <stop offset="0" stop-color="#2b6bff" stop-opacity="0.55"/>
+      <stop offset="0.34" stop-color="#6a1fd8" stop-opacity="0.55"/>
+      <stop offset="0.67" stop-color="#c026d3" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ff3d9a" stop-opacity="0.55"/>
     </linearGradient>
   </defs>
   <path class="cord-glow cord-glow-far" pathLength="1" d="M 0 0"/>
@@ -2112,7 +2085,7 @@ body.tour-lock, body.tour-lock * { pointer-events: none !important; }
     <div class="stage-holder" id="stage-holder">
       <div class="stage" id="stage">
         <div class="globe" id="globe"></div>
-        <div class="bloom" id="bloom"><img src="hero-assets/bloom.png" alt="rainbow bench app icon" draggable="false" /></div>
+        <div class="bloom" id="bloom"><img src="hero-assets/superbot-tile.svg" alt="superbot app icon" draggable="false" /></div>
         <div class="claude-ui" id="claude-ui">
           <aside class="cl-side">
             <div class="cl-brandrow">
@@ -2311,7 +2284,7 @@ body.tour-lock, body.tour-lock * { pointer-events: none !important; }
           <div class="claude-ui" id="bloom-ui">
           <aside class="bcs-side">
             <div class="bcs-brandrow">
-              <div class="bcs-logo"><img src="hero-assets/bloom.png" alt="superbot.gg" draggable="false" /></div>
+              <div class="bcs-logo"><img src="hero-assets/superbot-tile.svg" alt="superbot.gg" draggable="false" /></div>
               <div class="bcs-word"><b>superbot</b><em>.gg</em></div>
               <div class="bcs-brandicons">
                 <svg class="cl-ic" viewBox="0 0 12 12"><circle cx="5.2" cy="5.2" r="3.2"/><path d="M7.6 7.6 10.2 10.2"/></svg>
@@ -2424,11 +2397,11 @@ body.tour-lock, body.tour-lock * { pointer-events: none !important; }
       <div class="phone" id="phone">
         <div class="ph-screen" id="ph-screen">
           <div class="ph-island"></div>
-          <div class="ph-bloom" id="ph-bloom"><img src="hero-assets/bloom.png" alt="superbot app icon" draggable="false" /></div>
+          <div class="ph-bloom" id="ph-bloom"><img src="hero-assets/superbot-tile.svg" alt="superbot app icon" draggable="false" /></div>
           <div class="ph-chat" id="ph-chat" aria-hidden="true">
             <header class="ph-head">
               <button class="ph-title" id="ph-title" aria-haspopup="listbox" aria-expanded="false" title="Switch platform">
-                <img id="ph-title-ic" src="hero-assets/bloom.png" alt="Superbot" draggable="false" />
+                <img id="ph-title-ic" src="hero-assets/superbot-tile.svg" alt="Superbot" draggable="false" />
                 <b id="ph-title-name">Superbot</b>
                 <svg viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg>
               </button>
@@ -2900,7 +2873,7 @@ function familyRun(ctx) {
         // option's name, so the trigger shows the bare "Superbot": "(all)"
         // stays in the list. (The leading space lives inside the rainbow span —
         // background-clip:text paints nothing over whitespace.)
-        buildOpt("Superbot", "hero-assets/bloom.png", (label) => {
+        buildOpt("Superbot", "hero-assets/superbot-tile.svg", (label) => {
           const all = add("span", "bc-plat-all");
           all.textContent = " (all)";
           label.appendChild(all);
@@ -4608,7 +4581,7 @@ document.querySelectorAll(".composer").forEach((c) => {
   const uuColor = (p) => (p >= 70 ? "#e5636a" : p >= 40 ? "#e8b45a" : "#5fd08a");
   const uuFive = (name) => { const u = (typeof UU_PLATFORMS !== "undefined") && UU_PLATFORMS.find((x) => x.name === name); return u ? u.five : 34; };
   const PH_APPS = [
-    { name: "Superbot", src: "hero-assets/bloom.png", bg: "#0d0d0d", bubble: "#2f2f2f", accent: "#5fd08a", avaBg: "#1d2b22", avaFg: "#7ed09a", init: "sb", bot: "superbot",
+    { name: "Superbot", src: "hero-assets/superbot-tile.svg", bg: "#0d0d0d", bubble: "#2f2f2f", accent: "#5fd08a", avaBg: "#1d2b22", avaFg: "#7ed09a", init: "sb", bot: "superbot",
       user: "", userFmt: "pill", replyFmt: "plain", actions: true,
       reply: "", ph: "Message superbot…" },
     { name: "Claude", src: "hero-assets/claude.png", bg: "#262624", bubble: "#3d3b38", accent: "#d97757", avaBg: "#3a2f28", avaFg: "#e8a284", init: "cl", bot: "Claude",
@@ -4728,11 +4701,12 @@ document.querySelectorAll(".composer").forEach((c) => {
     // the rainbow ring is Superbot's alone — everyone else gets the plain pill
     chat.querySelector(".ph-compose").classList.toggle("_rainbow", a.name === "Superbot");
     screenEl.style.setProperty("--ph-accent", a.accent);
-    // the composer ring: the PC's full-rainbow stops for Superbot, an
-    // accent-conic for everyone else — STOPS only; `from var(--angle)` is
-    // declared on .ph-ring so the angle animates on the element that spins
+    // the composer ring: the PC's storm stops for Superbot (blue → purple →
+    // magenta → pink → blue, the xdxdxd.dsh.sh palette), an accent-conic for
+    // everyone else — STOPS only; `from var(--angle)` is declared on .ph-ring
+    // so the angle animates on the element that spins
     screenEl.style.setProperty("--ph-ringstops", a.name === "Superbot"
-      ? "hsl(0 100% 50%), hsl(30 100% 50%), hsl(60 100% 50%), hsl(90 100% 50%), hsl(120 100% 50%), hsl(150 100% 50%), hsl(180 100% 50%), hsl(210 100% 50%), hsl(240 100% 50%), hsl(270 100% 50%), hsl(300 100% 50%), hsl(330 100% 50%), hsl(360 100% 50%)"
+      ? "#2b6bff, #6a1fd8, #c026d3, #ff3d9a, #2b6bff"
       : a.accent + ", rgba(255,255,255,0.14), " + a.accent);
     renderPhThread(a.name);
     phCph.placeholder = a.ph;
