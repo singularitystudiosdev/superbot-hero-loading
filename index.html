@@ -2078,6 +2078,39 @@ body {
    never compacts the frame. */
 .bc-think-in { display: flex; align-items: center; gap: 9px; width: max-content; max-width: 520px; box-sizing: border-box; padding: 10px 16px 13px; /* the extra 2px at the bottom is the part sunk into the bar */ font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e2e4ea; }
 .bc-think-in svg { width: 14px; height: 14px; flex-shrink: 0; stroke: #c3c6ce; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+/* icon variants (the kit picks one): dots pulse and the ring spins while the
+   tab is live; "none" drops the glyph and the text moves over */
+.bc-think-in._noicon { gap: 0; }
+.bc-think-in .bc-think-ic:empty { display: none; }
+.bc-think-ic { display: inline-flex; }
+.bc-think._live .bc-think-ic._dots circle { animation: demo-dot 1.1s ease-in-out infinite; }
+.bc-think._live .bc-think-ic._dots circle:nth-child(2) { animation-delay: 0.18s; }
+.bc-think._live .bc-think-ic._dots circle:nth-child(3) { animation-delay: 0.36s; }
+.bc-think._live .bc-think-ic._ring svg { animation: demo-spin 1s linear infinite; }
+@keyframes demo-dot { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+@keyframes demo-spin { to { transform: rotate(360deg); } }
+/* ---- the kit: a small operator panel to tune the tab (2026-09-12) --------
+   icon (7 variants), thought length (3 sets), speed (0.5x to 2x, every beat
+   scales), Replay. Fixed bottom-right, k toggles it, settings persist in
+   localStorage. It stays clickable while the demo's pointer lock is on. */
+.think-kit { position: fixed; right: 16px; bottom: 16px; z-index: 1000; width: 232px; padding: 12px 12px 10px; border-radius: 14px; background: rgba(20, 20, 23, 0.94); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.9); backdrop-filter: blur(12px); font: 500 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #c9ccd4; user-select: none; }
+.think-kit[hidden] { display: none; }
+body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !important; }
+.think-kit-title { display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 12px; color: #e6e8ee; margin-bottom: 10px; }
+.think-kit-title span:last-child { font-weight: 500; font-size: 10.5px; color: #6f7480; }
+.think-kit-row { margin-bottom: 10px; }
+.think-kit-lab { display: flex; justify-content: space-between; color: #8b90a0; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+.think-kit-icons { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.think-kit-icons button { height: 26px; border-radius: 7px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: #c3c6ce; display: grid; place-items: center; cursor: pointer; padding: 0; font: 600 11px inherit; }
+.think-kit-icons button svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.think-kit-icons button._on, .think-kit-seg button._on { background: rgba(255, 255, 255, 0.14); border-color: rgba(255, 255, 255, 0.28); color: #ffffff; }
+.think-kit-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.think-kit-seg button { height: 26px; border-radius: 7px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: #c3c6ce; cursor: pointer; font: 600 11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.think-kit input[type="range"] { width: 100%; accent-color: #c3c6ce; margin: 2px 0 0; }
+.think-kit-replay { width: 100%; height: 30px; margin-top: 2px; border-radius: 9px; border: none; background: #e6e8ee; color: #0d0d0d; font: 700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; cursor: pointer; transition: transform 120ms ease, background 120ms ease; }
+.think-kit-replay:hover { background: #ffffff; }
+.think-kit-replay:active { transform: scale(0.97); }
+.think-kit-replay:disabled { opacity: 0.45; cursor: default; }
 .bc-think-text { white-space: nowrap; line-height: 1.4; min-height: 18px; transition: opacity 180ms ease; }
 .bc-think._live .bc-think-text { background: linear-gradient(90deg, #c3c6ce 0%, #c3c6ce 35%, #ffffff 50%, #c3c6ce 65%, #c3c6ce 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; } /* the silver sheen rides the words while thinking; emoji keep their own colour */
 .bc-think-text._out { opacity: 0; }
@@ -5439,10 +5472,33 @@ function chatScriptFor(title) {
 // stamped .demo-t.
 (function () {
   const ASK = "Order me a burger from mcdonalds";
-  // the thoughts, one short line each (the tab never wraps): the opening one,
-  // one per tool call while it runs, and the closing one
-  const THOUGHT = "Find the nearest McDonald's and check the menu 🔍";
-  const THOUGHT_END = "Big Mac Meal it is 🍔";
+  // ---- the kit's settings: icon variant, thought length, speed -------------
+  const KIT_KEY = "hero.thinkKit";
+  let stored = {};
+  try { stored = JSON.parse(localStorage.getItem(KIT_KEY) || "{}"); } catch (e) { console.error("[think-kit] bad stored settings", e); }
+  const KIT = Object.assign({ icon: "bubble", length: "medium", speed: 1, open: true }, stored);
+  const saveKit = () => { try { localStorage.setItem(KIT_KEY, JSON.stringify(KIT)); } catch (e) { console.error("[think-kit] save failed", e); } };
+  const T = (ms) => ms / (KIT.speed || 1); // every beat scales with the speed slider
+  // the thoughts, one line each (the tab never wraps), in three lengths: the
+  // opening one, one per tool call while it runs, and the closing one
+  const THOUGHTS = {
+    short: {
+      open: "Checking McDonald's 🍔",
+      steps: ["Closest is 5th Ave 📍", "Scanning burgers 🍔", "Meals look better 🍟", "Any deals? 🏷️"],
+      end: "Big Mac Meal it is 🎯",
+    },
+    medium: {
+      open: "Find the nearest McDonald's and scan the menu 🧭",
+      steps: ["Closest one is on 5th Ave, 1.2 miles 📍", "Looking through the burgers 🍔", "A meal makes more sense than a single 🍟", "Checking for a deal before ordering 🏷️"],
+      end: "Big Mac Meal, no pickles, on the saved card 🎯",
+    },
+    long: {
+      open: "Find the nearest McDonald's, then read its full menu 🧭",
+      steps: ["The closest open one is on 5th Ave, 1.2 miles out 📍", "Reading the burger list, Big Mac sits at the top 🍔", "A medium meal with fries and a Coke fits best 🍟", "Looking for a deal before placing the order 🏷️"],
+      end: "Big Mac Meal, no pickles, paid with the saved card 🎯",
+    },
+  };
+  const thoughts = () => THOUGHTS[KIT.length] || THOUGHTS.medium;
   const CHAR_MS = 22; // a steady typewriter cadence; each char fades in over 420ms
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter for the user's typing
   // the tool calls that follow the thought: [icon, running label, result,
@@ -5454,22 +5510,32 @@ function chatScriptFor(title) {
     list: '<svg viewBox="0 0 12 12"><path d="M4 3h6M4 6h6M4 9h6"/><circle cx="1.9" cy="3" r=".6" fill="currentColor" stroke="none"/><circle cx="1.9" cy="6" r=".6" fill="currentColor" stroke="none"/><circle cx="1.9" cy="9" r=".6" fill="currentColor" stroke="none"/></svg>',
     tag: '<svg viewBox="0 0 12 12"><path d="M1.8 1.8h4l4.6 4.6-4 4-4.6-4.6z"/><circle cx="4.1" cy="4.1" r=".8" fill="currentColor" stroke="none"/></svg>',
   };
-  const STEPS = [
-    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now", "Closest one is on 5th Ave 📍"],
-    ["search", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top", "Looking through the burgers 🍔"],
-    ["list", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke", "A meal makes more sense 🍟"],
-    ["tag", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today", "Checking for a deal first 🏷️"],
+  const STEPS = [ // the tab's per-step thought comes from thoughts().steps[i]
+    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now"],
+    ["search", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top"],
+    ["list", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke"],
+    ["tag", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today"],
   ];
-  const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char
+  const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char (both scale with speed)
+  // the tab's icon variants: line glyphs at 14px; "none" drops the glyph
+  const TAB_ICONS = {
+    bubble: '<svg viewBox="0 0 12 12"><path d="M2.2 2.2h7.6a1.2 1.2 0 0 1 1.2 1.2v3.4a1.2 1.2 0 0 1-1.2 1.2H5.6L3.2 10.2V8H2.2A1.2 1.2 0 0 1 1 6.8V3.4a1.2 1.2 0 0 1 1.2-1.2z"/></svg>',
+    sparkle: '<svg viewBox="0 0 12 12"><path d="M6 1.4c.4 2.5 1.9 4 4.6 4.6C7.9 6.6 6.4 8.1 6 10.6 5.6 8.1 4.1 6.6 1.4 6 4.1 5.4 5.6 3.9 6 1.4z"/></svg>',
+    dots: '<svg viewBox="0 0 12 12"><circle cx="2.4" cy="6" r="1.1" fill="currentColor" stroke="none"/><circle cx="6" cy="6" r="1.1" fill="currentColor" stroke="none"/><circle cx="9.6" cy="6" r="1.1" fill="currentColor" stroke="none"/></svg>',
+    bolt: '<svg viewBox="0 0 12 12"><path d="M6.8 1.2 2.6 6.8h3l-.4 4 4.2-5.6h-3z"/></svg>',
+    ring: '<svg viewBox="0 0 12 12"><path d="M10.4 6A4.4 4.4 0 1 1 6 1.6"/></svg>',
+    asterisk: '<svg viewBox="0 0 12 12"><path d="M6 1.4v9.2M2 3.7l8 4.6M2 8.3l8-4.6"/></svg>',
+    none: "",
+  };
+  const ICON_ORDER = ["bubble", "sparkle", "dots", "bolt", "ring", "asterisk", "none"];
 
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const sleep = (ms) => new Promise((r) => setTimeout(r, T(ms)));
   const alive = (gen) => gen === fxGen;
   const P = {};
   CHAT_PANELS.forEach((p) => { P[p.key] = p; });
   const lock = () => document.body.classList.add("tour-lock");
   const unlock = () => document.body.classList.remove("tour-lock");
   const follow = (th) => { th.scrollTop = th.scrollHeight; };
-  const BUBBLE = '<svg viewBox="0 0 12 12"><path d="M2.2 2.2h7.6a1.2 1.2 0 0 1 1.2 1.2v3.4a1.2 1.2 0 0 1-1.2 1.2H5.6L3.2 10.2V8H2.2A1.2 1.2 0 0 1 1 6.8V3.4a1.2 1.2 0 0 1 1.2-1.2z"/></svg>';
 
   // keystroke the composer one char at a time, focus ring on like a real user
   async function demoType(p, text, gen) {
@@ -5513,11 +5579,17 @@ function chatScriptFor(title) {
     const main = document.getElementById(P.gg.root).querySelector(".bcs-main");
     const tab = add("div", "bc-think demo-t _live");
     const inner = add("div", "bc-think-in");
-    inner.insertAdjacentHTML("beforeend", BUBBLE);
+    const iconEl = add("span", "bc-think-ic");
     const textEl = add("div", "bc-think-text");
-    inner.appendChild(textEl);
+    inner.append(iconEl, textEl);
     tab.appendChild(inner);
     main.appendChild(tab);
+    const setIcon = (name) => {
+      iconEl.innerHTML = TAB_ICONS[name] || "";
+      iconEl.className = "bc-think-ic _" + name;
+      inner.classList.toggle("_noicon", name === "none"); // the text moves over
+    };
+    setIcon(KIT.icon);
     const wrap = main.querySelector(".bc-softwrap");
     if (wrap) wrap.classList.add("_awake"); // the bar stays lit under the tab
     let widest = 0;
@@ -5563,7 +5635,15 @@ function chatScriptFor(title) {
       done() {
         tab.classList.remove("_live"); // the sheen stops; the thought stays
       },
+      setIcon(name) { // the kit swaps the glyph live; the frame re-fits around it
+        const cur = textEl.textContent;
+        setIcon(name);
+        widest = 0;
+        fitTo(cur); // measures, then clears the box
+        textEl.textContent = cur; // restore the plain line
+      },
     };
+    window.__thinkTab = api;
     return api;
   }
 
@@ -5598,7 +5678,7 @@ function chatScriptFor(title) {
         holder.appendChild(s);
         i++;
         if (i >= run.text.length) { r++; i = 0; }
-        setTimeout(tick, ms);
+        setTimeout(tick, T(ms));
       };
       tick();
     });
@@ -5610,7 +5690,9 @@ function chatScriptFor(title) {
     const list = add("div", "demo-tools bc-app demo-t");
     th.appendChild(list);
     follow(th);
-    for (const [icon, running, result, thought] of STEPS) {
+    const stepThoughts = thoughts().steps;
+    for (let i = 0; i < STEPS.length; i++) {
+      const [icon, running, result] = STEPS[i];
       if (!alive(gen)) return;
       const row = add("div", "demo-step _run");
       row.insertAdjacentHTML("beforeend", ICON[icon]);
@@ -5619,9 +5701,9 @@ function chatScriptFor(title) {
       list.appendChild(row);
       follow(th);
       const t0 = performance.now();
-      tab.say(thought); // the tab keeps thinking alongside the call (not awaited)
+      tab.say(stepThoughts[i]); // the tab keeps thinking alongside the call (not awaited)
       await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
-      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0))); if (!alive(gen)) return;
+      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0) * (KIT.speed || 1))); if (!alive(gen)) return;
       row.classList.remove("_run");
       row.classList.add("_done");
       await typeRich(l, result, LABEL_MS); if (!alive(gen)) return;
@@ -5656,15 +5738,105 @@ function chatScriptFor(title) {
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.gg, ASK);
+    const set = thoughts();
     const tab = openThinkTab(gen);
-    await tab.open(THOUGHT); if (!alive(gen)) return;
-    await tab.say(THOUGHT); if (!alive(gen)) return;
+    await tab.open(set.open); if (!alive(gen)) return;
+    await tab.say(set.open); if (!alive(gen)) return;
     await sleep(900); if (!alive(gen)) return; // a beat to read the opening thought
     await runTools(th, tab, gen); if (!alive(gen)) return; // the menu scan, as plain tool-call lines
     await sleep(200); if (!alive(gen)) return;
-    await tab.say(THOUGHT_END); // the closing thought, then the sheen stops; the tab stays up
+    await tab.say(set.end); // the closing thought, then the sheen stops; the tab stays up
     tab.done();
   }
+
+  // ---- the kit -------------------------------------------------------------
+  // Replay re-runs the demo from the settled state (no intro): it bumps fxGen
+  // so a demo in flight stops, clears the demo's nodes and runs it again with
+  // the current settings. Icon changes apply to the open tab at once; length
+  // applies on the next run; speed applies to every beat from now on.
+  window.replayDemo = function () {
+    if (!document.getElementById("server-pill")) return false; // the intro has not settled yet
+    const gen = ++fxGen;
+    window.runDemoTour(gen);
+    return true;
+  };
+
+  function buildKit() {
+    const kit = add("div", "think-kit");
+    kit.id = "think-kit";
+    kit.hidden = !KIT.open;
+    const title = add("div", "think-kit-title");
+    const t1 = add("span"); t1.textContent = "Thinking kit";
+    const t2 = add("span"); t2.textContent = "k to hide";
+    title.append(t1, t2);
+    kit.appendChild(title);
+
+    // icon
+    const rowI = add("div", "think-kit-row");
+    const labI = add("div", "think-kit-lab");
+    const labIa = add("span"); labIa.textContent = "Icon";
+    const labIb = add("span"); labIb.textContent = KIT.icon;
+    labI.append(labIa, labIb);
+    const icons = add("div", "think-kit-icons");
+    const iconBtns = ICON_ORDER.map((name) => {
+      const b = add("button"); b.type = "button"; b.title = name;
+      if (name === "none") b.textContent = "—"; else b.innerHTML = TAB_ICONS[name];
+      b.classList.toggle("_on", KIT.icon === name);
+      b.addEventListener("click", () => {
+        KIT.icon = name; saveKit();
+        iconBtns.forEach((o) => o.classList.toggle("_on", o === b));
+        labIb.textContent = name;
+        if (window.__thinkTab) window.__thinkTab.setIcon(name);
+      });
+      icons.appendChild(b);
+      return b;
+    });
+    rowI.append(labI, icons);
+    kit.appendChild(rowI);
+
+    // length
+    const rowL = add("div", "think-kit-row");
+    const labL = add("div", "think-kit-lab");
+    const labLa = add("span"); labLa.textContent = "Thought length";
+    const labLb = add("span"); labLb.textContent = "next run";
+    labL.append(labLa, labLb);
+    const seg = add("div", "think-kit-seg");
+    const lenBtns = ["short", "medium", "long"].map((name) => {
+      const b = add("button"); b.type = "button"; b.textContent = name[0].toUpperCase() + name.slice(1);
+      b.classList.toggle("_on", KIT.length === name);
+      b.addEventListener("click", () => {
+        KIT.length = name; saveKit();
+        lenBtns.forEach((o) => o.classList.toggle("_on", o === b));
+      });
+      seg.appendChild(b);
+      return b;
+    });
+    rowL.append(labL, seg);
+    kit.appendChild(rowL);
+
+    // speed
+    const rowS = add("div", "think-kit-row");
+    const labS = add("div", "think-kit-lab");
+    const labSa = add("span"); labSa.textContent = "Speed";
+    const labSb = add("span"); labSb.textContent = KIT.speed.toFixed(1) + "x";
+    labS.append(labSa, labSb);
+    const range = add("input"); range.type = "range"; range.min = "0.5"; range.max = "2"; range.step = "0.1"; range.value = String(KIT.speed);
+    range.addEventListener("input", () => { KIT.speed = parseFloat(range.value) || 1; labSb.textContent = KIT.speed.toFixed(1) + "x"; saveKit(); });
+    rowS.append(labS, range);
+    kit.appendChild(rowS);
+
+    // replay
+    const replay = add("button", "think-kit-replay"); replay.type = "button"; replay.textContent = "Replay";
+    replay.addEventListener("click", () => { if (!window.replayDemo()) { replay.textContent = "Wait for the settle"; setTimeout(() => { replay.textContent = "Replay"; }, 1200); } });
+    kit.appendChild(replay);
+
+    document.body.appendChild(kit);
+    document.addEventListener("keydown", (e) => {
+      const typing = e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA");
+      if (!typing && (e.key === "k" || e.key === "K")) { KIT.open = kit.hidden; kit.hidden = !kit.hidden; saveKit(); }
+    });
+  }
+  buildKit();
 })();
 </script>
 </body>
