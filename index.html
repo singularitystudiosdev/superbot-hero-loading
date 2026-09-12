@@ -5487,21 +5487,23 @@ function chatScriptFor(title) {
   const T = (ms) => ms / (KIT.speed || 1); // every beat scales with the speed slider
   // the thoughts, one line each (the tab never wraps), in three lengths: the
   // opening one, one per tool call while it runs, and the closing one
+  // emoji only where one names the thing in the line (a burger, a place, a
+  // meal with fries); lines about menus, deals or decisions stay plain
   const THOUGHTS = {
     short: {
       open: "Checking McDonald's 🍔",
-      steps: ["Closest is 5th Ave 📍", "Scanning burgers 🍔", "Meals look better 🍟", "Any deals? 🏷️"],
-      end: "Big Mac Meal it is 🎯",
+      steps: ["Closest is 5th Ave 📍", "Scanning burgers 🍔", "Meals look better 🍟", "Any deals?"],
+      end: "Big Mac Meal it is 🍔",
     },
     medium: {
-      open: "Find the nearest McDonald's and scan the menu 🧭",
-      steps: ["Closest one is on 5th Ave, 1.2 miles 📍", "Looking through the burgers 🍔", "A meal makes more sense than a single 🍟", "Checking for a deal before ordering 🏷️"],
-      end: "Big Mac Meal, no pickles, on the saved card 🎯",
+      open: "Find the nearest McDonald's and scan the menu",
+      steps: ["Closest one is on 5th Ave, 1.2 miles 📍", "Looking through the burgers 🍔", "A meal makes more sense than a single 🍟", "Checking for a deal before ordering"],
+      end: "Big Mac Meal, no pickles, on the saved card 🍔",
     },
     long: {
-      open: "Find the nearest McDonald's, then read its full menu 🧭",
-      steps: ["The closest open one is on 5th Ave, 1.2 miles out 📍", "Reading the burger list, Big Mac sits at the top 🍔", "A medium meal with fries and a Coke fits best 🍟", "Looking for a deal before placing the order 🏷️"],
-      end: "Big Mac Meal, no pickles, paid with the saved card 🎯",
+      open: "Find the nearest McDonald's, then read its full menu",
+      steps: ["The closest open one is on 5th Ave, 1.2 miles out 📍", "Reading the burger list, Big Mac sits at the top 🍔", "A medium meal with fries and a Coke fits best 🍟", "Looking for a deal before placing the order"],
+      end: "Big Mac Meal, no pickles, paid with the saved card 🍔",
     },
   };
   const thoughts = () => THOUGHTS[KIT.length] || THOUGHTS.medium;
