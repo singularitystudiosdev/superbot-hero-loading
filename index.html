@@ -2071,11 +2071,11 @@ body {
    up; each tool call swaps in its own thought. It lives in .bcs-main, not in
    .bc-softwrap, so the composer's rest filter never dims it. body.tour-lock
    swallows pointer input while the demo plays. */
-.bc-think { position: absolute; left: 50%; bottom: calc(18px + 46px - 3px); z-index: 3; /* centred on the bar; sunk 3px into it: at the panel's 0.667 scale a 1px overlap left a hairline of the composer ring showing (user, 2026-09-12) */ width: 0; height: 0; opacity: 0; overflow: hidden; border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #1e1e22, #141417); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 1px 0 0 rgba(255, 255, 255, 0.11), inset -1px 0 0 rgba(255, 255, 255, 0.11), 0 -10px 28px -14px rgba(0, 0, 0, 0.85); transform: translate(-50%, 8px); will-change: width, transform, opacity; transition: width 460ms cubic-bezier(0.22, 1, 0.36, 1), height 460ms cubic-bezier(0.22, 1, 0.36, 1), opacity 340ms ease, transform 460ms cubic-bezier(0.22, 1, 0.36, 1); pointer-events: none; }
+.bc-think { position: absolute; left: 50%; bottom: calc(18px + 46px - 3px); z-index: 3; /* centred on the bar; sunk 3px into it: at the panel's 0.667 scale a 1px overlap left a hairline of the composer ring showing (user, 2026-09-12) */ width: 0; height: 0; opacity: 0; overflow: hidden; border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #1e1e22, #141417); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 1px 0 0 rgba(255, 255, 255, 0.11), inset -1px 0 0 rgba(255, 255, 255, 0.11), 0 -10px 28px -14px rgba(0, 0, 0, 0.85); transform: translate(-50%, 8px); will-change: width, transform, opacity; --fit-ms: 450ms; transition: width var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), height var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity 340ms ease, transform 460ms cubic-bezier(0.22, 1, 0.36, 1); pointer-events: none; } /* --fit-ms is the kit's "resize" speed */
 .bc-think._on { opacity: 1; transform: translate(-50%, 0); }
-/* one row, like the reference: the bubble glyph then the thought. The tab's
-   width only ever grows (fitTo() keeps the widest line), so a shorter thought
-   never compacts the frame. */
+/* one row, like the reference: the glyph then the thought. The tab's width
+   follows the line (kit "Fit line", the default) or only ever grows (kit
+   "Grow only"). */
 .bc-think-in { display: flex; align-items: center; gap: 9px; width: max-content; max-width: 520px; box-sizing: border-box; padding: 10px 16px 13px; /* the extra 2px at the bottom is the part sunk into the bar */ font: 600 13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e2e4ea; }
 .bc-think-in svg { width: 14px; height: 14px; flex-shrink: 0; stroke: #c3c6ce; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 /* icon variants (the kit picks one): dots pulse and the ring spins while the
@@ -2091,8 +2091,10 @@ body {
 @keyframes demo-spin { to { transform: rotate(360deg); } }
 /* ---- the kit: a small operator panel to tune the tab (2026-09-12) --------
    icon (7 variants), thought length (3 sets), speed (0.5x to 2x, every beat
-   scales), Replay. Fixed bottom-right, k toggles it, settings persist in
-   localStorage. It stays clickable while the demo's pointer lock is on. */
+   scales), box fit (fit the line / grow only), adjust timing (before / live
+   / after the typing), resize speed, Replay. Fixed bottom-right, k toggles
+   it, settings persist in localStorage. It stays clickable while the demo's
+   pointer lock is on. */
 .think-kit { position: fixed; right: 16px; bottom: 16px; z-index: 1000; width: 232px; padding: 12px 12px 10px; border-radius: 14px; background: rgba(20, 20, 23, 0.94); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 18px 50px -20px rgba(0, 0, 0, 0.9); backdrop-filter: blur(12px); font: 500 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #c9ccd4; user-select: none; }
 .think-kit[hidden] { display: none; }
 body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !important; }
@@ -5476,7 +5478,11 @@ function chatScriptFor(title) {
   const KIT_KEY = "hero.thinkKit";
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem(KIT_KEY) || "{}"); } catch (e) { console.error("[think-kit] bad stored settings", e); }
-  const KIT = Object.assign({ icon: "bubble", length: "medium", speed: 1, open: true }, stored);
+  // defaults (2026-09-12, the user's pick): ring icon, medium thoughts, 0.8x;
+  // the box fits each line ("line"; "grow" only ever widens), resizes before
+  // the line types ("before"; "live" follows every char; "after" grows first
+  // if it must, then shrinks once the line has typed), over 450ms
+  const KIT = Object.assign({ icon: "ring", length: "medium", speed: 0.8, fit: "line", when: "before", resizeMs: 450, open: true }, stored);
   const saveKit = () => { try { localStorage.setItem(KIT_KEY, JSON.stringify(KIT)); } catch (e) { console.error("[think-kit] save failed", e); } };
   const T = (ms) => ms / (KIT.speed || 1); // every beat scales with the speed slider
   // the thoughts, one line each (the tab never wraps), in three lengths: the
@@ -5593,22 +5599,28 @@ function chatScriptFor(title) {
     const wrap = main.querySelector(".bc-softwrap");
     if (wrap) wrap.classList.add("_awake"); // the bar stays lit under the tab
     let widest = 0;
-    // one measurement per line: the full text is laid out for a single frame
-    // (textEl is empty when this runs), so the tab grows to the finished
-    // line's width in ONE eased motion before the chars type in; re-fitting
-    // per char restarted the easing twenty times a line and read as jitter
-    const fitTo = (text) => {
+    tab.style.setProperty("--fit-ms", (KIT.resizeMs || 450) + "ms");
+    // measure a line: the full text is laid out for a single frame (the box
+    // is empty when this runs) and cleared again, so nothing paints
+    const measure = (text) => {
       textEl.textContent = text;
-      widest = Math.max(widest, inner.offsetWidth); // grow only, never compact
-      const h = inner.offsetHeight;
+      const m = { w: inner.offsetWidth, h: inner.offsetHeight };
       textEl.textContent = "";
-      tab.style.width = widest + "px";
-      tab.style.height = h + "px";
+      return m;
     };
+    const curW = () => parseFloat(tab.style.width) || 0;
+    // the box's width under the kit's fit mode: "line" follows the line both
+    // ways, "grow" only ever widens
+    const applyW = (w) => {
+      if (KIT.fit === "grow") { widest = Math.max(widest, w); w = widest; }
+      tab.style.width = w + "px";
+    };
+    const applyH = (h) => { tab.style.height = h + "px"; };
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
     const api = {
       async open(firstText) {
-        fitTo(firstText || ""); // the tab rises already sized for its first line
+        const m = measure(firstText || "");
+        applyW(m.w); applyH(m.h); // the tab rises already sized for its first line
         await sleep(30);
         tab.classList.add("_on");
         await sleep(REDUCED_MOTION ? 0 : 420); // the rise settles before the first line types
@@ -5622,15 +5634,23 @@ function chatScriptFor(title) {
         }
         textEl.textContent = "";
         textEl.classList.remove("_out");
-        fitTo(text); // one smooth grow to the new line's width (if wider)
-        if (REDUCED_MOTION) { textEl.textContent = text; return; }
+        const m = measure(text);
+        applyH(m.h);
+        // when to adjust: "before" resizes to the finished line in one motion,
+        // then types; "after" only grows now if the line would not fit, and
+        // shrinks once it has typed; "live" follows the chars as they land
+        if (KIT.when === "before") applyW(m.w);
+        else if (KIT.when === "after" && m.w > curW()) applyW(m.w);
+        if (REDUCED_MOTION) { textEl.textContent = text; applyW(m.w); return; }
         for (let i = 0; i < text.length; i++) {
           if (!alive(gen) || my !== sayGen) return;
           const c = add("span", "demo-ch");
           c.textContent = text[i];
           textEl.appendChild(c);
+          if (KIT.when === "live") applyW(inner.offsetWidth);
           await sleep(CHAR_MS);
         }
+        if (KIT.when === "after" && my === sayGen) applyW(m.w);
       },
       done() {
         tab.classList.remove("_live"); // the sheen stops; the thought stays
@@ -5639,8 +5659,17 @@ function chatScriptFor(title) {
         const cur = textEl.textContent;
         setIcon(name);
         widest = 0;
-        fitTo(cur); // measures, then clears the box
+        const m = measure(cur); // measures, then clears the box
         textEl.textContent = cur; // restore the plain line
+        applyW(m.w); applyH(m.h);
+      },
+      setResize(ms) { tab.style.setProperty("--fit-ms", ms + "ms"); },
+      refit() { // fit mode changed: re-fit the current line under the new rule
+        const cur = textEl.textContent;
+        widest = 0;
+        const m = measure(cur);
+        textEl.textContent = cur;
+        applyW(m.w);
       },
     };
     window.__thinkTab = api;
@@ -5818,12 +5847,54 @@ function chatScriptFor(title) {
     const rowS = add("div", "think-kit-row");
     const labS = add("div", "think-kit-lab");
     const labSa = add("span"); labSa.textContent = "Speed";
-    const labSb = add("span"); labSb.textContent = KIT.speed.toFixed(1) + "x";
+    const labSb = add("span"); labSb.textContent = Number(KIT.speed).toFixed(1) + "x";
     labS.append(labSa, labSb);
     const range = add("input"); range.type = "range"; range.min = "0.5"; range.max = "2"; range.step = "0.1"; range.value = String(KIT.speed);
     range.addEventListener("input", () => { KIT.speed = parseFloat(range.value) || 1; labSb.textContent = KIT.speed.toFixed(1) + "x"; saveKit(); });
     rowS.append(labS, range);
     kit.appendChild(rowS);
+
+    // box fit: does the frame follow the line both ways, or only grow
+    const seg2 = (title, hint, options, key, onPick) => {
+      const row = add("div", "think-kit-row");
+      const lab = add("div", "think-kit-lab");
+      const a = add("span"); a.textContent = title;
+      const b = add("span"); b.textContent = hint;
+      lab.append(a, b);
+      const seg = add("div", "think-kit-seg");
+      seg.style.gridTemplateColumns = "repeat(" + options.length + ", 1fr)";
+      const btns = options.map(([value, text]) => {
+        const btn = add("button"); btn.type = "button"; btn.textContent = text;
+        btn.classList.toggle("_on", KIT[key] === value);
+        btn.addEventListener("click", () => {
+          KIT[key] = value; saveKit();
+          btns.forEach((o) => o.classList.toggle("_on", o === btn));
+          if (onPick) onPick(value);
+        });
+        seg.appendChild(btn);
+        return btn;
+      });
+      row.append(lab, seg);
+      kit.appendChild(row);
+    };
+    seg2("Box fit", "width", [["line", "Fit line"], ["grow", "Grow only"]], "fit", () => { if (window.__thinkTab) window.__thinkTab.refit(); });
+    // adjust: when the frame resizes relative to the typing
+    seg2("Adjust", "when", [["before", "Before"], ["live", "Live"], ["after", "After"]], "when", null);
+
+    // resize speed: the width/height easing duration
+    const rowR = add("div", "think-kit-row");
+    const labR = add("div", "think-kit-lab");
+    const labRa = add("span"); labRa.textContent = "Resize";
+    const labRb = add("span"); labRb.textContent = (KIT.resizeMs / 1000).toFixed(2) + "s";
+    labR.append(labRa, labRb);
+    const rangeR = add("input"); rangeR.type = "range"; rangeR.min = "100"; rangeR.max = "1200"; rangeR.step = "50"; rangeR.value = String(KIT.resizeMs);
+    rangeR.addEventListener("input", () => {
+      KIT.resizeMs = parseInt(rangeR.value, 10) || 450; saveKit();
+      labRb.textContent = (KIT.resizeMs / 1000).toFixed(2) + "s";
+      if (window.__thinkTab) window.__thinkTab.setResize(KIT.resizeMs);
+    });
+    rowR.append(labR, rangeR);
+    kit.appendChild(rowR);
 
     // replay
     const replay = add("button", "think-kit-replay"); replay.type = "button"; replay.textContent = "Replay";
