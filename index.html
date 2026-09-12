@@ -3070,7 +3070,6 @@ function familyRun(ctx) {
   function reset() {
     fxGen++; // invalidate any in-flight finisher
     window.__ff = 1; // a replay runs at normal speed again
-    if (window.rearmTourSkip) window.rearmTourSkip();
     live.forEach((a) => { try { a.cancel(); } catch (e) {} }); // kill every WAAPI stage
     live.clear();
     phase = "pop";
@@ -3167,18 +3166,19 @@ const ctx = {
   },
 };
 
-// skip: a double click / double tap anywhere fast-forwards the load animation
-// (both clocks and every tracked WAAPI stage run at 40x) and tells the demo
-// to finish its beats at once. r still replays at normal speed (reset()
-// restores the rate). Typing in a mock composer never triggers it.
+// skip: a double click / double tap anywhere fast-forwards the LOAD animation
+// only (both clocks and every tracked WAAPI stage run at 40x) and stops where
+// the demo starts: runDemoTour puts the rate back to 1 as the settle hands
+// over, so the ask and the thinking block play at normal speed. r still
+// replays from the top (reset() restores the rate too). Typing in a mock
+// composer never triggers it.
 window.__ff = 1;
 window.ffRate = () => window.__ff || 1;
 window.__ffHooks = window.__ffHooks || [];
 window.skipIntro = function () {
-  if (window.__ff > 1) { if (window.skipTour) window.skipTour(); return; }
+  if (window.__ff > 1) return;
   window.__ff = 40;
   window.__ffHooks.forEach((h) => { try { h(); } catch (e) { console.error("[skipIntro]", e); } });
-  if (window.skipTour) window.skipTour();
 };
 const skipAllowed = (e) => !(e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA"));
 document.addEventListener("dblclick", (e) => { if (skipAllowed(e)) window.skipIntro(); });
@@ -5406,23 +5406,18 @@ function chatScriptFor(title) {
 // Claude has just docked: dwell 0.9s → superbot; the user types "Order me a
 // burger from mcdonalds"; a thinking block opens, its reasoning fades in
 // word by word, and once the thought is done the head reads "Thought for Ns"
-// and the block folds. A double tap anywhere skips ahead (skipTour): every
-// wait resolves at once, the text lands whole and the block folds. The phone
-// mirrors the send. Replay-safe: reset()'s fxGen bump cancels the demo
-// between beats and a fresh run clears every node it stamped .demo-t.
+// and the block folds. A double tap during the LOAD animation fast-forwards
+// it to this point (skipIntro); the demo itself always plays at normal
+// speed. The phone mirrors the send. Replay-safe: reset()'s fxGen bump
+// cancels the demo between beats and a fresh run clears every node it
+// stamped .demo-t.
 (function () {
   const ASK = "Order me a burger from mcdonalds";
   const THOUGHT = "They want a burger from McDonald's. Two saved addresses and no default, so I'll ask which one before I order.";
   const WORD_MS = 70; // a steady cadence, no jitter: each word fades in over 640ms while the next ones land
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter for the user's typing
 
-  // skip: one promise every wait races against; reset() re-arms it
-  let skipping = false, skipResolve = null, skipP = null;
-  function rearm() { skipping = false; skipP = new Promise((r) => { skipResolve = r; }); }
-  rearm();
-  window.rearmTourSkip = rearm;
-  window.skipTour = () => { skipping = true; if (skipResolve) skipResolve(); };
-  const sleep = (ms) => skipping ? Promise.resolve() : Promise.race([new Promise((r) => setTimeout(r, ms)), skipP]);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const alive = (gen) => gen === fxGen;
   const P = {};
   CHAT_PANELS.forEach((p) => { P[p.key] = p; });
@@ -5437,10 +5432,9 @@ function chatScriptFor(title) {
     const inp = root && root.querySelector(p.inSel);
     if (!inp) return;
     inp.focus();
-    if (REDUCED_MOTION || skipping) { inp.value = text; await sleep(250); return; }
+    if (REDUCED_MOTION) { inp.value = text; await sleep(250); return; }
     for (let i = 1; i <= text.length; i++) {
       if (!alive(gen)) return;
-      if (skipping) { inp.value = text; return; }
       inp.value = text.slice(0, i);
       await sleep(KEYSTROKE[0] + Math.random() * (KEYSTROKE[1] - KEYSTROKE[0]));
     }
@@ -5487,12 +5481,11 @@ function chatScriptFor(title) {
     await sleep(40); if (!alive(gen)) return;
     box.classList.add("_open");
     const words = text.split(" ");
-    if (REDUCED_MOTION || skipping) { textEl.textContent = text; await sleep(600); }
+    if (REDUCED_MOTION) { textEl.textContent = text; await sleep(600); }
     else {
       await sleep(260); // the fold is most of the way open before the first word
       for (let i = 0; i < words.length; i++) {
         if (!alive(gen)) return;
-        if (skipping) { textEl.textContent = text; break; }
         const w = add("span", "demo-word");
         w.textContent = (i ? " " : "") + words[i];
         textEl.appendChild(w);
@@ -5501,11 +5494,11 @@ function chatScriptFor(title) {
       }
     }
     if (!alive(gen)) return;
-    await sleep(skipping ? 0 : 1000); if (!alive(gen)) return; // a beat to read the finished thought
+    await sleep(1000); if (!alive(gen)) return; // a beat to read the finished thought
     box.classList.remove("_live");
     label.textContent = "Thought for " + Math.max(1, Math.round((performance.now() - t0) / 1000)) + "s";
     box.classList.remove("_open"); // folds back the way it opened
-    await sleep(skipping ? 0 : 480);
+    await sleep(480);
     follow(th);
   }
 
@@ -5517,6 +5510,7 @@ function chatScriptFor(title) {
   }
 
   window.runDemoTour = async function (gen) {
+    window.__ff = 1; // a fast-forwarded intro hands over here: the demo plays at normal speed
     lock();
     clearTourState();
     try {
