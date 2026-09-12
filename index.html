@@ -2029,19 +2029,55 @@ body {
 .demo-thought-head { display: inline-flex; align-items: center; gap: 6px; color: #8b90a0; cursor: pointer; user-select: none; }
 .demo-thought-head svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; transition: transform 250ms ease; }
 .demo-thought._open .demo-thought-head svg { transform: rotate(180deg); }
-.demo-thought._live .demo-thought-label { background: linear-gradient(90deg, #8b90a0, #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #8b90a0); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; }
+.demo-thought._live .demo-thought-label { background: linear-gradient(90deg, #8b90a0 0%, #8b90a0 35%, #eef0f4 50%, #8b90a0 65%, #8b90a0 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; } /* standard grey sheen while thinking (user ask 2026-09-12) — no brand colour here */
 .demo-thought-body { margin-top: 7px; padding-left: 11px; border-left: 2px solid rgba(255, 255, 255, 0.1); color: #8b90a0; font-weight: 400; line-height: 1.5; max-height: 220px; overflow: hidden; transition: max-height 350ms ease, opacity 250ms ease, margin-top 350ms ease; }
 .demo-thought:not(._open) .demo-thought-body { max-height: 0; opacity: 0; margin-top: 0; }
 @keyframes demo-shimmer { from { background-position: 0% 0; } to { background-position: -220% 0; } }
-.demo-tools { align-self: flex-start; display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
-.demo-step { display: inline-flex; align-items: center; gap: 8px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #d4d7de; animation: demo-step-in 0.2s ease-out; transition: color 300ms ease; }
+/* the question card (Cursor's ask-question format): the question as the
+   title, one radio row per option, a Submit pill. The demo picks an option
+   (._sel fills the radio) and presses Submit (._press); the answered card
+   keeps the title and the chosen row only, dimmed, and drops the button. */
+.demo-ask { position: relative; align-self: flex-start; width: 100%; max-width: 420px; margin-top: 14px; padding: 12px 14px 12px; border-radius: 14px; background: #1a1a1c; border: 1px solid rgba(255, 255, 255, 0.12); font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e6e8ee; box-sizing: border-box; animation: demo-step-in 0.25s ease-out; }
+.demo-ask-title { font-weight: 700; font-size: 13.5px; color: #f2f3f7; }
+.demo-ask-opts { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.demo-ask-opt { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 9px; color: #c9ccd4; transition: background 180ms ease, color 180ms ease; }
+.demo-ask-opt .demo-radio { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.35); box-sizing: border-box; flex-shrink: 0; position: relative; transition: border-color 180ms ease; }
+.demo-ask-opt .demo-radio::after { content: ""; position: absolute; inset: 2.5px; border-radius: 50%; background: #f2f3f7; transform: scale(0); transition: transform 180ms cubic-bezier(.34,1.56,.64,1); }
+.demo-ask-opt .demo-opt-sub { margin-left: auto; color: #8b90a0; font-size: 11.5px; }
+.demo-ask-opt._sel { background: rgba(255, 255, 255, 0.08); color: #f2f3f7; }
+.demo-ask-opt._sel .demo-radio { border-color: #f2f3f7; }
+.demo-ask-opt._sel .demo-radio::after { transform: scale(1); }
+.demo-ask-foot { display: flex; justify-content: flex-end; margin-top: 10px; }
+.demo-ask-submit { font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0d0d0d; background: #e6e8ee; border: none; border-radius: 999px; padding: 6px 13px; cursor: pointer; transition: transform 120ms ease, background 120ms ease; }
+.demo-ask-submit._press { transform: scale(0.94); background: #ffffff; }
+.demo-ask._answered { border-color: rgba(255, 255, 255, 0.08); }
+.demo-ask._answered .demo-ask-title { color: #c9ccd4; }
+.demo-ask._answered .demo-ask-opt:not(._sel), .demo-ask._answered .demo-ask-foot { display: none; }
+.demo-ask._answered .demo-ask-opt._sel { background: none; padding-left: 0; color: #e6e8ee; }
+/* the progress frame (user ask 2026-09-12: "shows this progress within a
+   frame and each step has a progress bar that is filling"): a raised panel
+   with a header (what is happening + n of N), one row per tool call — emoji,
+   label, and under it a 2px track whose storm fill eases 0 → 100% across the
+   step. On completion the label swaps to its result, the fill settles and
+   dims, and the row's text goes quiet; when the last one lands the counter
+   reads Done and the frame's border lifts for a beat. No dots, no checks. */
+.demo-tools { align-self: flex-start; width: 100%; max-width: 440px; margin-top: 14px; padding: 10px 14px 12px; border-radius: 14px; background: #141416; border: 1px solid rgba(255, 255, 255, 0.08); box-sizing: border-box; display: flex; flex-direction: column; gap: 9px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; animation: demo-step-in 0.25s ease-out; transition: border-color 400ms ease; }
+.demo-tools._done { border-color: rgba(255, 255, 255, 0.16); }
+.demo-tools-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 8px; margin-bottom: 1px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); color: #c9ccd4; font-weight: 600; }
+.demo-tools-count { font-variant-numeric: tabular-nums; color: #8b90a0; font-weight: 500; transition: color 300ms ease; }
+.demo-tools._done .demo-tools-count { color: #f2f3f7; font-weight: 600; }
+.demo-step { display: flex; flex-direction: column; gap: 6px; color: #d4d7de; animation: demo-step-in 0.2s ease-out; transition: color 300ms ease; }
+.demo-step-line { display: flex; align-items: center; gap: 8px; min-height: 16px; }
 .demo-step b, .bcs-reply b, .ph-replytxt b { font-weight: 700; color: #f2f3f7; }
 .demo-step .demo-emoji { width: 18px; text-align: center; font-size: 13px; line-height: 1; }
-.demo-step .demo-dot { width: 7px; height: 7px; margin-left: 2px; border-radius: 50%; background: linear-gradient(135deg, #2b6bff, #c026d3); animation: demo-pulse 1s ease-in-out infinite; }
+.demo-bar { position: relative; height: 2px; border-radius: 2px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin-left: 26px; }
+.demo-fill { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #2b6bff, #6a1fd8, #c026d3, #ff3d9a); background-size: 440px 100%; transition: opacity 500ms ease; }
+.demo-fill::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%); background-size: 60px 100%; background-repeat: no-repeat; animation: demo-sheen 1.1s ease-in-out infinite; }
 .demo-step._done { color: #8b90a0; }
 .demo-step._done b { color: #c9ccd4; }
-.demo-step._done .demo-dot { display: none; }
-@keyframes demo-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }
+.demo-step._done .demo-fill { opacity: 0.45; }
+.demo-step._done .demo-fill::after { animation: none; opacity: 0; }
+@keyframes demo-sheen { from { background-position: -60px 0; } to { background-position: 480px 0; } }
 @keyframes demo-step-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 .demo-card { position: relative; align-self: flex-start; min-width: 260px; margin-top: 14px; padding: 11px 14px 10px; border-radius: 14px; background: #1a1a1c; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #e6e8ee; animation: demo-step-in 0.25s ease-out; }
 .demo-card::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(135deg, #2b6bff, #6a1fd8, #c026d3, #ff3d9a); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0.7; pointer-events: none; }
@@ -2050,10 +2086,11 @@ body {
 .demo-card-eta { display: flex; justify-content: space-between; gap: 18px; margin-top: 9px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); color: #c9ccd4; font-size: 11.5px; }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .demo-thought, .demo-step, .demo-card { animation: none; }
+  .demo-thought, .demo-step, .demo-card, .demo-ask, .demo-tools { animation: none; }
   .demo-thought._live .demo-thought-label { animation: none; }
   .demo-thought-body { transition: none; }
-  .demo-step .demo-dot { animation: none; opacity: 0.8; }
+  .demo-fill { transition: none !important; }
+  .demo-fill::after { animation: none; }
 }
 </style>
 </head>
@@ -5329,7 +5366,8 @@ function chatScriptFor(title) {
 // Choreography (Claude has just docked): dwell 0.9s → superbot; the user
 // types "Order me a burger from mcdonalds"; a visible thinking block streams
 // the model's reasoning and folds to "Thought for Ns"; the bot asks ONE
-// question (which saved address); the user types "Home please"; a second
+// question as a Cursor-style question card (which saved address) and the
+// demo picks Home and submits; a second
 // thinking block; five tool calls land one under another (each row shows its
 // running label, then swaps to its RESULT and dims — no check marks); the
 // order card slides in; the confirmation streams with bold emphasis. The
@@ -5338,10 +5376,11 @@ function chatScriptFor(title) {
 // stamped .demo-t before re-running.
 (function () {
   const ASK = "Order me a burger from mcdonalds";
-  const THOUGHT_1 = "The user wants a burger from McDonald's. Before I can place anything I need a delivery address — they have Home and Work saved but no default, so I should ask which one rather than guess. Once I have that I can find the nearest open location and check what they usually order.";
-  const QUESTION = "**Where should I send it?** Home 🏠 or Work 🏢?"; // the one question: short and easy to read (user ask)
-  const ANSWER = "Home please";
-  const THOUGHT_2 = "Home is 24 Pine St. The closest open McDonald's is the one on 5th Ave, about 1.2 miles out, delivering in roughly 15 minutes right now. Their last three orders there were a Big Mac Meal with no pickles, so I'll go with that, pay with the saved card ending 4421, and place it.";
+  const THOUGHT_1 = "They want a burger from McDonald's. Two saved addresses and no default, so I'll ask which one before I order.";
+  // the one question, in Cursor's ask-question format: title + options +
+  // Submit, never reply text (user ask). The demo picks `pick` and submits.
+  const QUESTION = { title: "Where should I send it?", options: [["🏠", "Home", "24 Pine St"], ["🏢", "Work", "350 5th Ave"]], pick: 0 };
+  const THOUGHT_2 = "Home is 24 Pine St. Nearest open McDonald's is on 5th Ave, about 15 minutes out. Their usual there is a Big Mac Meal, no pickles — I'll order that on the saved card.";
   const STEPS = [ // [emoji, running label, result] — bold runs carry the emphasis
     ["📍", "Finding the nearest **McDonald's** to 24 Pine St...", "Found **McDonald's · 5th Ave** — 1.2 mi, open until 2 AM"],
     ["📋", "Pulling up the **menu**...", "Menu loaded — **Big Mac Meal** matches your usual order"],
@@ -5350,8 +5389,9 @@ function chatScriptFor(title) {
     ["🛵", "Placing the **order**...", "Order **#48213** placed — courier assigned"],
   ];
   const ORDER = { item: "🍔 Big Mac Meal", price: "$9.49", sub: "Medium fries · Coke · No pickles", store: "McDonald's · 5th Ave → 24 Pine St", eta: "🛵 ~14 min" };
-  const REPLY = "**Done!** 🍔 Your **Big Mac Meal** is on its way to **24 Pine St** from McDonald's on 5th Ave. **$9.49** paid with your card, and it should be at your door in **about 14 minutes** 🛵💨";
-  const STEP_MS = 820, THOUGHT_WORD_MS = 38, TYPE_MS = 7;
+  const REPLY = "**Done!** 🍔 **Big Mac Meal** headed to **24 Pine St**, there in **~14 min** 🛵"; // one line (user ask); the card above carries the price and store
+  const TOOLS_TITLE = "Ordering from McDonald's";
+  const STEP_MS = 1050, THOUGHT_WORD_MS = 38, TYPE_MS = 7;
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter — human cadence
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -5453,6 +5493,47 @@ function chatScriptFor(title) {
   // the newest line in view, the way a live chat follows its tail
   const follow = (th) => { th.scrollTop = th.scrollHeight; };
 
+  // the question card: rendered, then answered by the demo — the pick's radio
+  // fills, Submit presses, the card folds to the chosen row. The exchange is
+  // stored as a bot line + a user line so a re-render and the phone read it
+  // as a normal question and answer.
+  async function askQuestion(th, q, gen) {
+    const card = add("div", "demo-ask bc-app demo-t");
+    const title = add("div", "demo-ask-title"); title.textContent = q.title;
+    const opts = add("div", "demo-ask-opts");
+    const rows = q.options.map(([emoji, name, sub]) => {
+      const row = add("div", "demo-ask-opt");
+      const radio = add("span", "demo-radio");
+      const label = add("span"); label.textContent = emoji + "  " + name;
+      const s = add("span", "demo-opt-sub"); s.textContent = sub;
+      row.append(radio, label, s);
+      opts.appendChild(row);
+      return row;
+    });
+    const foot = add("div", "demo-ask-foot");
+    const submit = add("button", "demo-ask-submit"); submit.type = "button"; submit.textContent = "Submit";
+    foot.appendChild(submit);
+    card.append(title, opts, foot);
+    th.appendChild(card);
+    follow(th);
+    const key = chatKey(P.gg, liveChat.get("gg"));
+    if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text: q.title });
+    if (window.phTourReply) window.phTourReply(q.title, 220);
+    // the user reads the card, picks, submits
+    await sleep(REDUCED_MOTION ? 500 : 1300); if (!alive(gen)) return;
+    rows[q.pick].classList.add("_sel");
+    await sleep(REDUCED_MOTION ? 300 : 800); if (!alive(gen)) return;
+    submit.classList.add("_press");
+    await sleep(160); if (!alive(gen)) return;
+    submit.classList.remove("_press");
+    await sleep(120); if (!alive(gen)) return;
+    card.classList.add("_answered");
+    const answer = q.options[q.pick][1];
+    if (threadStore.has(key)) threadStore.get(key).push({ who: "user", text: answer });
+    if (window.phTourSend) window.phTourSend(answer); // the phone re-renders from the store: question line + answer bubble
+    follow(th);
+  }
+
   // the visible reasoning: head shimmers while the body streams word by word,
   // then the head reads "Thought for Ns" and the body folds away
   async function think(th, text, gen) {
@@ -5485,24 +5566,47 @@ function chatScriptFor(title) {
     follow(th);
   }
 
-  // the tool-call log: rows land one under the other; the running row pulses,
-  // a finished row swaps to its result and dims
+  // the progress frame: a header with the count, then one row per tool call;
+  // each row's bar eases to full across the step, then the label swaps to its
+  // result and the fill settles. The last one flips the frame to Done.
   async function runTools(th, gen) {
-    const log = add("div", "demo-tools bc-app demo-t");
-    th.appendChild(log);
+    const frame = add("div", "demo-tools bc-app demo-t");
+    const head = add("div", "demo-tools-head");
+    const title = add("span"); title.textContent = TOOLS_TITLE;
+    const count = add("span", "demo-tools-count");
+    count.textContent = "0 of " + STEPS.length;
+    head.append(title, count);
+    frame.appendChild(head);
+    th.appendChild(frame);
+    follow(th);
+    await sleep(REDUCED_MOTION ? 100 : 350); if (!alive(gen)) return;
+    let n = 0;
     for (const [emoji, running, result] of STEPS) {
       if (!alive(gen)) return;
       const row = add("div", "demo-step");
+      const line = add("div", "demo-step-line");
       const e = add("span", "demo-emoji"); e.textContent = emoji;
       const l = add("span");
       richInto(l, running);
-      row.append(e, l, add("span", "demo-dot"));
-      log.appendChild(row);
+      line.append(e, l);
+      const bar = add("div", "demo-bar");
+      const fill = add("div", "demo-fill");
+      bar.appendChild(fill);
+      row.append(line, bar);
+      frame.appendChild(row);
       follow(th);
-      await sleep(REDUCED_MOTION ? 220 : STEP_MS);
+      // the fill: fast out of the gate, easing into the last stretch — the
+      // transition is armed after the row has painted at width 0
+      void fill.offsetWidth;
+      fill.style.transition = REDUCED_MOTION ? "none" : "width " + STEP_MS + "ms cubic-bezier(0.22, 0.75, 0.25, 1)";
+      fill.style.width = "100%";
+      await sleep(REDUCED_MOTION ? 220 : STEP_MS + 120); if (!alive(gen)) return;
       richInto(l, result);
       row.classList.add("_done");
+      count.textContent = (++n) + " of " + STEPS.length;
     }
+    count.textContent = "Done";
+    frame.classList.add("_done");
   }
 
   // the order receipt
@@ -5548,15 +5652,11 @@ function chatScriptFor(title) {
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.gg, ASK);
-    // thinking → the one question
+    // thinking → the one question (a card the demo answers)
     await think(th, THOUGHT_1, gen); if (!alive(gen)) return;
     await sleep(300); if (!alive(gen)) return;
-    await demoReply(th, QUESTION); if (!alive(gen)) return;
-    // the user answers
-    await sleep(900); if (!alive(gen)) return;
-    await demoType(P.gg, ANSWER, gen); if (!alive(gen)) return;
-    await sleep(320); if (!alive(gen)) return;
-    demoSend(P.gg, ANSWER);
+    await askQuestion(th, QUESTION, gen); if (!alive(gen)) return;
+    await sleep(500); if (!alive(gen)) return;
     // thinking → the tool calls → the receipt → the confirmation
     await think(th, THOUGHT_2, gen); if (!alive(gen)) return;
     await sleep(300); if (!alive(gen)) return;
