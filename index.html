@@ -2072,23 +2072,26 @@ body {
    done the head reads "Thought for Ns" and the tab folds back into the bar.
    It lives in .bcs-main, not in .bc-softwrap, so the composer's rest filter
    never dims it. body.tour-lock swallows pointer input while the demo plays. */
-.bc-think { position: absolute; left: calc(50% - 266px); bottom: calc(18px + 46px - 1px); z-index: 3; max-width: 440px; height: 0; opacity: 0; overflow: hidden; border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #1e1e22, #141417); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 1px 0 0 rgba(255, 255, 255, 0.11), inset -1px 0 0 rgba(255, 255, 255, 0.11), 0 -10px 28px -14px rgba(0, 0, 0, 0.85); transition: height 300ms cubic-bezier(0.2, 0, 0, 1), opacity 240ms ease; pointer-events: none; }
-.bc-think._on { opacity: 1; }
-.bc-think-in { width: max-content; max-width: 440px; box-sizing: border-box; padding: 9px 14px 11px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #d6d8de; }
+.bc-think { position: absolute; left: 50%; bottom: calc(18px + 46px - 1px); z-index: 3; width: 0; height: 0; opacity: 0; overflow: hidden; border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #1e1e22, #141417); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26), inset 1px 0 0 rgba(255, 255, 255, 0.11), inset -1px 0 0 rgba(255, 255, 255, 0.11), 0 -10px 28px -14px rgba(0, 0, 0, 0.85); transform: translate(-50%, 8px); transition: width 380ms cubic-bezier(0.2, 0.8, 0.2, 1), height 380ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 320ms ease, transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1); pointer-events: none; }
+.bc-think._on { opacity: 1; transform: translate(-50%, 0); }
+.bc-think-in { width: max-content; max-width: 460px; box-sizing: border-box; padding: 9px 16px 11px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #d6d8de; }
 .bc-think-head { display: flex; align-items: center; gap: 7px; color: #c3c6ce; }
 .bc-think-head svg { width: 12px; height: 12px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; }
 .bc-think._live .bc-think-label { background: linear-gradient(90deg, #a9adb8 0%, #a9adb8 35%, #ffffff 50%, #a9adb8 65%, #a9adb8 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
-.bc-think-text { margin-top: 6px; max-width: 412px; color: #b6b9c3; font-weight: 400; line-height: 1.5; }
-.bc-think-text:empty { display: none; }
-.demo-word { opacity: 0; filter: blur(4px); animation: demo-word-in 640ms cubic-bezier(0.2, 0.6, 0.2, 1) forwards; }
-@keyframes demo-word-in { to { opacity: 1; filter: blur(0); } }
+.bc-think-text { margin-top: 5px; max-width: 428px; min-height: 19px; color: #b6b9c3; font-weight: 400; line-height: 1.5; white-space: nowrap; transition: opacity 180ms ease; }
+.bc-think-text._out { opacity: 0; }
+/* the typewriter: every char lands as its own span and fades in over 420ms
+   while the next ones arrive, so the line reads as a smooth wash rather than
+   a hard cursor */
+.demo-ch { opacity: 0; animation: demo-ch-in 420ms ease-out forwards; }
+@keyframes demo-ch-in { to { opacity: 1; } }
 @keyframes demo-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 @keyframes demo-shimmer { from { background-position: 0% 0; } to { background-position: -220% 0; } }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .bc-think { transition: none; }
+  .bc-think, .bc-think-text { transition: none; }
   .bc-think._live .bc-think-label { animation: none; }
-  .demo-word { animation: none; opacity: 1; filter: none; }
+  .demo-ch { animation: none; opacity: 1; }
 }
 /* ---- the tool calls (after the thought folds, 2026-09-12) -----------------
    Clean lines, nothing else: one row per call, a small line icon and a label
@@ -5422,11 +5425,12 @@ function chatScriptFor(title) {
 
 // ---- the thinking line: the scripted demo that plays after the settle -----
 // Claude has just docked: dwell 0.9s → superbot; the user types "Order me a
-// burger from mcdonalds"; a thinking tab opens on top of the composer, its
-// reasoning fades in word by word (the tab grows with each new line), and
-// once the thought is done the head reads "Thought for Ns" and the tab folds
-// back into the bar; then four plain tool-call lines scan the McDonald's
-// menu, each shimmering while it runs and settling to its result. A double
+// burger from mcdonalds"; a thinking tab rises, centred on the composer, and
+// STAYS up: one short line types in with a char fade, then four plain
+// tool-call lines scan the McDonald's menu (each shimmering while it runs and
+// settling to its result) while the tab swaps in a one-line thought per
+// call; at the end the head reads "Thought for Ns" and the closing thought
+// types in. A double
 // tap during the LOAD animation fast-forwards
 // it to this point (skipIntro); the demo itself always plays at normal
 // speed. The phone mirrors the send. Replay-safe: reset()'s fxGen bump
@@ -5434,11 +5438,15 @@ function chatScriptFor(title) {
 // stamped .demo-t.
 (function () {
   const ASK = "Order me a burger from mcdonalds";
-  const THOUGHT = "They want a burger from McDonald's. I'll find the nearest one and scan its menu before I order anything.";
-  const WORD_MS = 70; // a steady cadence, no jitter: each word fades in over 640ms while the next ones land
+  // the thoughts, one short line each (the tab never wraps): the opening one,
+  // one per tool call while it runs, and the closing one
+  const THOUGHT = "Find the nearest McDonald's and check the menu.";
+  const THOUGHT_END = "Big Mac Meal it is.";
+  const CHAR_MS = 22; // a steady typewriter cadence; each char fades in over 420ms
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter for the user's typing
-  // the tool calls that follow the thought: [icon, running label, result],
-  // short, bold on the key noun, no dashes. Icons are small line glyphs.
+  // the tool calls that follow the thought: [icon, running label, result,
+  // the one-line thought shown while it runs], short, bold on the key noun,
+  // no dashes. Icons are small line glyphs.
   const ICON = {
     pin: '<svg viewBox="0 0 12 12"><path d="M6 10.8S2.6 7.6 2.6 5.2a3.4 3.4 0 0 1 6.8 0C9.4 7.6 6 10.8 6 10.8z"/><circle cx="6" cy="5.2" r="1.2"/></svg>',
     search: '<svg viewBox="0 0 12 12"><circle cx="5.2" cy="5.2" r="3.3"/><path d="M7.7 7.7 10.4 10.4"/></svg>',
@@ -5446,10 +5454,10 @@ function chatScriptFor(title) {
     tag: '<svg viewBox="0 0 12 12"><path d="M1.8 1.8h4l4.6 4.6-4 4-4.6-4.6z"/><circle cx="4.1" cy="4.1" r=".8" fill="currentColor" stroke="none"/></svg>',
   };
   const STEPS = [
-    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now"],
-    ["search", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top"],
-    ["list", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke"],
-    ["tag", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today"],
+    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now", "Closest one is on 5th Ave."],
+    ["search", "Scanning **Burgers**", "**12 burgers**, Big Mac at the top", "Looking through the burgers."],
+    ["list", "Scanning **Meals and sides**", "**Medium meal**, fries and a Coke", "A meal makes more sense."],
+    ["tag", "Checking **deals**", "**Big Mac Meal** $9.49, no deal today", "Checking for a deal first."],
   ];
   const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char
 
@@ -5495,9 +5503,12 @@ function chatScriptFor(title) {
     return th;
   }
 
-  // the thinking tab: docked on the composer, opens from 0, grows with the
-  // text (height re-measured after every word), then folds back into the bar
-  async function think(text, gen) {
+  // the thinking tab: centred on the composer, it opens once and stays up.
+  // say(text) fades the current line out and types the next one in char by
+  // char; the tab's width and height are re-measured as the chars land, so
+  // it grows and shrinks around the line smoothly. done() swaps the head to
+  // "Thought for Ns" and stops the shimmer.
+  function openThinkTab(gen) {
     const main = document.getElementById(P.gg.root).querySelector(".bcs-main");
     const tab = add("div", "bc-think demo-t _live");
     const inner = add("div", "bc-think-in");
@@ -5512,34 +5523,42 @@ function chatScriptFor(title) {
     main.appendChild(tab);
     const wrap = main.querySelector(".bc-softwrap");
     if (wrap) wrap.classList.add("_awake"); // the bar stays lit under the tab
-    const grow = () => { tab.style.height = inner.offsetHeight + "px"; }; // eased by the height transition
-    const gone = () => { tab.remove(); if (wrap) wrap.classList.remove("_awake"); };
     const t0 = performance.now();
-    await sleep(30); if (!alive(gen)) return gone();
-    tab.classList.add("_on");
-    grow();
-    const words = text.split(" ");
-    if (REDUCED_MOTION) { textEl.textContent = text; grow(); await sleep(900); }
-    else {
-      await sleep(320); // the tab has opened before the first word lands
-      for (let i = 0; i < words.length; i++) {
-        if (!alive(gen)) return gone();
-        const w = add("span", "demo-word");
-        w.textContent = (i ? " " : "") + words[i];
-        textEl.appendChild(w);
-        grow(); // a word that wraps to a new line grows the tab smoothly
-        await sleep(WORD_MS);
-      }
-    }
-    if (!alive(gen)) return gone();
-    await sleep(1000); if (!alive(gen)) return gone(); // a beat to read the finished thought
-    tab.classList.remove("_live");
-    label.textContent = "Thought for " + Math.max(1, Math.round((performance.now() - t0) / 1000)) + "s";
-    await sleep(700); if (!alive(gen)) return gone();
-    tab.style.height = "0px"; // folds back into the bar
-    tab.classList.remove("_on");
-    await sleep(340);
-    gone();
+    const fit = () => { tab.style.width = inner.offsetWidth + "px"; tab.style.height = inner.offsetHeight + "px"; };
+    let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
+    const api = {
+      async open() {
+        fit();
+        await sleep(30);
+        tab.classList.add("_on");
+        await sleep(REDUCED_MOTION ? 0 : 380); // the tab has risen before the first line types
+      },
+      async say(text) {
+        const my = ++sayGen;
+        if (textEl.textContent) { // the previous line fades out first
+          textEl.classList.add("_out");
+          await sleep(REDUCED_MOTION ? 0 : 190);
+          if (!alive(gen) || my !== sayGen) return;
+        }
+        textEl.textContent = "";
+        textEl.classList.remove("_out");
+        if (REDUCED_MOTION) { textEl.textContent = text; fit(); return; }
+        for (let i = 0; i < text.length; i++) {
+          if (!alive(gen) || my !== sayGen) return;
+          const c = add("span", "demo-ch");
+          c.textContent = text[i];
+          textEl.appendChild(c);
+          fit(); // the tab widens with the line
+          await sleep(CHAR_MS);
+        }
+      },
+      done() {
+        tab.classList.remove("_live");
+        label.textContent = "Thought for " + Math.max(1, Math.round((performance.now() - t0) / 1000)) + "s";
+        fit();
+      },
+    };
+    return api;
   }
 
   // "**bold**" runs → text nodes and <b> elements (no innerHTML of copy)
@@ -5581,11 +5600,11 @@ function chatScriptFor(title) {
 
   // the tool calls: one line each. The label types in and shimmers while the
   // call runs; when it lands the result types over it and the row settles dim.
-  async function runTools(th, gen) {
+  async function runTools(th, tab, gen) {
     const list = add("div", "demo-tools bc-app demo-t");
     th.appendChild(list);
     follow(th);
-    for (const [icon, running, result] of STEPS) {
+    for (const [icon, running, result, thought] of STEPS) {
       if (!alive(gen)) return;
       const row = add("div", "demo-step _run");
       row.insertAdjacentHTML("beforeend", ICON[icon]);
@@ -5594,6 +5613,7 @@ function chatScriptFor(title) {
       list.appendChild(row);
       follow(th);
       const t0 = performance.now();
+      tab.say(thought); // the tab keeps thinking alongside the call (not awaited)
       await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
       await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0))); if (!alive(gen)) return;
       row.classList.remove("_run");
@@ -5630,9 +5650,14 @@ function chatScriptFor(title) {
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.gg, ASK);
-    await think(THOUGHT, gen); if (!alive(gen)) return;
+    const tab = openThinkTab(gen);
+    await tab.open(); if (!alive(gen)) return;
+    await tab.say(THOUGHT); if (!alive(gen)) return;
+    await sleep(900); if (!alive(gen)) return; // a beat to read the opening thought
+    await runTools(th, tab, gen); if (!alive(gen)) return; // the menu scan, as plain tool-call lines
     await sleep(200); if (!alive(gen)) return;
-    await runTools(th, gen); // the menu scan, as plain tool-call lines
+    tab.done(); // the head reads "Thought for Ns"; the tab stays up
+    await tab.say(THOUGHT_END);
   }
 })();
 </script>
