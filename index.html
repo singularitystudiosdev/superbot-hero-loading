@@ -2078,8 +2078,15 @@ body {
    thought that types in char by char under a silver sheen while live; each
    new thought swaps in (the old one lifts, blurs and fades out, the new one
    settles up from just below). */
-.gt-think { display: grid; grid-template-rows: 0fr; opacity: 0; --fit-ms: 450ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity calc(var(--fit-ms) * 0.7) ease; user-select: none; }
-.gt-think._on { grid-template-rows: 1fr; opacity: 1; }
+/* the fold (user, 2026-09-12: "smooth"): the track eases on a soft
+   standard curve over 520ms, and the CONTENT does the fading: it lifts 6px
+   and fades over the whole fold, so the row never shrinks as an empty
+   sliver and nothing snaps. The sheen and the ring keep running until the
+   node is gone; the fade is what stops them. */
+.gt-think { display: grid; grid-template-rows: 0fr; --fit-ms: 520ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); user-select: none; }
+.gt-think._on { grid-template-rows: 1fr; }
+.gt-think-in { opacity: 0; transform: translateY(-6px); transition: opacity calc(var(--fit-ms) * 0.85) ease, transform var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); }
+.gt-think._on .gt-think-in { opacity: 1; transform: none; }
 .gt-think-body { min-height: 0; overflow: hidden; }
 .gt-think-in { display: flex; align-items: center; gap: 9px; margin: 0 12px; padding: 12px 6px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 13px ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, sans-serif; letter-spacing: -0.1px; color: #b4b4b4; }
 .gt-think svg { width: 14px; height: 14px; flex-shrink: 0; stroke: #c3c3c3; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -2093,8 +2100,10 @@ body {
    the same thought, mirrored as ChatGPT's grey status line under the ask in
    the thread. It fades up in with the composer row, types the same chars in
    step, and settles once the thinking is done. */
-.gt-think-echo { align-self: stretch; display: grid; grid-template-rows: 0fr; opacity: 0; --fit-ms: 450ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity calc(var(--fit-ms) * 0.7) ease; } /* a grid track like the bar's row: it eases open, and folds shut once the thinking is done (user, 2026-09-12) */
-.gt-think-echo._on { grid-template-rows: 1fr; opacity: 1; }
+.gt-think-echo { align-self: stretch; display: grid; grid-template-rows: 0fr; --fit-ms: 520ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); } /* a grid track like the bar's row: it eases open, and folds shut once the thinking is done (user, 2026-09-12); the content fades, the track only moves */
+.gt-think-echo._on { grid-template-rows: 1fr; }
+.gt-think-echo-in { opacity: 0; transform: translateY(-6px); transition: opacity calc(var(--fit-ms) * 0.85) ease, transform var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); }
+.gt-think-echo._on .gt-think-echo-in { opacity: 1; transform: none; }
 .gt-think-echo-body { min-height: 0; overflow: hidden; }
 .gt-think-echo-in { display: flex; align-items: center; gap: 8px; padding-top: 16px; min-height: 18px; max-width: 100%; font: 500 13px ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, sans-serif; letter-spacing: -0.1px; color: #9b9b9b; }
 .gt-think-echo svg { width: 13px; height: 13px; flex-shrink: 0; stroke: #b4b4b4; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -2140,7 +2149,7 @@ body {
 .gt-sbcard-btn:active { transform: scale(0.97); }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .gt-think, .gt-think-echo, .gt-think-text, .gt-sbcard._on, .gt-sbcard::before { transition: none; }
+  .gt-think, .gt-think-in, .gt-think-echo, .gt-think-echo-in, .gt-think-text, .gt-sbcard._on, .gt-sbcard::before { transition: none; }
   .gt-sbcard-plate, .gt-sbcard::before, .gt-sbcard._on::before, .gt-sbcard._on .gt-sbcard-plate::after { animation: none; } /* static frame, static bloom, no sweep */
   .gt-think._live .gt-think-text, .gt-think._live svg, .gt-think-echo._live .gt-think-text, .gt-think-echo._live svg { animation: none; }
   .demo-ch { animation: none; opacity: 1; }
@@ -5612,13 +5621,13 @@ function chatScriptFor(title) {
       // shrinks back to its plain shape, the thread line closes up); resolves
       // once the fold has settled, and the folded nodes go
       async done() {
-        row.classList.remove("_live");
-        echo.classList.remove("_live");
-        await sleep(REDUCED_MOTION ? 0 : 220); // a beat at rest before the fold
+        // the ring and the sheen keep running into the fold: stopping them
+        // first snapped both back to frame zero (the "not clean" stop)
+        await sleep(REDUCED_MOTION ? 0 : 160); // a short beat before the fold
         if (!alive(gen)) return;
         row.classList.remove("_on");
         echo.classList.remove("_on");
-        await sleep(REDUCED_MOTION ? 0 : 450);
+        await sleep(REDUCED_MOTION ? 0 : 560); // the 520ms fold settles
         if (!alive(gen)) return;
         row.remove();
         echo.remove();
