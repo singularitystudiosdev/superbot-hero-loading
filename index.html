@@ -2001,8 +2001,8 @@ body {
 .ph-tool._run { color: #c9ccd4; }
 .ph-tool._run span { background: linear-gradient(90deg, #a5a9b6 0%, #a5a9b6 35%, #f2f3f7 50%, #a5a9b6 65%, #a5a9b6 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .ph-think, .ph-think-in { transition: none; }
-  .ph-think svg, .ph-think-text, .ph-tool, .ph-tool._run span { animation: none; }
+  .ph-think, .ph-think-in, .ph-bar-think, .ph-bar-think-in { transition: none; }
+  .ph-think svg, .ph-think-text, .ph-tool, .ph-tool._run span, .ph-bar-think svg { animation: none; }
 }
 .ph-codechip { display: inline-block; margin-top: 8px; font: 600 11px ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; color: #cdd6e0; background: #0f1216; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 6px; padding: 3px 7px; }
 .ph-quote { margin-top: 9px; border-left: 3px solid var(--ph-accent, #5fd08a); padding-left: 9px; font-size: 12.5px; line-height: 18px; color: #c9ccd4; }
@@ -2026,15 +2026,29 @@ body {
   --radius: 22px;
   --speed: 3.5s;
   position: relative;
-  height: 44px;
+  min-height: 44px; /* the ring grows when the demo's thought row opens inside it (2026-09-13) */
   border-radius: var(--radius);
   background: #1f1f1f;
-  padding: 0 8px 0 14px;
+  padding: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
   box-sizing: border-box;
 }
+/* the input row: what the ring was before the thought row moved in above it */
+.ph-ring-row { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 8px 0 14px; }
+/* the phone's popup thought row (user, 2026-09-13: "it isn't doing the popup
+   thinking like it is on pc"): the same grid track as the PC bar's, inside
+   the ring above the input row, opening with the first thought and folding
+   when the thinking is done; the content lifts and fades over the fold */
+.ph-bar-think { display: grid; grid-template-rows: 0fr; --fit-ms: 520ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); }
+.ph-bar-think._on { grid-template-rows: 1fr; }
+.ph-bar-think-body { min-height: 0; overflow: hidden; }
+.ph-bar-think-in { display: flex; align-items: center; gap: 7px; margin: 0 10px; padding: 10px 4px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; font-weight: 600; letter-spacing: -0.1px; color: #b4b4b4; opacity: 0; transform: translateY(-5px); transition: opacity calc(var(--fit-ms) * 0.85) ease, transform var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); }
+.ph-bar-think._on .ph-bar-think-in { opacity: 1; transform: none; }
+.ph-bar-think svg { width: 12px; height: 12px; flex-shrink: 0; stroke: #c3c3c3; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; animation: demo-spin 1s linear infinite; }
+.ph-bar-think .gt-think-text { font: inherit; }
+.ph-bar-think._live .gt-think-text { background: linear-gradient(90deg, #a9a9a9 0%, #a9a9a9 35%, #f0f0f0 50%, #a9a9a9 65%, #a9a9a9 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; }
 /* Superbot's rainbow variant: the PC bc-softwrap recipe — spinning conic
    border-box/padding-box border + two bloom layers. `from var(--angle)` must
    live here (the animating element), not in an inherited property — var()
@@ -2574,10 +2588,13 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
             <div class="ph-msgs"></div>
             <div class="ph-compose">
               <div class="ph-ring">
-                <span class="ph-cplus"><svg viewBox="0 0 15 15"><path d="M7.5 2.5v10M2.5 7.5h10"/></svg></span>
-                <input class="ph-cph" type="text" placeholder="Message superbot…" autocomplete="off" />
-                <span class="ph-cmic"><svg viewBox="0 0 12 12"><rect x="4.4" y="1.3" width="3.2" height="6" rx="1.6"/><path d="M2.8 5.8a3.2 3.2 0 0 0 6.4 0M6 9v1.7"/></svg></span>
-                <span class="ph-csend"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></span>
+                <!-- the demo prepends its thought row (.ph-bar-think) here, inside the ring, above the input row -->
+                <div class="ph-ring-row">
+                  <span class="ph-cplus"><svg viewBox="0 0 15 15"><path d="M7.5 2.5v10M2.5 7.5h10"/></svg></span>
+                  <input class="ph-cph" type="text" placeholder="Message superbot…" autocomplete="off" />
+                  <span class="ph-cmic"><svg viewBox="0 0 12 12"><rect x="4.4" y="1.3" width="3.2" height="6" rx="1.6"/><path d="M2.8 5.8a3.2 3.2 0 0 0 6.4 0M6 9v1.7"/></svg></span>
+                  <span class="ph-csend"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></span>
+                </div>
               </div>
             </div>
           </div>
@@ -5221,10 +5238,32 @@ document.querySelectorAll(".composer").forEach((c) => {
     line.appendChild(body);
     msgs.appendChild(line);
     msgs.scrollTop = msgs.scrollHeight;
+    // the popup thought row in the phone's composer ring: the PC's say()
+    // drives it event by event (open, swap out, reset, each char) so the two
+    // bars type in lockstep. It reuses the PC's .gt-think-text swap classes
+    // (_in / _out / _live sheen) on the text element.
+    const ring = chat.querySelector(".ph-ring");
+    const bar = add("div", "ph-bar-think demo-t");
+    const barBody = add("div", "ph-bar-think-body");
+    const barIn = add("div", "ph-bar-think-in");
+    barIn.innerHTML = '<svg viewBox="0 0 12 12"><path d="M10.4 6A4.4 4.4 0 1 1 6 1.6"/></svg>';
+    const barText = add("div", "gt-think-text");
+    barIn.appendChild(barText);
+    barBody.appendChild(barIn);
+    bar.appendChild(barBody);
+    bar.classList.add("_live"); // the sheen rides the row's text while it thinks
+    ring.prepend(bar);
     return {
       open() { requestAnimationFrame(() => requestAnimationFrame(() => { line.classList.add("_on"); msgs.scrollTop = msgs.scrollHeight; })); },
-      fold() { line.classList.remove("_on"); },
-      remove() { line.remove(); },
+      fold() { line.classList.remove("_on"); bar.classList.remove("_on"); },
+      remove() { line.remove(); bar.remove(); },
+      bar: {
+        open() { bar.classList.add("_on"); },
+        out() { barText.classList.add("_out"); },
+        reset() { barText.textContent = ""; barText.classList.add("_in"); barText.classList.remove("_out"); void barText.offsetHeight; barText.classList.remove("_in"); },
+        char(ch) { const c = add("span", "demo-ch"); c.textContent = ch; barText.appendChild(c); },
+        set(text) { barText.classList.remove("_out"); barText.textContent = text; },
+      },
     };
   };
   // superbot's tool calls, mirrored as compact lines: a row shimmers while
@@ -5700,15 +5739,18 @@ function chatScriptFor(title) {
         const my = ++sayGen;
         if (!row.classList.contains("_on")) { // first thought: the pill opens around the row now (user, 2026-09-12: "only pops up when it starts thinking")
           row.classList.add("_on"); // the pill grows to make room
+          if (ph) ph.bar.open(); // the phone's ring opens too
           await sleep(REDUCED_MOTION ? 0 : 450); // the open settles before the line types
           if (!alive(gen) || my !== sayGen) return;
         } else if (textEl.textContent) { // the previous line lifts and fades out first
           textEl.classList.add("_out");
+          if (ph) ph.bar.out();
           await sleep(REDUCED_MOTION ? 0 : 260);
           if (!alive(gen) || my !== sayGen) return;
         }
         textEl.textContent = "";
-        if (REDUCED_MOTION) { textEl.classList.remove("_out"); textEl.textContent = text; return; }
+        if (REDUCED_MOTION) { textEl.classList.remove("_out"); textEl.textContent = text; if (ph) ph.bar.set(text); return; }
+        if (ph) ph.bar.reset();
         // the new line starts a touch below (no transition), then eases up
         // into place as its first chars land
         textEl.classList.add("_in");
@@ -5720,6 +5762,7 @@ function chatScriptFor(title) {
           const c = add("span", "demo-ch");
           c.textContent = text[i];
           textEl.appendChild(c);
+          if (ph) ph.bar.char(text[i]); // the phone's row types the same char
           await sleep(CHAR_MS);
         }
       },
