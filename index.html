@@ -2050,12 +2050,15 @@ body {
 .ph-bar-think svg { width: 12px; height: 12px; flex-shrink: 0; stroke: #c3c3c3; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; animation: demo-spin 1s linear infinite; }
 /* the card on the phone (user, 2026-09-13: "it should have each element"):
    the same .gt-sbcard riser / plate / bloom / shine, scaled to the screen */
-.gt-sbcard._ph { width: 210px; margin-top: 0; }
-.gt-sbcard._ph::before { inset: -4px; border-radius: 22px; filter: blur(16px); }
-.gt-sbcard._ph .gt-sbcard-plate { padding: 14px 14px 12px; border-width: 3px; border-radius: 18px; }
-.gt-sbcard._ph .gt-sbcard-title { gap: 7px; font-size: 15px; letter-spacing: -0.3px; }
-.gt-sbcard._ph .gt-sbcard-title img { width: 20px; height: 20px; }
-.gt-sbcard._ph .gt-sbcard-btn { height: 32px; margin-top: 10px; font-size: 14px; }
+/* phone only (user, 2026-09-13): the card fills the message column and sits
+   a touch lower so it clears the reply's action row */
+.gt-sbcard._ph { width: auto; align-self: stretch; margin: 0 2px; }
+.ph-msgs > .gt-sbcard._ph { margin-top: 14px; }
+.gt-sbcard._ph::before { inset: -4px; border-radius: 24px; filter: blur(16px); }
+.gt-sbcard._ph .gt-sbcard-plate { padding: 16px 16px 14px; border-width: 3px; border-radius: 20px; }
+.gt-sbcard._ph .gt-sbcard-title { gap: 8px; font-size: 17px; letter-spacing: -0.3px; }
+.gt-sbcard._ph .gt-sbcard-title img { width: 23px; height: 23px; }
+.gt-sbcard._ph .gt-sbcard-btn { height: 36px; margin-top: 12px; font-size: 15px; }
 .ph-bar-think .gt-think-text { font: inherit; }
 .ph-bar-think._live .gt-think-text { background: linear-gradient(90deg, #a9a9a9 0%, #a9a9a9 35%, #f0f0f0 50%, #a9a9a9 65%, #a9a9a9 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; }
 /* Superbot's rainbow variant: the PC bc-softwrap recipe — spinning conic
