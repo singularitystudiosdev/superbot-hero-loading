@@ -2093,8 +2093,10 @@ body {
    the same thought, mirrored as ChatGPT's grey status line under the ask in
    the thread. It fades up in with the composer row, types the same chars in
    step, and settles once the thinking is done. */
-.gt-think-echo { align-self: flex-start; display: flex; align-items: center; gap: 8px; margin-top: 16px; min-height: 18px; max-width: 100%; font: 500 13px ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, sans-serif; letter-spacing: -0.1px; color: #9b9b9b; opacity: 0; transform: translateY(4px); transition: opacity 260ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1); }
-.gt-think-echo._on { opacity: 1; transform: none; }
+.gt-think-echo { align-self: stretch; display: grid; grid-template-rows: 0fr; opacity: 0; --fit-ms: 450ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity calc(var(--fit-ms) * 0.7) ease; } /* a grid track like the bar's row: it eases open, and folds shut once the thinking is done (user, 2026-09-12) */
+.gt-think-echo._on { grid-template-rows: 1fr; opacity: 1; }
+.gt-think-echo-body { min-height: 0; overflow: hidden; }
+.gt-think-echo-in { display: flex; align-items: center; gap: 8px; padding-top: 16px; min-height: 18px; max-width: 100%; font: 500 13px ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, sans-serif; letter-spacing: -0.1px; color: #9b9b9b; }
 .gt-think-echo svg { width: 13px; height: 13px; flex-shrink: 0; stroke: #b4b4b4; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .gt-think-echo._live svg { animation: demo-spin 1s linear infinite; }
 .gt-think-echo._live .gt-think-text { background: linear-gradient(90deg, #a9a9a9 0%, #a9a9a9 35%, #f0f0f0 50%, #a9a9a9 65%, #a9a9a9 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; }
@@ -5536,10 +5538,10 @@ function chatScriptFor(title) {
   // the thinking row: baked into the ChatGPT composer as its top row, inside
   // the pill. open() eases the row open (the pill grows to make room) and it
   // stays up; say(text) fades the current thought out and types the next in
-  // char by char; done() stops the sheen and the spinner, the last thought
-  // stays. The same thought is echoed as a status line under the ask in the
-  // thread (th) reads "Thinking" the whole time; only the bar carries the
-  // thoughts. Both open and settle in step.
+  // char by char; done() stops the sheen and the spinner, then folds both
+  // rows shut. The status line under the ask in the thread (th) reads
+  // "Thinking" the whole time; only the bar carries the thoughts. Both open
+  // and fold in step.
   function openThink(th, gen) {
     const composer = document.getElementById(P.chatgpt.root).querySelector(".gt-compose");
     const row = add("div", "gt-think demo-t _live");
@@ -5552,10 +5554,14 @@ function chatScriptFor(title) {
     row.appendChild(body);
     composer.prepend(row);
     const echo = add("div", "gt-think-echo demo-t _live");
-    echo.insertAdjacentHTML("beforeend", RING);
+    const echoBody = add("div", "gt-think-echo-body");
+    const echoIn = add("div", "gt-think-echo-in");
+    echoIn.insertAdjacentHTML("beforeend", RING);
     const echoText = add("div", "gt-think-text");
     echoText.textContent = ECHO; // the thread line says "Thinking" and only that
-    echo.appendChild(echoText);
+    echoIn.appendChild(echoText);
+    echoBody.appendChild(echoIn);
+    echo.appendChild(echoBody);
     th.appendChild(echo);
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
     return {
@@ -5588,9 +5594,20 @@ function chatScriptFor(title) {
           await sleep(CHAR_MS);
         }
       },
-      done() {
+      // done: the sheen and spinner stop, then both rows fold shut (the pill
+      // shrinks back to its plain shape, the thread line closes up); resolves
+      // once the fold has settled, and the folded nodes go
+      async done() {
         row.classList.remove("_live");
         echo.classList.remove("_live");
+        await sleep(REDUCED_MOTION ? 0 : 220); // a beat at rest before the fold
+        if (!alive(gen)) return;
+        row.classList.remove("_on");
+        echo.classList.remove("_on");
+        await sleep(REDUCED_MOTION ? 0 : 450);
+        if (!alive(gen)) return;
+        row.remove();
+        echo.remove();
       },
     };
   }
@@ -5678,7 +5695,8 @@ function chatScriptFor(title) {
     await sleep(1200); if (!alive(gen)) return;
     await think.say(THOUGHTS[1]); if (!alive(gen)) return;
     await sleep(900); if (!alive(gen)) return;
-    think.done();
+    await think.done(); if (!alive(gen)) return; // both rows fold shut before the reply types
+    await sleep(120); if (!alive(gen)) return;
     await reply(th, REFUSAL, gen); if (!alive(gen)) return;
     await sleep(500); if (!alive(gen)) return;
     showCard(th, gen);
