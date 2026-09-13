@@ -2047,6 +2047,14 @@ body {
 .ph-bar-think-in { display: flex; align-items: center; gap: 7px; margin: 0 10px; padding: 10px 4px 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px; font-weight: 600; letter-spacing: -0.1px; color: #b4b4b4; opacity: 0; transform: translateY(-5px); transition: opacity calc(var(--fit-ms) * 0.85) ease, transform var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); }
 .ph-bar-think._on .ph-bar-think-in { opacity: 1; transform: none; }
 .ph-bar-think svg { width: 12px; height: 12px; flex-shrink: 0; stroke: #c3c3c3; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; animation: demo-spin 1s linear infinite; }
+/* the card on the phone (user, 2026-09-13: "it should have each element"):
+   the same .gt-sbcard riser / plate / bloom / shine, scaled to the screen */
+.gt-sbcard._ph { width: 210px; margin-top: 0; }
+.gt-sbcard._ph::before { inset: -4px; border-radius: 22px; filter: blur(16px); }
+.gt-sbcard._ph .gt-sbcard-plate { padding: 14px 14px 12px; border-width: 3px; border-radius: 18px; }
+.gt-sbcard._ph .gt-sbcard-title { gap: 7px; font-size: 15px; letter-spacing: -0.3px; }
+.gt-sbcard._ph .gt-sbcard-title img { width: 20px; height: 20px; }
+.gt-sbcard._ph .gt-sbcard-btn { height: 32px; margin-top: 10px; font-size: 14px; }
 .ph-bar-think .gt-think-text { font: inherit; }
 .ph-bar-think._live .gt-think-text { background: linear-gradient(90deg, #a9a9a9 0%, #a9a9a9 35%, #f0f0f0 50%, #a9a9a9 65%, #a9a9a9 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; }
 /* Superbot's rainbow variant: the PC bc-softwrap recipe — spinning conic
@@ -5268,6 +5276,25 @@ document.querySelectorAll(".composer").forEach((c) => {
   };
   // superbot's tool calls, mirrored as compact lines: a row shimmers while
   // its call runs and settles dim on the result (plain text, no bold)
+  // any thread element the demo builds for the PC, mounted on the phone too
+  // (the card); returns the node so the demo can drive it
+  window.phTourMount = function (el) {
+    const msgs = chat.querySelector(".ph-msgs");
+    msgs.appendChild(el);
+    msgs.scrollTop = msgs.scrollHeight;
+    return el;
+  };
+  // a reply typed on the PC char by char lands the same way here: the PC's
+  // loop feeds each char, done() normalises and adds the action row
+  window.phTourTyped = function () {
+    const msgs = chat.querySelector(".ph-msgs");
+    const el = add("div", "ph-replytxt demo-t");
+    msgs.appendChild(el);
+    return {
+      char(ch) { const c = add("span", "demo-ch"); c.textContent = ch; el.appendChild(c); msgs.scrollTop = msgs.scrollHeight; },
+      done(text) { el.textContent = text; const act = add("div", "ph-actrow demo-t"); act.innerHTML = PH_ACT; msgs.appendChild(act); msgs.scrollTop = msgs.scrollHeight; },
+    };
+  };
   window.phTourTools = function () {
     const msgs = chat.querySelector(".ph-msgs");
     const list = add("div", "ph-tools demo-t");
@@ -5277,11 +5304,18 @@ document.querySelectorAll(".composer").forEach((c) => {
         const row = add("div", "ph-tool _run");
         row.innerHTML = iconHtml;
         const s = add("span");
-        s.textContent = running.replace(/\*\*/g, "");
         row.appendChild(s);
         list.appendChild(row);
         msgs.scrollTop = msgs.scrollHeight;
-        return { settle(result) { row.classList.remove("_run"); s.textContent = result.replace(/\*\*/g, ""); msgs.scrollTop = msgs.scrollHeight; } };
+        // the PC's typeRich feeds the same chars here, so the label types in
+        // with the same fade (user, 2026-09-13: "the text on mobile isn't
+        // doing a fluid animation like pc"); set() normalises once typed
+        return {
+          clear() { s.textContent = ""; },
+          char(ch) { const c = add("span", "bc-fade-chunk"); c.textContent = ch; s.appendChild(c); },
+          set(text) { s.textContent = text.replace(/\*\*/g, ""); msgs.scrollTop = msgs.scrollHeight; },
+          settle() { row.classList.remove("_run"); },
+        };
       },
     };
   };
@@ -5757,12 +5791,13 @@ function chatScriptFor(title) {
         textEl.classList.remove("_out");
         void textEl.offsetHeight;
         textEl.classList.remove("_in");
-        for (let i = 0; i < text.length; i++) {
+        const chars = Array.from(text); // code points, so an emoji never splits into two half-spans
+        for (let i = 0; i < chars.length; i++) {
           if (!alive(gen) || my !== sayGen) return;
           const c = add("span", "demo-ch");
-          c.textContent = text[i];
+          c.textContent = chars[i];
           textEl.appendChild(c);
-          if (ph) ph.bar.char(text[i]); // the phone's row types the same char
+          if (ph) ph.bar.char(chars[i]); // the phone's row types the same char
           await sleep(CHAR_MS);
         }
       },
@@ -5799,17 +5834,21 @@ function chatScriptFor(title) {
     const t = add("div", p.rtxt);
     wrap.appendChild(t);
     th.appendChild(wrap);
-    if (window.phTourReply) window.phTourReply(text, 0); // the phone lands the same refusal, its ChatGPT way
-    if (REDUCED_MOTION) { t.textContent = text; await sleep(250); return; }
-    for (let i = 0; i < text.length; i++) {
+    const ph = window.phTourTyped ? window.phTourTyped() : null; // the phone types the same refusal in step
+    if (REDUCED_MOTION) { t.textContent = text; if (ph) ph.done(text); await sleep(250); return; }
+    const chars = Array.from(text); // code points, never half an emoji
+    for (let i = 0; i < chars.length; i++) {
       if (!alive(gen)) return;
       const c = add("span", "demo-ch");
-      c.textContent = text[i];
+      c.textContent = chars[i];
       t.appendChild(c);
+      if (ph) ph.char(chars[i]);
       await sleep(REPLY_CHAR_MS);
     }
     await sleep(420); // the last char's fade finishes before the card rises
-    if (alive(gen)) t.textContent = text; // normalised to plain text once typed
+    if (!alive(gen)) return;
+    t.textContent = text; // normalised to plain text once typed
+    if (ph) ph.done(text);
   }
 
   // ---- the superbot leg -----------------------------------------------------
@@ -5830,20 +5869,23 @@ function chatScriptFor(title) {
 
   // the typewriter fade for a label: each char lands as a fading span (inside
   // a <b> when the run is bold); the finished text is normalized to plain nodes
-  function typeRich(el, text, ms) {
+  // mirror (optional): a phone row with clear / char / set, fed the same chars
+  function typeRich(el, text, ms, mirror) {
     return new Promise((resolve) => {
       const runs = text.split(/(\*\*.+?\*\*)/g).filter(Boolean).map((part) =>
-        part.startsWith("**") && part.endsWith("**") ? { bold: true, text: part.slice(2, -2) } : { bold: false, text: part });
+        part.startsWith("**") && part.endsWith("**") ? { bold: true, text: Array.from(part.slice(2, -2)) } : { bold: false, text: Array.from(part) }); // code points, never half an emoji
       el.textContent = "";
-      if (REDUCED_MOTION) { richInto(el, text); resolve(); return; }
+      if (mirror) mirror.clear();
+      if (REDUCED_MOTION) { richInto(el, text); if (mirror) mirror.set(text); resolve(); return; }
       let r = 0, i = 0, holder = null;
       const tick = () => {
-        if (r >= runs.length) { richInto(el, text); resolve(); return; }
+        if (r >= runs.length) { richInto(el, text); if (mirror) mirror.set(text); resolve(); return; }
         const run = runs[r];
         if (i === 0) { holder = run.bold ? add("b") : el; if (run.bold) el.appendChild(holder); }
         const s = add("span", "bc-fade-chunk");
         s.textContent = run.text[i];
         holder.appendChild(s);
+        if (mirror) mirror.char(run.text[i]);
         i++;
         if (i >= run.text.length) { r++; i = 0; }
         setTimeout(tick, T(ms));
@@ -5872,12 +5914,12 @@ function chatScriptFor(title) {
       const phRow = phTools ? phTools.step(ICON[icon], running) : null;
       const t0 = performance.now();
       if (thought) setTimeout(() => { if (alive(gen)) tab.say(thought); }, T(260 + Math.random() * 500));
-      await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
+      await typeRich(l, running, LABEL_MS, phRow); if (!alive(gen)) return;
       await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0) * (KIT.speed || 1))); if (!alive(gen)) return;
       row.classList.remove("_run");
       row.classList.add("_done");
-      if (phRow) phRow.settle(result);
-      await typeRich(l, result, LABEL_MS); if (!alive(gen)) return;
+      if (phRow) phRow.settle();
+      await typeRich(l, result, LABEL_MS, phRow); if (!alive(gen)) return;
       await sleep(REDUCED_MOTION ? 60 : 180);
       follow(th);
     }
@@ -5902,10 +5944,10 @@ function chatScriptFor(title) {
 
   // the demo's own tap on the card's chat button: it presses, releases, and
   // superbot docks (the phone follows)
-  async function pressChat(btn, gen) {
-    btn.classList.add("_press");
+  async function pressChat(btns, gen) { // the PC's button and the phone's, pressed together
+    btns.forEach((b) => b.classList.add("_press"));
     await sleep(REDUCED_MOTION ? 0 : 150); if (!alive(gen)) return;
-    btn.classList.remove("_press");
+    btns.forEach((b) => b.classList.remove("_press"));
     await sleep(REDUCED_MOTION ? 0 : 200); if (!alive(gen)) return;
     dockUi(-1, gen);
     if (window.syncFromRail) window.syncFromRail(-1);
@@ -5914,8 +5956,8 @@ function chatScriptFor(title) {
   // the card: the cat mark, "superbot can do it!", a chat button, in the
   // rainbow frame; it rises in on its own transition once it has painted at
   // rest. chat hands the ask over: superbot docks and the phone follows.
-  function showCard(th, gen) {
-    const card = add("div", "gt-sbcard demo-t"); // the riser; the bloom is its ::before
+  function buildCard(extraClass) {
+    const card = add("div", "gt-sbcard demo-t" + (extraClass ? " " + extraClass : "")); // the riser; the bloom is its ::before
     const plate = add("div", "gt-sbcard-plate"); // the framed plate; the shine is its ::after
     const title = add("div", "gt-sbcard-title");
     const img = add("img");
@@ -5934,9 +5976,20 @@ function chatScriptFor(title) {
     });
     plate.append(title, btn);
     card.appendChild(plate);
-    th.appendChild(card);
-    requestAnimationFrame(() => requestAnimationFrame(() => { if (alive(gen)) card.classList.add("_on"); }));
-    return btn; // the demo taps it once the card has landed
+    return { card, btn };
+  }
+  // the card on the PC and, scaled, on the phone; both rise together
+  function showCard(th, gen) {
+    const pc = buildCard();
+    th.appendChild(pc.card);
+    const ph = window.phTourMount ? buildCard("_ph") : null;
+    if (ph) window.phTourMount(ph.card);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!alive(gen)) return;
+      pc.card.classList.add("_on");
+      if (ph) ph.card.classList.add("_on");
+    }));
+    return ph ? [pc.btn, ph.btn] : [pc.btn]; // the demo taps them once the card has landed
   }
 
   // replay hygiene: every node and store entry the demo owns goes away so a
@@ -5981,12 +6034,12 @@ function chatScriptFor(title) {
     await sleep(120); if (!alive(gen)) return;
     await reply(th, REFUSAL, gen); if (!alive(gen)) return;
     await sleep(500); if (!alive(gen)) return;
-    const btn = showCard(th, gen);
+    const btns = showCard(th, gen);
     // the superbot leg: the card is read, chat is tapped, superbot docks and
     // does the order for real: the ask, the thinking row, the tool calls,
     // and the reply that it is ordered
     await sleep(1900); if (!alive(gen)) return; // the rise, the shine, a beat to read the card
-    await pressChat(btn, gen); if (!alive(gen)) return;
+    await pressChat(btns, gen); if (!alive(gen)) return;
     await sleep(700); if (!alive(gen)) return;
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
