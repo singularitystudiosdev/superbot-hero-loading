@@ -5565,15 +5565,18 @@ function chatScriptFor(title) {
     th.appendChild(echo);
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
     return {
-      async open() {
+      async open() { // the thread line only; the bar's row waits for its first thought
         await sleep(30); // painted closed first, so the open is a transition
-        row.classList.add("_on"); // the pill grows to make room
-        echo.classList.add("_on"); // the thread line fades up with it
-        await sleep(REDUCED_MOTION ? 0 : 450); // the open settles before the first line types
+        echo.classList.add("_on"); // the thread line fades up
+        await sleep(REDUCED_MOTION ? 0 : 450); // the open settles
       },
       async say(text) { // the bar only
         const my = ++sayGen;
-        if (textEl.textContent) { // the previous line lifts and fades out first
+        if (!row.classList.contains("_on")) { // first thought: the pill opens around the row now (user, 2026-09-12: "only pops up when it starts thinking")
+          row.classList.add("_on"); // the pill grows to make room
+          await sleep(REDUCED_MOTION ? 0 : 450); // the open settles before the line types
+          if (!alive(gen) || my !== sayGen) return;
+        } else if (textEl.textContent) { // the previous line lifts and fades out first
           textEl.classList.add("_out");
           await sleep(REDUCED_MOTION ? 0 : 260);
           if (!alive(gen) || my !== sayGen) return;
@@ -5689,8 +5692,8 @@ function chatScriptFor(title) {
     const th = demoSend(P.chatgpt, ASK);
     await sleep(420); if (!alive(gen)) return; // the line wakes a beat after the send, not with it
     const think = openThink(th, gen);
-    await think.open(); if (!alive(gen)) return; // the thread line reads "Thinking" from here
-    await sleep(700); if (!alive(gen)) return; // a beat of plain thinking before the bar speaks
+    await think.open(); if (!alive(gen)) return; // the thread line reads "Thinking" from here; the bar is still a plain pill
+    await sleep(700); if (!alive(gen)) return; // a beat of plain thinking before the bar opens with its first thought
     await think.say(THOUGHTS[0]); if (!alive(gen)) return;
     await sleep(1200); if (!alive(gen)) return;
     await think.say(THOUGHTS[1]); if (!alive(gen)) return;
