@@ -5468,7 +5468,8 @@ function chatScriptFor(title) {
 // every node it stamped .demo-t.
 (function () {
   const ASK = "Order me a burger";
-  const THOUGHTS = ["Thinking", "Unable to order burger", "Redirecting to superbot"];
+  const ECHO = "Thinking"; // the thread line under the ask says only this (user, 2026-09-12)
+  const THOUGHTS = ["Unable to order burger", "Redirecting to superbot"]; // the bar's thoughts; it never says "Thinking"
   const REFUSAL = "I can’t complete the checkout or charge a payment method from this chat because there isn’t an active food-ordering connection.";
   const CARD_TITLE = "superbot can do it!";
   const CARD_BUTTON = "chat";
@@ -5527,7 +5528,8 @@ function chatScriptFor(title) {
   // stays up; say(text) fades the current thought out and types the next in
   // char by char; done() stops the sheen and the spinner, the last thought
   // stays. The same thought is echoed as a status line under the ask in the
-  // thread (th): both lines open, type and settle in step.
+  // thread (th) reads "Thinking" the whole time; only the bar carries the
+  // thoughts. Both open and settle in step.
   function openThink(th, gen) {
     const composer = document.getElementById(P.chatgpt.root).querySelector(".gt-compose");
     const row = add("div", "gt-think demo-t _live");
@@ -5542,9 +5544,9 @@ function chatScriptFor(title) {
     const echo = add("div", "gt-think-echo demo-t _live");
     echo.insertAdjacentHTML("beforeend", RING);
     const echoText = add("div", "gt-think-text");
+    echoText.textContent = ECHO; // the thread line says "Thinking" and only that
     echo.appendChild(echoText);
     th.appendChild(echo);
-    const texts = [textEl, echoText];
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
     return {
       async open() {
@@ -5553,27 +5555,26 @@ function chatScriptFor(title) {
         echo.classList.add("_on"); // the thread line fades up with it
         await sleep(REDUCED_MOTION ? 0 : 450); // the open settles before the first line types
       },
-      async say(text) {
+      async say(text) { // the bar only
         const my = ++sayGen;
         if (textEl.textContent) { // the previous line lifts and fades out first
-          texts.forEach((t) => t.classList.add("_out"));
+          textEl.classList.add("_out");
           await sleep(REDUCED_MOTION ? 0 : 260);
           if (!alive(gen) || my !== sayGen) return;
         }
-        texts.forEach((t) => { t.textContent = ""; });
-        if (REDUCED_MOTION) { texts.forEach((t) => { t.classList.remove("_out"); t.textContent = text; }); return; }
+        textEl.textContent = "";
+        if (REDUCED_MOTION) { textEl.classList.remove("_out"); textEl.textContent = text; return; }
         // the new line starts a touch below (no transition), then eases up
         // into place as its first chars land
-        texts.forEach((t) => { t.classList.add("_in"); t.classList.remove("_out"); });
+        textEl.classList.add("_in");
+        textEl.classList.remove("_out");
         void textEl.offsetHeight;
-        texts.forEach((t) => t.classList.remove("_in"));
+        textEl.classList.remove("_in");
         for (let i = 0; i < text.length; i++) {
           if (!alive(gen) || my !== sayGen) return;
-          texts.forEach((t) => {
-            const c = add("span", "demo-ch");
-            c.textContent = text[i];
-            t.appendChild(c);
-          });
+          const c = add("span", "demo-ch");
+          c.textContent = text[i];
+          textEl.appendChild(c);
           await sleep(CHAR_MS);
         }
       },
@@ -5649,12 +5650,11 @@ function chatScriptFor(title) {
     const th = demoSend(P.chatgpt, ASK);
     await sleep(420); if (!alive(gen)) return; // the line wakes a beat after the send, not with it
     const think = openThink(th, gen);
-    await think.open(); if (!alive(gen)) return;
+    await think.open(); if (!alive(gen)) return; // the thread line reads "Thinking" from here
+    await sleep(700); if (!alive(gen)) return; // a beat of plain thinking before the bar speaks
     await think.say(THOUGHTS[0]); if (!alive(gen)) return;
-    await sleep(1100); if (!alive(gen)) return;
-    await think.say(THOUGHTS[1]); if (!alive(gen)) return;
     await sleep(1200); if (!alive(gen)) return;
-    await think.say(THOUGHTS[2]); if (!alive(gen)) return;
+    await think.say(THOUGHTS[1]); if (!alive(gen)) return;
     await sleep(900); if (!alive(gen)) return;
     think.done();
     await reply(th, REFUSAL); if (!alive(gen)) return;
