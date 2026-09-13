@@ -1985,6 +1985,25 @@ body {
 .ph-when { font-size: 10.5px; color: #8b8f99; }
 .ph-thought { margin-top: 18px; font-size: 12px; color: #8b8f99; }
 .ph-thought span { font-weight: 600; color: #b9bdc6; }
+/* the demo's mirror on the phone (user, 2026-09-13: "make mobile sync too"):
+   the Thinking line under the ask (a grid track that folds like the PC's),
+   and superbot's tool calls as compact lines */
+.ph-think { display: grid; grid-template-rows: 0fr; --fit-ms: 520ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); }
+.ph-think._on { grid-template-rows: 1fr; }
+.ph-think-body { min-height: 0; overflow: hidden; }
+.ph-think-in { display: flex; align-items: center; gap: 6px; padding-top: 14px; font-size: 12px; font-weight: 500; color: #9b9b9b; opacity: 0; transform: translateY(-5px); transition: opacity calc(var(--fit-ms) * 0.85) ease, transform var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); }
+.ph-think._on .ph-think-in { opacity: 1; transform: none; }
+.ph-think svg { width: 11px; height: 11px; flex-shrink: 0; stroke: #b4b4b4; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; animation: demo-spin 1s linear infinite; }
+.ph-think-text { background: linear-gradient(90deg, #a9a9a9 0%, #a9a9a9 35%, #f0f0f0 50%, #a9a9a9 65%, #a9a9a9 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; }
+.ph-tools { display: flex; flex-direction: column; gap: 7px; font-size: 11px; font-weight: 500; letter-spacing: -0.1px; }
+.ph-tool { display: flex; align-items: center; gap: 6px; color: #8b90a0; animation: demo-in 0.2s ease-out; transition: color 300ms ease; }
+.ph-tool svg { width: 10px; height: 10px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+.ph-tool._run { color: #c9ccd4; }
+.ph-tool._run span { background: linear-gradient(90deg, #a5a9b6 0%, #a5a9b6 35%, #f2f3f7 50%, #a5a9b6 65%, #a5a9b6 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .ph-think, .ph-think-in { transition: none; }
+  .ph-think svg, .ph-think-text, .ph-tool, .ph-tool._run span { animation: none; }
+}
 .ph-codechip { display: inline-block; margin-top: 8px; font: 600 11px ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; color: #cdd6e0; background: #0f1216; border: 1px solid rgba(255, 255, 255, 0.09); border-radius: 6px; padding: 3px 7px; }
 .ph-quote { margin-top: 9px; border-left: 3px solid var(--ph-accent, #5fd08a); padding-left: 9px; font-size: 12.5px; line-height: 18px; color: #c9ccd4; }
 .ph-status { display: flex; align-items: center; gap: 6px; margin-top: 18px; font-size: 11px; color: #9b9b9b; }
@@ -5178,14 +5197,54 @@ document.querySelectorAll(".composer").forEach((c) => {
   // tour → phone: the scripted demo mirrors its beats onto the phone so the
   // two surfaces stay in lockstep — a send switches the phone to Superbot and
   // shows the same user bubble, a reply streams the same text
-  window.phTourSend = function () {
+  window.phTourSend = function (appName) {
     // applyApp → renderPhThread re-renders the PC's threadStore, which
     // already holds this send — appending here would duplicate it
     syncEcho = true;
-    applyApp(PH_APPS.findIndex((a) => a.name === "Superbot"));
+    applyApp(Math.max(0, PH_APPS.findIndex((a) => a.name === (appName || "Superbot"))));
     syncEcho = false;
     const msgs = chat.querySelector(".ph-msgs");
     msgs.scrollTop = msgs.scrollHeight;
+  };
+  // the Thinking line under the ask, mirrored: opens with the PC's, folds
+  // with it (user, 2026-09-13: "make mobile sync too")
+  window.phTourThink = function () {
+    const msgs = chat.querySelector(".ph-msgs");
+    const line = add("div", "ph-think demo-t");
+    const body = add("div", "ph-think-body");
+    const inner = add("div", "ph-think-in");
+    inner.innerHTML = '<svg viewBox="0 0 12 12"><path d="M10.4 6A4.4 4.4 0 1 1 6 1.6"/></svg>';
+    const t = add("span", "ph-think-text");
+    t.textContent = "Thinking";
+    inner.appendChild(t);
+    body.appendChild(inner);
+    line.appendChild(body);
+    msgs.appendChild(line);
+    msgs.scrollTop = msgs.scrollHeight;
+    return {
+      open() { requestAnimationFrame(() => requestAnimationFrame(() => { line.classList.add("_on"); msgs.scrollTop = msgs.scrollHeight; })); },
+      fold() { line.classList.remove("_on"); },
+      remove() { line.remove(); },
+    };
+  };
+  // superbot's tool calls, mirrored as compact lines: a row shimmers while
+  // its call runs and settles dim on the result (plain text, no bold)
+  window.phTourTools = function () {
+    const msgs = chat.querySelector(".ph-msgs");
+    const list = add("div", "ph-tools demo-t");
+    msgs.appendChild(list);
+    return {
+      step(iconHtml, running) {
+        const row = add("div", "ph-tool _run");
+        row.innerHTML = iconHtml;
+        const s = add("span");
+        s.textContent = running.replace(/\*\*/g, "");
+        row.appendChild(s);
+        list.appendChild(row);
+        msgs.scrollTop = msgs.scrollHeight;
+        return { settle(result) { row.classList.remove("_run"); s.textContent = result.replace(/\*\*/g, ""); msgs.scrollTop = msgs.scrollHeight; } };
+      },
+    };
   };
   window.phTourReply = function (text, ttft) {
     const msgs = chat.querySelector(".ph-msgs");
@@ -5600,9 +5659,16 @@ function chatScriptFor(title) {
   // char by char; done() stops the sheen and the spinner, then folds both
   // rows shut. The status line under the ask in the thread (th) reads
   // "Thinking" the whole time; only the bar carries the thoughts. Both open
-  // and fold in step.
-  function openThink(th, gen) {
-    const composer = document.getElementById(P.chatgpt.root).querySelector(".gt-compose");
+  // and fold in step. One pattern for both panels (user, 2026-09-13: "just
+  // shows thinking in the same way as the chat gpt"): p picks the composer
+  // (ChatGPT's pill or superbot's ring, which stays lit while it carries the
+  // row). The phone mirrors the Thinking line.
+  function openThink(p, th, gen) {
+    const root = document.getElementById(p.root);
+    const composer = root.querySelector(p.key === "chatgpt" ? ".gt-compose" : ".composer");
+    const wrap = p.key === "gg" ? root.querySelector(".bc-softwrap") : null;
+    if (wrap) wrap.classList.add("_awake");
+    const ph = window.phTourThink ? window.phTourThink() : null;
     const row = add("div", "gt-think demo-t _live");
     const body = add("div", "gt-think-body");
     const inner = add("div", "gt-think-in");
@@ -5627,6 +5693,7 @@ function chatScriptFor(title) {
       async open() { // the thread line only; the bar's row waits for its first thought
         await sleep(30); // painted closed first, so the open is a transition
         echo.classList.add("_on"); // the thread line fades up
+        if (ph) ph.open(); // …and on the phone
         await sleep(REDUCED_MOTION ? 0 : 450); // the open settles
       },
       async say(text) { // the bar only
@@ -5666,10 +5733,13 @@ function chatScriptFor(title) {
         if (!alive(gen)) return;
         row.classList.remove("_on");
         echo.classList.remove("_on");
+        if (ph) ph.fold();
         await sleep(REDUCED_MOTION ? 0 : 560); // the 520ms fold settles
         if (!alive(gen)) return;
         row.remove();
         echo.remove();
+        if (ph) ph.remove();
+        if (wrap) wrap.classList.remove("_awake");
       },
     };
   }
@@ -5686,6 +5756,7 @@ function chatScriptFor(title) {
     const t = add("div", p.rtxt);
     wrap.appendChild(t);
     th.appendChild(wrap);
+    if (window.phTourReply) window.phTourReply(text, 0); // the phone lands the same refusal, its ChatGPT way
     if (REDUCED_MOTION) { t.textContent = text; await sleep(250); return; }
     for (let i = 0; i < text.length; i++) {
       if (!alive(gen)) return;
@@ -5745,6 +5816,7 @@ function chatScriptFor(title) {
     const list = add("div", "demo-tools bc-app demo-t");
     th.appendChild(list);
     follow(th);
+    const phTools = window.phTourTools ? window.phTourTools() : null; // the phone mirrors the calls
     for (let i = 0; i < steps.length; i++) {
       const [icon, running, result, thought] = steps[i];
       if (!alive(gen)) return;
@@ -5754,72 +5826,18 @@ function chatScriptFor(title) {
       row.appendChild(l);
       list.appendChild(row);
       follow(th);
+      const phRow = phTools ? phTools.step(ICON[icon], running) : null;
       const t0 = performance.now();
       if (thought) setTimeout(() => { if (alive(gen)) tab.say(thought); }, T(260 + Math.random() * 500));
       await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
       await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0) * (KIT.speed || 1))); if (!alive(gen)) return;
       row.classList.remove("_run");
       row.classList.add("_done");
+      if (phRow) phRow.settle(result);
       await typeRich(l, result, LABEL_MS); if (!alive(gen)) return;
       await sleep(REDUCED_MOTION ? 60 : 180);
       follow(th);
     }
-  }
-
-  // superbot's thinking row: the same .gt-think track, prepended inside the
-  // composer's rainbow ring; the ring stays lit (._awake) while it carries it
-  function openSbThink(gen) {
-    const main = document.getElementById(P.gg.root);
-    const composer = main.querySelector(".composer");
-    const wrap = main.querySelector(".bc-softwrap");
-    const row = add("div", "gt-think demo-t _live");
-    const body = add("div", "gt-think-body");
-    const inner = add("div", "gt-think-in");
-    inner.insertAdjacentHTML("beforeend", RING);
-    const textEl = add("div", "gt-think-text");
-    inner.appendChild(textEl);
-    body.appendChild(inner);
-    row.appendChild(body);
-    composer.prepend(row);
-    if (wrap) wrap.classList.add("_awake");
-    let sayGen = 0;
-    return {
-      async open() {
-        await sleep(30);
-        row.classList.add("_on");
-        await sleep(REDUCED_MOTION ? 0 : 520);
-      },
-      async say(text) {
-        const my = ++sayGen;
-        if (textEl.textContent) {
-          textEl.classList.add("_out");
-          await sleep(REDUCED_MOTION ? 0 : 260);
-          if (!alive(gen) || my !== sayGen) return;
-        }
-        textEl.textContent = "";
-        if (REDUCED_MOTION) { textEl.classList.remove("_out"); textEl.textContent = text; return; }
-        textEl.classList.add("_in");
-        textEl.classList.remove("_out");
-        void textEl.offsetHeight;
-        textEl.classList.remove("_in");
-        for (let i = 0; i < text.length; i++) {
-          if (!alive(gen) || my !== sayGen) return;
-          const c = add("span", "demo-ch");
-          c.textContent = text[i];
-          textEl.appendChild(c);
-          await sleep(CHAR_MS);
-        }
-      },
-      async done() { // the ring keeps running into the fold, as on the ChatGPT side
-        await sleep(REDUCED_MOTION ? 0 : 160);
-        if (!alive(gen)) return;
-        row.classList.remove("_on");
-        await sleep(REDUCED_MOTION ? 0 : 560);
-        if (!alive(gen)) return;
-        row.remove();
-        if (wrap) wrap.classList.remove("_awake");
-      },
-    };
   }
 
   // superbot's reply: the panel's own reply block, typed with its char fade
@@ -5907,8 +5925,9 @@ function chatScriptFor(title) {
     await demoType(P.chatgpt, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.chatgpt, ASK);
+    if (window.phTourSend) window.phTourSend("ChatGPT"); // the phone mirrors the send
     await sleep(420); if (!alive(gen)) return; // the line wakes a beat after the send, not with it
-    const think = openThink(th, gen);
+    const think = openThink(P.chatgpt, th, gen);
     await think.open(); if (!alive(gen)) return; // the thread line reads "Thinking" from here; the bar is still a plain pill
     await sleep(700); if (!alive(gen)) return; // a beat of plain thinking before the bar opens with its first thought
     await think.say(THOUGHTS[0]); if (!alive(gen)) return;
@@ -5929,12 +5948,13 @@ function chatScriptFor(title) {
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th2 = demoSend(P.gg, ASK);
-    if (window.phTourSend) window.phTourSend(ASK); // the phone mirrors the send
+    if (window.phTourSend) window.phTourSend("Superbot"); // the phone mirrors the send
     await sleep(420); if (!alive(gen)) return;
-    const sb = openSbThink(gen);
+    const sb = openThink(P.gg, th2, gen); // the same pattern as ChatGPT's: the thread line says Thinking, the ring opens with the first thought
     await sb.open(); if (!alive(gen)) return;
-    await sb.say(SB_OPEN); if (!alive(gen)) return;
     await sleep(700); if (!alive(gen)) return;
+    await sb.say(SB_OPEN); if (!alive(gen)) return;
+    await sleep(600); if (!alive(gen)) return;
     await runTools(th2, sb, gen, SB_STEPS); if (!alive(gen)) return;
     await sleep(240); if (!alive(gen)) return;
     await sb.done(); if (!alive(gen)) return;
