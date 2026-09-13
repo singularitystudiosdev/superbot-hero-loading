@@ -800,19 +800,20 @@ body {
   margin-bottom: 18px;
   width: 560px;
   max-width: calc(100% - 48px);
-  height: 52px;
+  min-height: 52px; /* the pill grows when the thinking row opens inside it (2026-09-12) */
   background: #212121;
   border: none;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-  border-radius: 999px;
-  padding: 0 14px 0 10px;
+  border-radius: 26px; /* a full pill at its 52px rest height, rounded once it grows */
+  padding: 0;
   box-sizing: border-box;
   display: flex;
-  align-items: center;
-  gap: 20px;
+  flex-direction: column;
   text-align: left;
   flex-shrink: 0;
 }
+/* the input row: what the pill was before the thinking row moved in above it */
+.gt-compose-row { display: flex; align-items: center; gap: 20px; height: 52px; padding: 0 14px 0 10px; }
 .gt-plus { color: #d4d4d4; display: inline-flex; }
 .gt-plus .gt-ic { width: 20px; height: 20px; }
 .gt-cph { color: #ececec; font-size: 16px; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -2070,15 +2071,20 @@ body {
    burger") and hands off ("Redirecting to superbot"), the refusal lands, and
    a framed "superbot can do it!" card with a chat button rises into the
    thread. body.tour-lock swallows pointer input while the demo plays. */
-/* the thinking line: ChatGPT's grey status line under the ask, a spinning
-   ring glyph and a one-line thought that types in char by char under a
-   silver sheen while live; each new thought swaps in (the old one lifts,
-   blurs and fades out, the new one settles up from just below) */
-.gt-think { align-self: flex-start; display: flex; align-items: center; gap: 8px; margin-top: 16px; min-height: 18px; max-width: 100%; font: 500 13px ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, sans-serif; letter-spacing: -0.1px; color: #9b9b9b; opacity: 0; transform: translateY(4px); transition: opacity 260ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1); }
-.gt-think._on { opacity: 1; transform: none; }
-.gt-think svg { width: 13px; height: 13px; flex-shrink: 0; stroke: #b4b4b4; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+/* the thinking row, overhead in the composer (user, 2026-09-12: "like it was
+   before in superbot"): .gt-think is the FIRST row of the ChatGPT pill, above
+   the input row. It is a grid track that eases 0fr → 1fr (--fit-ms), so the
+   whole pill grows to make room. Inside: a spinning ring glyph and a one-line
+   thought that types in char by char under a silver sheen while live; each
+   new thought swaps in (the old one lifts, blurs and fades out, the new one
+   settles up from just below). */
+.gt-think { display: grid; grid-template-rows: 0fr; opacity: 0; --fit-ms: 450ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.22, 1, 0.36, 1), opacity calc(var(--fit-ms) * 0.7) ease; user-select: none; }
+.gt-think._on { grid-template-rows: 1fr; opacity: 1; }
+.gt-think-body { min-height: 0; overflow: hidden; }
+.gt-think-in { display: flex; align-items: center; gap: 9px; margin: 0 12px; padding: 12px 6px 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 13px ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, sans-serif; letter-spacing: -0.1px; color: #b4b4b4; }
+.gt-think svg { width: 14px; height: 14px; flex-shrink: 0; stroke: #c3c3c3; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .gt-think._live svg { animation: demo-spin 1s linear infinite; }
-.gt-think-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 18px; transform: translateY(0); transition: opacity 240ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1), filter 240ms ease; }
+.gt-think-text { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; min-height: 18px; transform: translateY(0); transition: opacity 240ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1), filter 240ms ease; }
 .gt-think-text._in { transform: translateY(4px); transition: none; }
 .gt-think._live .gt-think-text { background: linear-gradient(90deg, #a9a9a9 0%, #a9a9a9 35%, #f0f0f0 50%, #a9a9a9 65%, #a9a9a9 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.8s linear infinite; } /* the grey sheen rides the words while thinking */
 .gt-think-text._out { opacity: 0; transform: translateY(-4px); filter: blur(2px); }
@@ -2240,10 +2246,13 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
   <main class="gt-main">
     <div class="gt-thread"></div>
     <div class="gt-compose">
-      <span class="gt-plus"><svg class="gt-ic" viewBox="0 0 12 12"><path d="M6 1.8v8.4M1.8 6h8.4"/></svg></span>
-      <input class="gt-cph" type="text" placeholder="Ask ChatGPT" autocomplete="off" />
-      <span class="gt-mode">Instant <svg class="gt-ic" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg></span>
-      <span class="gt-cmic"><svg class="gt-ic" viewBox="0 0 12 12"><rect x="4.4" y="1.4" width="3.2" height="5.8" rx="1.6"/><path d="M2.6 5.8a3.4 3.4 0 0 0 6.8 0M6 9.2v1.4"/></svg></span>
+      <!-- the thinking row (.gt-think) is prepended here by the demo: it lives INSIDE the pill, above this input row -->
+      <div class="gt-compose-row">
+        <span class="gt-plus"><svg class="gt-ic" viewBox="0 0 12 12"><path d="M6 1.8v8.4M1.8 6h8.4"/></svg></span>
+        <input class="gt-cph" type="text" placeholder="Ask ChatGPT" autocomplete="off" />
+        <span class="gt-mode">Instant <svg class="gt-ic" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg></span>
+        <span class="gt-cmic"><svg class="gt-ic" viewBox="0 0 12 12"><rect x="4.4" y="1.4" width="3.2" height="5.8" rx="1.6"/><path d="M2.6 5.8a3.4 3.4 0 0 0 6.8 0M6 9.2v1.4"/></svg></span>
+      </div>
     </div>
   </main>
 </div>
@@ -5504,21 +5513,28 @@ function chatScriptFor(title) {
     return th;
   }
 
-  // the thinking line under the ask. open() fades it in; say(text) fades
-  // the current thought out and types the next in char by char; done()
-  // stops the sheen and the spinner, the last thought stays.
-  function openThink(th, gen) {
+  // the thinking row: baked into the ChatGPT composer as its top row, inside
+  // the pill. open() eases the row open (the pill grows to make room) and it
+  // stays up; say(text) fades the current thought out and types the next in
+  // char by char; done() stops the sheen and the spinner, the last thought
+  // stays.
+  function openThink(gen) {
+    const composer = document.getElementById(P.chatgpt.root).querySelector(".gt-compose");
     const row = add("div", "gt-think demo-t _live");
-    row.insertAdjacentHTML("beforeend", RING);
+    const body = add("div", "gt-think-body");
+    const inner = add("div", "gt-think-in");
+    inner.insertAdjacentHTML("beforeend", RING);
     const textEl = add("div", "gt-think-text");
-    row.appendChild(textEl);
-    th.appendChild(row);
+    inner.appendChild(textEl);
+    body.appendChild(inner);
+    row.appendChild(body);
+    composer.prepend(row);
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
     return {
       async open() {
-        await sleep(30); // painted faded first, so the open is a transition
-        row.classList.add("_on");
-        await sleep(REDUCED_MOTION ? 0 : 320);
+        await sleep(30); // painted closed first, so the open is a transition
+        row.classList.add("_on"); // the pill grows to make room
+        await sleep(REDUCED_MOTION ? 0 : 450); // the open settles before the first line types
       },
       async say(text) {
         const my = ++sayGen;
@@ -5613,7 +5629,7 @@ function chatScriptFor(title) {
     await sleep(320); if (!alive(gen)) return;
     const th = demoSend(P.chatgpt, ASK);
     await sleep(420); if (!alive(gen)) return; // the line wakes a beat after the send, not with it
-    const think = openThink(th, gen);
+    const think = openThink(gen);
     await think.open(); if (!alive(gen)) return;
     await think.say(THOUGHTS[0]); if (!alive(gen)) return;
     await sleep(1100); if (!alive(gen)) return;
