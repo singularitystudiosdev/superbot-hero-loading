@@ -1978,8 +1978,9 @@ body {
 /* assistant reply — 1:1 with ChatGPT mobile: NO avatar bubble, NO name line,
    plain prose straight under the user pill, then the muted 3-icon action row */
 .ph-replytxt { margin-top: 18px; font-size: 13.5px; line-height: 19px; color: #ececec; }
-.ph-act { display: inline-flex; align-items: center; gap: 16px; margin-top: 12px; }
-.ph-act svg { width: 15px; height: 15px; stroke: #9b9b9b; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ph-act { display: inline-flex; align-items: center; gap: 10px; margin-top: 0; } /* tight under the reply (user, 2026-09-13: "more tight and closer to the text above it") */
+.ph-act svg { width: 14px; height: 14px; stroke: #9b9b9b; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ph-msgs > .ph-actrow { margin-top: 6px; } /* beats the 18px message spacing: the row belongs to the reply above it */
 .ph-act svg._dots { fill: #9b9b9b; stroke: none; }
 .ph-actrow { display: flex; align-items: center; gap: 12px; }
 .ph-when { font-size: 10.5px; color: #8b8f99; }
