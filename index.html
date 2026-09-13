@@ -2152,13 +2152,29 @@ body {
 .gt-sbcard-title img { width: 30px; height: 30px; flex-shrink: 0; }
 .gt-sbcard-btn { display: block; width: 100%; margin-top: 16px; height: 46px; border: none; border-radius: 999px; background: #ffffff; color: #0d0d0d; font: 700 20px ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, sans-serif; letter-spacing: -0.2px; cursor: pointer; transition: transform 140ms ease, background 140ms ease; }
 .gt-sbcard-btn:hover { background: #f2f2f2; }
-.gt-sbcard-btn:active { transform: scale(0.97); }
+.gt-sbcard-btn:active, .gt-sbcard-btn._press { transform: scale(0.95); background: #e9e9e9; } /* ._press: the demo's own tap on chat (user, 2026-09-13) */
+/* ---- the superbot leg (user, 2026-09-13: "it clicks on chat and then it
+   shows superbot doing it, show the tool calls, and then say it got
+   ordered"). The thinking row reuses .gt-think inside superbot's composer
+   ring (same grid track, same fold). The tool calls are clean lines in the
+   thread: one row per call, a small line icon and a label that types in and
+   shimmers while the call runs, then settles dim on its result. */
+.demo-tools { align-self: flex-start; display: flex; flex-direction: column; gap: 9px; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; }
+.demo-step { display: flex; align-items: center; gap: 8px; min-height: 16px; color: #8b90a0; animation: demo-in 0.2s ease-out; transition: color 300ms ease; }
+.demo-step svg { width: 12px; height: 12px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+.demo-step._run { color: #c9ccd4; }
+.demo-step._run .demo-step-label { background: linear-gradient(90deg, #a5a9b6 0%, #a5a9b6 35%, #f2f3f7 50%, #a5a9b6 65%, #a5a9b6 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
+.demo-step._run .demo-step-label b, .demo-step._run .demo-step-label .bc-fade-chunk { color: inherit; }
+.demo-step b { font-weight: 600; color: #c9ccd4; }
+.demo-step._done { color: #8b90a0; }
+@keyframes demo-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .gt-think, .gt-think-in, .gt-think-echo, .gt-think-echo-in, .gt-think-text, .gt-sbcard._on, .gt-sbcard::before { transition: none; }
   .gt-sbcard, .gt-sbcard._on::before, .gt-sbcard._on .gt-sbcard-plate::after { animation: none; } /* static frame, static bloom, no sweep */
   .gt-think._live .gt-think-text, .gt-think._live svg, .gt-think-echo._live .gt-think-text, .gt-think-echo._live svg { animation: none; }
   .demo-ch { animation: none; opacity: 1; }
+  .demo-step, .demo-step._run .demo-step-label { animation: none; }
 }
 /* ---- the kit: a small operator panel (2026-09-12): speed (0.5x to 2x,
    every beat scales) and Replay. Fixed bottom-right, k toggles it, settings
@@ -5511,6 +5527,23 @@ function chatScriptFor(title) {
   const REFUSAL = "I can’t complete the checkout or charge a payment method from this chat because there isn’t an active food-ordering connection.";
   const CARD_TITLE = "superbot can do it!";
   const CARD_BUTTON = "chat";
+  // the superbot leg: the row's opening thought, the tool calls [icon,
+  // running label, result, the row's thought while it runs] and the reply
+  const SB_OPEN = "Find the nearest McDonald's and order a Big Mac Meal";
+  const SB_STEPS = [
+    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now", "Closest one is on 5th Ave 📍"],
+    ["search", "Picking a **Big Mac Meal**", "**Big Mac Meal**, medium, $9.49", "Big Mac Meal it is 🍔"],
+    ["tag", "Paying with the **saved card**", "**$9.49** on the card ending 4421", "Saved card covers it"],
+    ["list", "Placing the **order**", "Order **#48213** placed, 14 minutes out", "Placing the order now"],
+  ];
+  const SB_REPLY = "Ordered. A Big Mac Meal from McDonald's on 5th Ave, $9.49 on your saved card. It'll be at your door in about 14 minutes.";
+  const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char (both scale with speed)
+  const ICON = {
+    pin: '<svg viewBox="0 0 12 12"><path d="M6 10.8S2.6 7.6 2.6 5.2a3.4 3.4 0 0 1 6.8 0C9.4 7.6 6 10.8 6 10.8z"/><circle cx="6" cy="5.2" r="1.2"/></svg>',
+    search: '<svg viewBox="0 0 12 12"><circle cx="5.2" cy="5.2" r="3.3"/><path d="M7.7 7.7 10.4 10.4"/></svg>',
+    list: '<svg viewBox="0 0 12 12"><path d="M4 3h6M4 6h6M4 9h6"/><circle cx="1.9" cy="3" r=".6" fill="currentColor" stroke="none"/><circle cx="1.9" cy="6" r=".6" fill="currentColor" stroke="none"/><circle cx="1.9" cy="9" r=".6" fill="currentColor" stroke="none"/></svg>',
+    tag: '<svg viewBox="0 0 12 12"><path d="M1.8 1.8h4l4.6 4.6-4 4-4.6-4.6z"/><circle cx="4.1" cy="4.1" r=".8" fill="currentColor" stroke="none"/></svg>',
+  };
   const CHATGPT_RAIL = UI_BY_RAIL.indexOf("chatgpt-ui");
   // ---- the kit's settings: speed, open --------------------------------------
   const KIT_KEY = "hero.thinkKit";
@@ -5665,6 +5698,158 @@ function chatScriptFor(title) {
     if (alive(gen)) t.textContent = text; // normalised to plain text once typed
   }
 
+  // ---- the superbot leg -----------------------------------------------------
+  const follow = (th) => { th.scrollTop = th.scrollHeight; }; // keep the newest line in view
+
+  // "**bold**" runs → text nodes and <b> elements (no innerHTML of copy)
+  function richInto(el, text) {
+    el.textContent = "";
+    text.split(/(\*\*.+?\*\*)/g).forEach((part) => {
+      if (!part) return;
+      if (part.startsWith("**") && part.endsWith("**")) {
+        const b = add("b");
+        b.textContent = part.slice(2, -2);
+        el.appendChild(b);
+      } else el.appendChild(document.createTextNode(part));
+    });
+  }
+
+  // the typewriter fade for a label: each char lands as a fading span (inside
+  // a <b> when the run is bold); the finished text is normalized to plain nodes
+  function typeRich(el, text, ms) {
+    return new Promise((resolve) => {
+      const runs = text.split(/(\*\*.+?\*\*)/g).filter(Boolean).map((part) =>
+        part.startsWith("**") && part.endsWith("**") ? { bold: true, text: part.slice(2, -2) } : { bold: false, text: part });
+      el.textContent = "";
+      if (REDUCED_MOTION) { richInto(el, text); resolve(); return; }
+      let r = 0, i = 0, holder = null;
+      const tick = () => {
+        if (r >= runs.length) { richInto(el, text); resolve(); return; }
+        const run = runs[r];
+        if (i === 0) { holder = run.bold ? add("b") : el; if (run.bold) el.appendChild(holder); }
+        const s = add("span", "bc-fade-chunk");
+        s.textContent = run.text[i];
+        holder.appendChild(s);
+        i++;
+        if (i >= run.text.length) { r++; i = 0; }
+        setTimeout(tick, T(ms));
+      };
+      tick();
+    });
+  }
+
+  // the tool calls: one line each. The label types in and shimmers while the
+  // call runs; when it lands the result types over it and the row settles dim.
+  // The bar's row swaps in each call's own thought a beat after it starts.
+  async function runTools(th, tab, gen, steps) {
+    const list = add("div", "demo-tools bc-app demo-t");
+    th.appendChild(list);
+    follow(th);
+    for (let i = 0; i < steps.length; i++) {
+      const [icon, running, result, thought] = steps[i];
+      if (!alive(gen)) return;
+      const row = add("div", "demo-step _run");
+      row.insertAdjacentHTML("beforeend", ICON[icon]);
+      const l = add("span", "demo-step-label");
+      row.appendChild(l);
+      list.appendChild(row);
+      follow(th);
+      const t0 = performance.now();
+      if (thought) setTimeout(() => { if (alive(gen)) tab.say(thought); }, T(260 + Math.random() * 500));
+      await typeRich(l, running, LABEL_MS); if (!alive(gen)) return;
+      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0) * (KIT.speed || 1))); if (!alive(gen)) return;
+      row.classList.remove("_run");
+      row.classList.add("_done");
+      await typeRich(l, result, LABEL_MS); if (!alive(gen)) return;
+      await sleep(REDUCED_MOTION ? 60 : 180);
+      follow(th);
+    }
+  }
+
+  // superbot's thinking row: the same .gt-think track, prepended inside the
+  // composer's rainbow ring; the ring stays lit (._awake) while it carries it
+  function openSbThink(gen) {
+    const main = document.getElementById(P.gg.root);
+    const composer = main.querySelector(".composer");
+    const wrap = main.querySelector(".bc-softwrap");
+    const row = add("div", "gt-think demo-t _live");
+    const body = add("div", "gt-think-body");
+    const inner = add("div", "gt-think-in");
+    inner.insertAdjacentHTML("beforeend", RING);
+    const textEl = add("div", "gt-think-text");
+    inner.appendChild(textEl);
+    body.appendChild(inner);
+    row.appendChild(body);
+    composer.prepend(row);
+    if (wrap) wrap.classList.add("_awake");
+    let sayGen = 0;
+    return {
+      async open() {
+        await sleep(30);
+        row.classList.add("_on");
+        await sleep(REDUCED_MOTION ? 0 : 520);
+      },
+      async say(text) {
+        const my = ++sayGen;
+        if (textEl.textContent) {
+          textEl.classList.add("_out");
+          await sleep(REDUCED_MOTION ? 0 : 260);
+          if (!alive(gen) || my !== sayGen) return;
+        }
+        textEl.textContent = "";
+        if (REDUCED_MOTION) { textEl.classList.remove("_out"); textEl.textContent = text; return; }
+        textEl.classList.add("_in");
+        textEl.classList.remove("_out");
+        void textEl.offsetHeight;
+        textEl.classList.remove("_in");
+        for (let i = 0; i < text.length; i++) {
+          if (!alive(gen) || my !== sayGen) return;
+          const c = add("span", "demo-ch");
+          c.textContent = text[i];
+          textEl.appendChild(c);
+          await sleep(CHAR_MS);
+        }
+      },
+      async done() { // the ring keeps running into the fold, as on the ChatGPT side
+        await sleep(REDUCED_MOTION ? 0 : 160);
+        if (!alive(gen)) return;
+        row.classList.remove("_on");
+        await sleep(REDUCED_MOTION ? 0 : 560);
+        if (!alive(gen)) return;
+        row.remove();
+        if (wrap) wrap.classList.remove("_awake");
+      },
+    };
+  }
+
+  // superbot's reply: the panel's own reply block, typed with its char fade
+  // (fx "type", 7ms a char, unscaled), stored, mirrored to the phone;
+  // resolves once it has typed
+  async function sbReply(th, text, gen) {
+    const p = P.gg;
+    const key = chatKey(p, liveChat.get(p.key));
+    if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text });
+    panelAddReply(p, th, text, null, true, performance.now());
+    const node = th.lastElementChild;
+    if (node) node.classList.add("demo-t");
+    if (window.phTourReply) window.phTourReply(text, 220);
+    follow(th);
+    const typed = text.length * 7 + 400;
+    const t0 = performance.now();
+    while (alive(gen) && performance.now() - t0 < typed) { await sleep(120 * (KIT.speed || 1)); follow(th); }
+  }
+
+  // the demo's own tap on the card's chat button: it presses, releases, and
+  // superbot docks (the phone follows)
+  async function pressChat(btn, gen) {
+    btn.classList.add("_press");
+    await sleep(REDUCED_MOTION ? 0 : 150); if (!alive(gen)) return;
+    btn.classList.remove("_press");
+    await sleep(REDUCED_MOTION ? 0 : 200); if (!alive(gen)) return;
+    dockUi(-1, gen);
+    if (window.syncFromRail) window.syncFromRail(-1);
+  }
+
   // the card: the cat mark, "superbot can do it!", a chat button, in the
   // rainbow frame; it rises in on its own transition once it has painted at
   // rest. chat hands the ask over: superbot docks and the phone follows.
@@ -5690,6 +5875,7 @@ function chatScriptFor(title) {
     card.appendChild(plate);
     th.appendChild(card);
     requestAnimationFrame(() => requestAnimationFrame(() => { if (alive(gen)) card.classList.add("_on"); }));
+    return btn; // the demo taps it once the card has landed
   }
 
   // replay hygiene: every node and store entry the demo owns goes away so a
@@ -5697,6 +5883,9 @@ function chatScriptFor(title) {
   function clearTourState() {
     document.querySelectorAll(".demo-t").forEach((el) => el.remove());
     threadStore.delete(chatKey(P.chatgpt, ASK));
+    threadStore.delete(chatKey(P.gg, ASK));
+    const wrap = document.querySelector("#bloom-ui .bc-softwrap");
+    if (wrap) wrap.classList.remove("_awake");
   }
 
   window.runDemoTour = async function (gen) {
@@ -5730,7 +5919,27 @@ function chatScriptFor(title) {
     await sleep(120); if (!alive(gen)) return;
     await reply(th, REFUSAL, gen); if (!alive(gen)) return;
     await sleep(500); if (!alive(gen)) return;
-    showCard(th, gen);
+    const btn = showCard(th, gen);
+    // the superbot leg: the card is read, chat is tapped, superbot docks and
+    // does the order for real: the ask, the thinking row, the tool calls,
+    // and the reply that it is ordered
+    await sleep(1900); if (!alive(gen)) return; // the rise, the shine, a beat to read the card
+    await pressChat(btn, gen); if (!alive(gen)) return;
+    await sleep(700); if (!alive(gen)) return;
+    await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
+    await sleep(320); if (!alive(gen)) return;
+    const th2 = demoSend(P.gg, ASK);
+    if (window.phTourSend) window.phTourSend(ASK); // the phone mirrors the send
+    await sleep(420); if (!alive(gen)) return;
+    const sb = openSbThink(gen);
+    await sb.open(); if (!alive(gen)) return;
+    await sb.say(SB_OPEN); if (!alive(gen)) return;
+    await sleep(700); if (!alive(gen)) return;
+    await runTools(th2, sb, gen, SB_STEPS); if (!alive(gen)) return;
+    await sleep(240); if (!alive(gen)) return;
+    await sb.done(); if (!alive(gen)) return;
+    await sleep(120); if (!alive(gen)) return;
+    await sbReply(th2, SB_REPLY, gen);
   }
 
   // ---- the kit -------------------------------------------------------------
