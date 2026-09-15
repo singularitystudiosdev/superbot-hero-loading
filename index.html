@@ -1404,41 +1404,44 @@ body {
 .fm-wrap { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; }
 .fm-wrap[hidden] { display: none; }
 .fm-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.72); }
+/* sized at 70% of the Manage Context board (user, 2026-09-14: "30% smaller"):
+   483px wide, every box and gap scaled with it; the preview renders the page at
+   the old pane size and scales it down so the page keeps its proportions */
 .fm-modal {
-  position: relative; width: 690px;
+  position: relative; width: 483px;
   background: #0e1015;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 20px;
+  border-radius: 16px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.09), 0 30px 90px -20px rgba(0, 0, 0, 0.95);
-  padding: 18px 18px 14px;
-  display: grid; gap: 12px;
+  padding: 13px 13px 10px;
+  display: grid; gap: 9px;
 }
 .fm-modal:focus, .fm-modal:focus-visible { outline: none; }
-.fm-close { position: absolute; top: 10px; right: 12px; background: none; border: none; color: #8b90a0; font: 400 22px/1 system-ui; cursor: pointer; padding: 2px 6px; }
+.fm-close { position: absolute; top: 7px; right: 9px; background: none; border: none; color: #8b90a0; font: 400 19px/1 system-ui; cursor: pointer; padding: 2px 5px; }
 .fm-close:hover { color: #e6e8ee; }
-.fm-head { display: grid; gap: 2px; padding-right: 28px; }
-.fm-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 1.1px; text-transform: uppercase; color: #8b90a0; }
-.fm-title { font: 700 24px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.5px; color: #ffffff; }
-.fm-sub { font: 500 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #8b90a0; }
-.fm-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 10px; height: 300px; }
-.fm-pane { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; background: #0b0d10; }
-.fm-pane-head { display: flex; align-items: center; gap: 5px; padding: 6px 10px; background: #14171b; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 10.5px/1 ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.03em; color: #8b90a0; }
-.fm-pane-head i { width: 6px; height: 6px; border-radius: 50%; background: #4a4e57; }
-.fm-pane-head i:last-of-type { margin-right: 4px; }
-.fm-preview { width: 100%; height: 100%; border: 0; display: block; background: #0f0f10; }
-.fm-code { margin: 0; padding: 10px 12px; overflow: auto; overscroll-behavior: contain; font: 11px/16px ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; color: #d6dde6; white-space: pre; scrollbar-width: thin; scrollbar-color: #2a2d36 transparent; }
+.fm-head { display: grid; gap: 1px; padding-right: 24px; }
+.fm-eyebrow { font-size: 8.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #8b90a0; }
+.fm-title { font: 700 18px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.4px; color: #ffffff; }
+.fm-sub { font: 500 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #8b90a0; }
+.fm-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 7px; height: 210px; }
+.fm-pane { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 9px; overflow: hidden; background: #0b0d10; }
+.fm-pane-head { display: flex; align-items: center; gap: 4px; padding: 5px 8px; background: #14171b; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 9px/1 ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.03em; color: #8b90a0; }
+.fm-pane-head i { width: 5px; height: 5px; border-radius: 50%; background: #4a4e57; }
+.fm-pane-head i:last-of-type { margin-right: 3px; }
+.fm-preview { width: 142.86%; height: 142.86%; transform: scale(0.7); transform-origin: 0 0; border: 0; display: block; background: #0f0f10; }
+.fm-code { margin: 0; padding: 8px 9px; overflow: auto; overscroll-behavior: contain; font: 9.5px/14px ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; color: #d6dde6; white-space: pre; scrollbar-width: thin; scrollbar-color: #2a2d36 transparent; }
 .fm-code .kw { color: #6ea8ff; }
 .fm-code .fn { color: #d98cff; }
 .fm-code .str { color: #7ed99a; }
 .fm-code .cm { color: #6f7480; font-style: italic; }
 .fm-code .num { color: #ffb340; }
-.fm-foot { display: flex; align-items: center; gap: 8px; }
-.fm-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 10px; background: #1e2027; border: 1px solid rgba(255, 255, 255, 0.1); color: #e6e8ee; font: 700 12.5px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-decoration: none; cursor: pointer; transition: background 140ms ease; }
+.fm-foot { display: flex; align-items: center; gap: 6px; }
+.fm-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 8px; background: #1e2027; border: 1px solid rgba(255, 255, 255, 0.1); color: #e6e8ee; font: 700 11px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-decoration: none; cursor: pointer; transition: background 140ms ease; }
 .fm-btn:hover { background: #262932; }
 .fm-btn.fm-primary { background: #ffffff; border-color: #ffffff; color: #0d0d0d; }
 .fm-btn.fm-primary:hover { background: #f2f2f2; }
-.fm-btn img { width: 15px; height: 15px; display: block; }
-.fm-size { margin-left: auto; font: 500 10.5px ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; color: #8b90a0; }
+.fm-btn img { width: 12px; height: 12px; display: block; }
+.fm-size { margin-left: auto; font: 500 9px ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; color: #8b90a0; }
 
 /* "View Usage" popup — the + popup's modal mechanics (same open/close motion
    as View Savings) showing per-platform plan burn: a 4-column tile grid where
@@ -2281,6 +2284,8 @@ body {
 .demo-file._ph .demo-file-btn span { display: none; }
 .demo-file._ph .demo-file-btn { padding-left: 8px; }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
+/* while the demo plays the thinking rows fold at the demo's pace (--demo-fit-ms is set by the demo from PACE) */
+body.tour-lock .gt-think, body.tour-lock .gt-think-echo, body.tour-lock .ph-think, body.tour-lock .ph-bar-think { --fit-ms: var(--demo-fit-ms, 520ms); }
 @media (prefers-reduced-motion: reduce) {
   .demo-file { transition: none; }
   .gt-think, .gt-think-in, .gt-think-echo, .gt-think-echo-in, .gt-think-text, .gt-sbcard._on, .gt-sbcard::before { transition: none; }
@@ -5894,7 +5899,12 @@ function chatScriptFor(title) {
   try { stored = JSON.parse(localStorage.getItem(KIT_KEY) || "{}"); } catch (e) { console.error("[think-kit] bad stored settings", e); }
   const KIT = Object.assign({ speed: 0.8, open: true }, stored); // 0.8x (2026-09-12, the user's pick)
   const saveKit = () => { try { localStorage.setItem(KIT_KEY, JSON.stringify(KIT)); } catch (e) { console.error("[think-kit] save failed", e); } };
-  const T = (ms) => ms / (KIT.speed || 1); // every beat scales with the speed slider
+  // the hand-over runs at a fifth of its 2026-09-13 pace (user, 2026-09-14:
+  // "over 80% faster"): every sleep, keystroke, thought and label beat, the
+  // tool-call dwell, the reply's typing and the fold durations all scale by PACE
+  const PACE = 0.2;
+  const T = (ms) => (ms * PACE) / (KIT.speed || 1); // every beat scales with the speed slider, on top of PACE
+  document.body.style.setProperty("--demo-fit-ms", Math.round(520 * PACE) + "ms"); // the thinking rows' fold, while the demo plays
   const CHAR_MS = 22; // a steady typewriter cadence; each char fades in over 420ms
   const KEYSTROKE = [31, 62]; // per-char keystroke jitter for the user's typing
   const RING = '<svg viewBox="0 0 12 12"><path d="M10.4 6A4.4 4.4 0 1 1 6 1.6"/></svg>';
@@ -6097,7 +6107,7 @@ function chatScriptFor(title) {
       const t0 = performance.now();
       if (thought) setTimeout(() => { if (alive(gen)) tab.say(thought); }, T(260 + Math.random() * 500));
       await typeRich(l, running, LABEL_MS, phRow); if (!alive(gen)) return;
-      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - (performance.now() - t0) * (KIT.speed || 1))); if (!alive(gen)) return;
+      await sleep(Math.max(0, (REDUCED_MOTION ? 220 : STEP_MS) - ((performance.now() - t0) * (KIT.speed || 1)) / PACE)); if (!alive(gen)) return; // the label's typing counts toward the call's dwell
       row.classList.remove("_run");
       row.classList.add("_done");
       if (phRow) phRow.settle();
@@ -6114,12 +6124,13 @@ function chatScriptFor(title) {
     const p = P.gg;
     const key = chatKey(p, liveChat.get(p.key));
     if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text });
-    panelAddReply(p, th, text, null, true, performance.now());
+    const ms = Math.max(1, Math.round((p.fx && p.fx.ms || 7) * PACE)); // the panel's own typewriter, at the demo's pace
+    panelAddReply(Object.assign({}, p, { fx: Object.assign({}, p.fx, { ms }) }), th, text, null, true, performance.now());
     const node = th.lastElementChild;
     if (node) node.classList.add("demo-t");
     if (window.phTourReply) window.phTourReply(text, 220);
     follow(th);
-    const typed = text.length * 7 + 400;
+    const typed = text.length * ms + 400 * PACE;
     const t0 = performance.now();
     while (alive(gen) && performance.now() - t0 < typed) { await sleep(120 * (KIT.speed || 1)); follow(th); }
   }
