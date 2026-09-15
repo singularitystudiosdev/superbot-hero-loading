@@ -1396,6 +1396,50 @@ body {
   .sv-row { animation: none; }
 }
 
+/* the generated-file popup — the View Savings popup's modal mechanics
+   (backdrop fade, card scale-in, reversed drop close) in the same black
+   shell, at the Manage Context board's width, holding the file the demo's
+   superbot leg hands over: a live preview of the page beside its source,
+   with Open in Chrome and Download underneath. */
+.fm-wrap { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; }
+.fm-wrap[hidden] { display: none; }
+.fm-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.72); }
+.fm-modal {
+  position: relative; width: 690px;
+  background: #0e1015;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.09), 0 30px 90px -20px rgba(0, 0, 0, 0.95);
+  padding: 18px 18px 14px;
+  display: grid; gap: 12px;
+}
+.fm-modal:focus, .fm-modal:focus-visible { outline: none; }
+.fm-close { position: absolute; top: 10px; right: 12px; background: none; border: none; color: #8b90a0; font: 400 22px/1 system-ui; cursor: pointer; padding: 2px 6px; }
+.fm-close:hover { color: #e6e8ee; }
+.fm-head { display: grid; gap: 2px; padding-right: 28px; }
+.fm-eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 1.1px; text-transform: uppercase; color: #8b90a0; }
+.fm-title { font: 700 24px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.5px; color: #ffffff; }
+.fm-sub { font: 500 11.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #8b90a0; }
+.fm-body { display: grid; grid-template-columns: 1.15fr 1fr; gap: 10px; height: 300px; }
+.fm-pane { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow: hidden; background: #0b0d10; }
+.fm-pane-head { display: flex; align-items: center; gap: 5px; padding: 6px 10px; background: #14171b; border-bottom: 1px solid rgba(255, 255, 255, 0.08); font: 600 10.5px/1 ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.03em; color: #8b90a0; }
+.fm-pane-head i { width: 6px; height: 6px; border-radius: 50%; background: #4a4e57; }
+.fm-pane-head i:last-of-type { margin-right: 4px; }
+.fm-preview { width: 100%; height: 100%; border: 0; display: block; background: #0f0f10; }
+.fm-code { margin: 0; padding: 10px 12px; overflow: auto; overscroll-behavior: contain; font: 11px/16px ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; color: #d6dde6; white-space: pre; scrollbar-width: thin; scrollbar-color: #2a2d36 transparent; }
+.fm-code .kw { color: #6ea8ff; }
+.fm-code .fn { color: #d98cff; }
+.fm-code .str { color: #7ed99a; }
+.fm-code .cm { color: #6f7480; font-style: italic; }
+.fm-code .num { color: #ffb340; }
+.fm-foot { display: flex; align-items: center; gap: 8px; }
+.fm-btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 10px; background: #1e2027; border: 1px solid rgba(255, 255, 255, 0.1); color: #e6e8ee; font: 700 12.5px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; text-decoration: none; cursor: pointer; transition: background 140ms ease; }
+.fm-btn:hover { background: #262932; }
+.fm-btn.fm-primary { background: #ffffff; border-color: #ffffff; color: #0d0d0d; }
+.fm-btn.fm-primary:hover { background: #f2f2f2; }
+.fm-btn img { width: 15px; height: 15px; display: block; }
+.fm-size { margin-left: auto; font: 500 10.5px ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; color: #8b90a0; }
+
 /* "View Usage" popup — the + popup's modal mechanics (same open/close motion
    as View Savings) showing per-platform plan burn: a 4-column tile grid where
    every platform carries TWO meters — its 5-hour window and its weekly
@@ -2111,9 +2155,9 @@ body {
 }
 
 /* ---- the scripted demo: ChatGPT can't order it, superbot can (2026-09-12) --
-   After the settle the page docks ChatGPT, the user asks for a burger, a
-   thinking line under the ask tries ("Thinking"), gives up ("Unable to order
-   burger") and hands off ("Redirecting to superbot"), the refusal lands, and
+   After the settle the page docks ChatGPT, the user asks for a HTML file, a
+   thinking line under the ask tries ("Thinking"), gives up ("Unable to make
+   HTML file") and hands off ("Redirecting to superbot"), the refusal lands, and
    a framed "superbot can do it!" card with a chat button rises into the
    thread. body.tour-lock swallows pointer input while the demo plays. */
 /* the thinking row, overhead in the composer (user, 2026-09-12: "like it was
@@ -2213,8 +2257,30 @@ body {
 .demo-step b { font-weight: 600; color: #c9ccd4; }
 .demo-step._done { color: #8b90a0; }
 @keyframes demo-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+/* the file card under superbot's reply (user, 2026-09-14): a tilted code tile
+   peeking from the left edge, the file's name and kind, and a "Download and
+   open" button with the Chrome mark and a caret. It rises in on _on like the
+   sbcard, and a click opens the file popup (.fm-*). The phone's copy (_ph)
+   drops the button label to fit the column. */
+.demo-file { position: relative; display: flex; align-items: center; gap: 12px; align-self: stretch; margin-top: 12px; padding: 10px 12px 10px 10px; border-radius: 14px; background: #101216; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden; cursor: pointer; opacity: 0; transform: translateY(10px); transition: opacity 420ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1), border-color 140ms ease, background 140ms ease; user-select: none; }
+.demo-file._on { opacity: 1; transform: none; }
+.demo-file:hover { border-color: rgba(255, 255, 255, 0.22); background: #14161b; }
+.demo-file:focus-visible { outline: 2px solid #2b6bff; outline-offset: 1px; }
+.demo-file-ic { flex-shrink: 0; width: 34px; height: 46px; margin: -6px 0 -14px; display: grid; place-items: center; border-radius: 7px; background: #1a1c22; border: 1px solid rgba(255, 255, 255, 0.14); color: #d5d8e0; transform: rotate(-7deg); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55); }
+.demo-file-ic svg { width: 16px; height: 16px; margin-top: -8px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.demo-file-meta { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.demo-file-title { font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e6e8ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.demo-file-kind { font: 500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #8b90a0; }
+.demo-file-btn { flex-shrink: 0; display: flex; align-items: center; gap: 7px; padding: 7px 4px 7px 11px; border-radius: 10px; background: #1e2027; border: 1px solid rgba(255, 255, 255, 0.1); font: 600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #e6e8ee; white-space: nowrap; }
+.demo-file-btn img { width: 14px; height: 14px; display: block; }
+.demo-file-btn i { width: 1px; height: 16px; background: rgba(255, 255, 255, 0.16); margin-left: 4px; }
+.demo-file-caret { width: 13px; height: 13px; margin-right: 3px; stroke: #8b90a0; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.demo-file._ph { margin: 12px 2px 0; padding: 9px 10px 9px 8px; gap: 9px; }
+.demo-file._ph .demo-file-btn span { display: none; }
+.demo-file._ph .demo-file-btn { padding-left: 8px; }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) {
+  .demo-file { transition: none; }
   .gt-think, .gt-think-in, .gt-think-echo, .gt-think-echo-in, .gt-think-text, .gt-sbcard._on, .gt-sbcard::before { transition: none; }
   .gt-sbcard, .gt-sbcard._on::before, .gt-sbcard._on .gt-sbcard-plate::after { animation: none; } /* static frame, static bloom, no sweep */
   .gt-think._live .gt-think-text, .gt-think._live svg, .gt-think-echo._live .gt-think-text, .gt-think-echo._live svg { animation: none; }
@@ -2519,6 +2585,27 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
         <div class="aa-row" data-q="warp terminal"><img src="hero-assets/warp.png" alt="" draggable="false" /><span class="aa-name">Warp</span><span class="aa-add">Add</span></div>
         <div class="aa-row" data-q="claude code agent"><img src="hero-assets/claude.png" alt="" draggable="false" /><span class="aa-name">Claude Code</span><span class="aa-add">Add</span></div>
         <div class="aa-row" data-q="github copilot agent"><img src="hero-assets/copilot.svg" alt="" draggable="false" /><span class="aa-name">GitHub Copilot</span><span class="aa-add">Add</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- the generated file: the demo's superbot reply hands over index.html as a card; a click opens it here -->
+  <div class="fm-wrap" id="fm-wrap" hidden>
+    <div class="fm-backdrop" id="fm-backdrop"></div>
+    <div class="fm-modal" role="dialog" aria-modal="true" aria-labelledby="fm-title" tabindex="-1">
+      <button class="fm-close" id="fm-close" aria-label="Close">&times;</button>
+      <div class="fm-head">
+        <div class="fm-eyebrow">Generated file</div>
+        <div class="fm-title" id="fm-title">index.html</div>
+        <div class="fm-sub" id="fm-sub">Code · HTML</div>
+      </div>
+      <div class="fm-body">
+        <div class="fm-pane"><div class="fm-pane-head"><i></i><i></i><i></i><span>preview</span></div><iframe class="fm-preview" id="fm-preview" title="index.html preview" sandbox=""></iframe></div>
+        <div class="fm-pane"><div class="fm-pane-head"><i></i><i></i><i></i><span>index.html</span></div><pre class="fm-code" id="fm-code"></pre></div>
+      </div>
+      <div class="fm-foot">
+        <a class="fm-btn fm-primary" id="fm-open" target="_blank" rel="noopener"><img src="hero-assets/chrome.svg" alt="" draggable="false">Open in Chrome</a>
+        <a class="fm-btn" id="fm-dl">Download</a>
+        <span class="fm-size" id="fm-size"></span>
       </div>
     </div>
   </div>
@@ -3156,7 +3243,7 @@ function familyRun(ctx) {
         return true;
       },
     };
-    // STAGE 6 — the scripted burger-order demo that plays after the settle.
+    // STAGE 6 — the scripted make-me-a-HTML-file demo that plays after the settle.
     // Runs once per settle epoch; reset()'s fxGen bump cancels it between
     // beats, and a replay clears its nodes before re-running.
     if (window.runDemoTour) window.runDemoTour(gen);
@@ -3357,7 +3444,7 @@ document.addEventListener("keydown", (e) => {
   // r replays only when the add-tool popup is closed; Esc closes it
   const popupOpen = (!!aaWrap && !aaWrap.hidden) || (!!svWrap && !svWrap.hidden) || (!!uuWrap && !uuWrap.hidden) || (!!mcWrap && !mcWrap.hidden);
   if (!typing && (e.key === "r" || e.key === "R") && !popupOpen) runner.reset();
-  if (e.key === "Escape") { closeAddTools(); closePlatPop(); closeSavings(); closeUsage(); mcClose(); }
+  if (e.key === "Escape") { closeAddTools(); closePlatPop(); closeSavings(); closeUsage(); mcClose(); closeFile(); }
 });
 
 // + tile's add-tool popup — a Discord modal: the + tile opens it, the backdrop,
@@ -3580,6 +3667,124 @@ function closeSavings() {
 if (svWrap) {
   svWrap.addEventListener("click", (e) => {
     if (e.target === svWrap || e.target.id === "sv-backdrop" || e.target.id === "sv-close") closeSavings();
+  });
+}
+
+// ---- the generated-file popup (same modal motion as View Savings) ----------
+// The demo's superbot leg hands over index.html as a file card under its
+// reply; a click on the card opens it here: a live preview of the page
+// (srcdoc, sandboxed) beside its tinted source, with Open in Chrome and
+// Download pointing at a real blob of the file. Seeded on first open. The
+// backdrop, the x and Escape close it, on the View Savings motion tokens.
+const FILE_NAME = "index.html";
+const FILE_BODY = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sunday Bakery</title>
+  <style>
+    :root { --bg: #0f0f10; --fg: #f4f1ea; --muted: #a09c93; --accent: #ffb340; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; }
+    main { max-width: 560px; padding: 48px 24px; text-align: center; }
+    h1 { margin: 0 0 12px; font-size: 44px; line-height: 1.1; letter-spacing: -0.02em; }
+    p { margin: 0 0 28px; color: var(--muted); font-size: 18px; }
+    .hours { display: flex; gap: 12px; justify-content: center; margin-bottom: 28px; }
+    .hours span { padding: 8px 14px; border: 1px solid #2a2a2c; border-radius: 999px; font-size: 14px; }
+    a.btn { display: inline-block; padding: 14px 26px; border-radius: 12px; background: var(--accent); color: #1a1200; font-weight: 700; text-decoration: none; }
+    a.btn:hover { filter: brightness(1.08); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Sunday Bakery</h1>
+    <p>Sourdough, cardamom buns and a proper flat white. Baked before sunrise, gone by noon.</p>
+    <div class="hours"><span>Sat 7 to 12</span><span>Sun 8 to 13</span></div>
+    <a class="btn" href="#order">Order for pickup</a>
+  </main>
+</body>
+</html>
+`;
+const fmWrap = document.getElementById("fm-wrap");
+let fmClosing = false;
+let fmSeeded = false;
+let fmAnims = [];
+
+// a tiny HTML tokenizer for the source pane: comments, tags, attribute names,
+// strings and numbers get a colour; everything else stays plain
+function fmTokens(s) {
+  const esc = (x) => x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const re = /(<!--[\s\S]*?-->)|(<!?\/?[A-Za-z][\w-]*|\/?>)|("[^"\n]*"|'[^'\n]*')|([A-Za-z-]+)(?==)|(\b\d+\.?\d*(?:px|em|vh|%)?\b)|([^<>"'=\s]+|\s+|=|[\s\S])/g;
+  let html = "", m;
+  while ((m = re.exec(s))) {
+    const [tok, cm, tag, str, attr, num] = m;
+    const cls = cm ? "cm" : tag ? "kw" : str ? "str" : attr ? "fn" : num ? "num" : null;
+    html += cls ? '<span class="' + cls + '">' + esc(tok) + "</span>" : esc(tok);
+  }
+  return html;
+}
+
+function fmSeed() {
+  if (fmSeeded) return;
+  fmSeeded = true;
+  const lines = FILE_BODY.trimEnd().split("\n").length;
+  const bytes = new TextEncoder().encode(FILE_BODY).length;
+  document.getElementById("fm-preview").srcdoc = FILE_BODY;
+  document.getElementById("fm-code").innerHTML = fmTokens(FILE_BODY);
+  document.getElementById("fm-sub").textContent = "Code · HTML · " + lines + " lines";
+  document.getElementById("fm-size").textContent = (bytes / 1024).toFixed(1) + " KB";
+  const url = URL.createObjectURL(new Blob([FILE_BODY], { type: "text/html" }));
+  document.getElementById("fm-open").href = url;
+  const dl = document.getElementById("fm-dl");
+  dl.href = url;
+  dl.download = FILE_NAME;
+}
+
+function openFile() {
+  if (!fmWrap || (!fmWrap.hidden && !fmClosing)) return;
+  fmAnims.forEach((a) => a.cancel && a.cancel());
+  fmClosing = false;
+  fmWrap.hidden = false;
+  fmSeed();
+  const backdrop = document.getElementById("fm-backdrop");
+  const modal = fmWrap.querySelector(".fm-modal");
+  const plays = [backdrop.animate({ opacity: [0, 1] }, { duration: 160, easing: "ease-out", fill: "forwards" })];
+  if (!aaReducedMotion) plays.push(modal.animate(
+    { transform: ["scale(0.86)", "scale(1)"], opacity: [0, 1] },
+    { duration: 200, easing: "ease-out", fill: "forwards" }
+  ));
+  fmAnims = plays;
+  modal.focus({ preventScroll: true });
+}
+
+function closeFile() {
+  if (!fmWrap || fmWrap.hidden || fmClosing) return;
+  fmClosing = true;
+  const backdrop = document.getElementById("fm-backdrop");
+  const modal = fmWrap.querySelector(".fm-modal");
+  const plays = [backdrop.animate({ opacity: [1, 0] }, { duration: 150, easing: "ease-in", fill: "forwards" })];
+  if (!aaReducedMotion) plays.push(modal.animate(
+    { transform: ["scale(1)", "scale(0.858) translateY(-8px)"], opacity: [1, 0] },
+    { duration: 150, easing: "ease-in", fill: "forwards" }
+  ));
+  fmAnims.forEach((a) => a.cancel && a.cancel());
+  fmAnims = plays;
+  const pending = setTimeout(() => {
+    fmAnims.forEach((a) => a.effect && a.effect.target && a.effect.target.getAnimations().forEach((x) => x.cancel()));
+    fmWrap.hidden = true;
+    fmClosing = false;
+    fmAnims = [];
+  }, 155);
+  fmAnims.push({ cancel: () => clearTimeout(pending) });
+}
+window.openFile = openFile;
+window.closeFile = closeFile;
+window.FILE_NAME = FILE_NAME;
+
+if (fmWrap) {
+  fmWrap.addEventListener("click", (e) => {
+    if (e.target === fmWrap || e.target.id === "fm-backdrop" || e.target.id === "fm-close") closeFile();
   });
 }
 
@@ -4709,9 +4914,9 @@ CHAT_PANELS.forEach((p) => {
 document.querySelectorAll(".bcs-tool").forEach((row) => {
   // one popup at a time: opening a tool closes its siblings
   row.addEventListener("click", () => {
-    if (row.dataset.tool === "savings") { closeUsage(); mcClose(); openSavings(); return; }
-    if (row.dataset.tool === "usage") { closeSavings(); mcClose(); openUsage(); return; }
-    if (row.dataset.tool === "context") { closeSavings(); closeUsage(); mcOpen(); return; }
+    if (row.dataset.tool === "savings") { closeUsage(); mcClose(); closeFile(); openSavings(); return; }
+    if (row.dataset.tool === "usage") { closeSavings(); mcClose(); closeFile(); openUsage(); return; }
+    if (row.dataset.tool === "context") { closeSavings(); closeUsage(); closeFile(); mcOpen(); return; }
   });
   // keyboard reachability: the rows are role=button divs
   row.tabIndex = 0;
@@ -5647,9 +5852,9 @@ function chatScriptFor(title) {
 }
 
 // ---- the scripted demo that plays after the settle (2026-09-12) -----------
-// Claude has just docked: dwell 0.9s → ChatGPT; the user types "Order me a
-// burger"; a thinking line under the ask tries ("Thinking"), gives up
-// ("Unable to order burger") and hands off ("Redirecting to superbot"); the
+// Claude has just docked: dwell 0.9s → ChatGPT; the user types "Make me a
+// HTML file"; a thinking line under the ask tries ("Thinking"), gives up
+// ("Unable to make HTML file") and hands off ("Redirecting to superbot"); the
 // refusal lands the way chatgpt.com paints a short reply; then a framed
 // "superbot can do it!" card with a chat button rises into the thread. A
 // double tap during the LOAD animation fast-forwards it to this point
@@ -5657,28 +5862,32 @@ function chatScriptFor(title) {
 // reset()'s fxGen bump cancels the demo between beats and a fresh run clears
 // every node it stamped .demo-t.
 (function () {
-  const ASK = "Order me a burger";
+  const ASK = "Make me a HTML file";
   const ECHO = "Thinking"; // the thread line under the ask says only this (user, 2026-09-12)
-  const THOUGHTS = ["Unable to order burger", "Redirecting to superbot"]; // the bar's thoughts; it never says "Thinking"
-  const REFUSAL = "I can’t complete the checkout or charge a payment method from this chat because there isn’t an active food-ordering connection.";
+  const THOUGHTS = ["Unable to make HTML file", "Redirecting to superbot"]; // the bar's thoughts; it never says "Thinking"
+  const REFUSAL = "I can’t create or save files from this chat because there isn’t an active file workspace connected.";
   const CARD_TITLE = "superbot can do it!";
   const CARD_BUTTON = "chat";
   // the superbot leg: the row's opening thought, the tool calls [icon,
-  // running label, result, the row's thought while it runs] and the reply
-  const SB_OPEN = "Find the nearest McDonald's and order a Big Mac Meal";
+  // running label, result, the row's thought while it runs], the reply and
+  // the file card it hands over (a click opens the file popup, see openFile)
+  const SB_OPEN = "Write a single-file HTML page and hand it over";
   const SB_STEPS = [
-    ["pin", "Finding the nearest **McDonald's**", "**McDonald's on 5th Ave**, 1.2 mi, open now", "Closest one is on 5th Ave"],
-    ["search", "Picking a **Big Mac Meal**", "**Big Mac Meal**, medium, $9.49", "Big Mac Meal it is"], // no emoji: the sheen's text clip paints them as grey blobs (user, 2026-09-13)
-    ["tag", "Paying with the **saved card**", "**$9.49** on the card ending 4421", "Saved card covers it"],
-    ["list", "Placing the **order**", "Order **#48213** placed, 14 minutes out", "Placing the order now"],
+    ["tag", "Picking a **layout**", "**Landing page**, one column, dark", "Picking a layout"],
+    ["code", "Writing **index.html**", "**index.html**, 28 lines of HTML and CSS", "Writing the page"], // no emoji: the sheen's text clip paints them as grey blobs (user, 2026-09-13)
+    ["search", "Checking it **renders**", "Renders clean in **Chrome**", "Checking the render"],
+    ["file", "Saving the **file**", "Saved **index.html**, 1.4 KB", "Saving it"],
   ];
-  const SB_REPLY = "Ordered. A Big Mac Meal from McDonald's on 5th Ave, $9.49 on your saved card. It'll be at your door in about 14 minutes.";
+  const SB_REPLY = "Done. One index.html, plain HTML and CSS, no build step. Open it in any browser and it renders as-is.";
+  const FILE_TITLE = "Sunday Bakery landing page", FILE_KIND = "Code · HTML", FILE_BUTTON = "Download and open";
   const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char (both scale with speed)
   const ICON = {
     pin: '<svg viewBox="0 0 12 12"><path d="M6 10.8S2.6 7.6 2.6 5.2a3.4 3.4 0 0 1 6.8 0C9.4 7.6 6 10.8 6 10.8z"/><circle cx="6" cy="5.2" r="1.2"/></svg>',
     search: '<svg viewBox="0 0 12 12"><circle cx="5.2" cy="5.2" r="3.3"/><path d="M7.7 7.7 10.4 10.4"/></svg>',
     list: '<svg viewBox="0 0 12 12"><path d="M4 3h6M4 6h6M4 9h6"/><circle cx="1.9" cy="3" r=".6" fill="currentColor" stroke="none"/><circle cx="1.9" cy="6" r=".6" fill="currentColor" stroke="none"/><circle cx="1.9" cy="9" r=".6" fill="currentColor" stroke="none"/></svg>',
     tag: '<svg viewBox="0 0 12 12"><path d="M1.8 1.8h4l4.6 4.6-4 4-4.6-4.6z"/><circle cx="4.1" cy="4.1" r=".8" fill="currentColor" stroke="none"/></svg>',
+    code: '<svg viewBox="0 0 12 12"><path d="M4.4 3.2 1.8 6l2.6 2.8M7.6 3.2 10.2 6 7.6 8.8"/></svg>',
+    file: '<svg viewBox="0 0 12 12"><path d="M7 1.6H3.4a.9.9 0 0 0-.9.9v7a.9.9 0 0 0 .9.9h5.2a.9.9 0 0 0 .9-.9V4.2z"/><path d="M7 1.6v2.6h2.5"/></svg>',
   };
   const CHATGPT_RAIL = UI_BY_RAIL.indexOf("chatgpt-ui");
   // ---- the kit's settings: speed, open --------------------------------------
@@ -5996,9 +6205,61 @@ function chatScriptFor(title) {
     return ph ? [pc.btn, ph.btn] : [pc.btn]; // the demo taps them once the card has landed
   }
 
+  // the file card: the generated file, handed over under superbot's reply
+  // (a tilted code tile, the name and kind, a "Download and open" button).
+  // A click, Enter or Space opens the file popup. The phone gets its own copy.
+  function buildFileCard(extraClass) {
+    const card = add("div", "demo-file demo-t" + (extraClass ? " " + extraClass : ""));
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.setAttribute("aria-label", "Open " + (window.FILE_NAME || "the file"));
+    const ic = add("span", "demo-file-ic");
+    ic.insertAdjacentHTML("beforeend", ICON.code);
+    const meta = add("div", "demo-file-meta");
+    const title = add("div", "demo-file-title");
+    title.textContent = FILE_TITLE;
+    const kind = add("div", "demo-file-kind");
+    kind.textContent = FILE_KIND;
+    meta.append(title, kind);
+    const btn = add("span", "demo-file-btn");
+    const img = add("img");
+    img.src = "hero-assets/chrome.svg";
+    img.alt = "";
+    img.draggable = false;
+    const lbl = add("span");
+    lbl.textContent = FILE_BUTTON;
+    const div = add("i");
+    btn.append(img, lbl, div);
+    btn.insertAdjacentHTML("beforeend", '<svg class="demo-file-caret" viewBox="0 0 12 12"><path d="m3 4.6 3 3 3-3"/></svg>');
+    card.append(ic, meta, btn);
+    const open = () => { // one popup at a time, like the sidebar rows
+      if (window.closeSavings) closeSavings();
+      if (window.closeUsage) closeUsage();
+      if (window.mcClose) mcClose();
+      if (window.openFile) window.openFile();
+    };
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    return card;
+  }
+  // the card on the PC and on the phone; both rise together
+  function showFileCard(th, gen) {
+    const pc = buildFileCard();
+    th.appendChild(pc);
+    follow(th);
+    const ph = window.phTourMount ? window.phTourMount(buildFileCard("_ph")) : null;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!alive(gen)) return;
+      pc.classList.add("_on");
+      if (ph) ph.classList.add("_on");
+      follow(th);
+    }));
+  }
+
   // replay hygiene: every node and store entry the demo owns goes away so a
   // rerun starts from the same clean state as the first
   function clearTourState() {
+    if (window.closeFile) window.closeFile(); // a file popup left open from the last run
     document.querySelectorAll(".demo-t").forEach((el) => el.remove());
     threadStore.delete(chatKey(P.chatgpt, ASK));
     threadStore.delete(chatKey(P.gg, ASK));
@@ -6059,7 +6320,9 @@ function chatScriptFor(title) {
     await sleep(240); if (!alive(gen)) return;
     await sb.done(); if (!alive(gen)) return;
     await sleep(120); if (!alive(gen)) return;
-    await sbReply(th2, SB_REPLY, gen);
+    await sbReply(th2, SB_REPLY, gen); if (!alive(gen)) return;
+    await sleep(260); if (!alive(gen)) return; // the reply settles, then the file lands under it
+    showFileCard(th2, gen);
   }
 
   // ---- the kit -------------------------------------------------------------
