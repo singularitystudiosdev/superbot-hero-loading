@@ -2303,11 +2303,22 @@ body {
    first row after a beat unless the user clicks one (or presses 1/2/3)
    first, ⌘Enter skips. The pick lands as the user's bubble and the card
    folds away (_off). The phone's copy (_ph) is tighter. */
-.demo-ask { align-self: stretch; margin-top: 12px; padding: 14px 16px 12px; border-radius: 14px; background: #17181c; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 18px 40px -18px rgba(0, 0, 0, 0.8); display: grid; gap: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; opacity: 0; transform: translateY(10px); transition: opacity 420ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1); user-select: none; }
+.demo-ask { align-self: center; width: 560px; max-width: calc(100% - 48px); box-sizing: border-box; flex-shrink: 0; margin: auto 0 18px; padding: 14px 16px 12px; border-radius: 14px; background: #17181c; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 18px 40px -18px rgba(0, 0, 0, 0.8); display: grid; gap: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; opacity: 0; transform: translateY(10px); transition: opacity 420ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1); user-select: none; }
 .demo-ask._on { opacity: 1; transform: none; }
 .demo-ask._off { opacity: 0; transform: translateY(-6px); transition: opacity 260ms ease, transform 260ms ease; }
 .demo-ask-q { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; font-weight: 600; font-size: 15px; line-height: 1.3; letter-spacing: -0.2px; color: #f0f0f0; }
-.demo-ask-q svg { flex-shrink: 0; margin-left: auto; width: 12px; height: 12px; stroke: #8b90a0; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.demo-ask-fold { flex-shrink: 0; margin-left: auto; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; background: none; display: grid; place-items: center; cursor: pointer; transition: background 140ms ease; }
+.demo-ask-fold:hover { background: #26272c; }
+.demo-ask-fold svg { width: 12px; height: 12px; stroke: #8b90a0; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* folded: the card goes, the composer comes back with a "Reopen form ⌃" chip
+   above it (reference 3); the chip reopens the card */
+.demo-ask-reopen { align-self: center; width: 560px; max-width: calc(100% - 48px); box-sizing: border-box; flex-shrink: 0; margin: auto 0 8px; display: flex; justify-content: flex-end; }
+.demo-ask-reopen button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.1); background: #232429; color: #e6e8ee; font: 500 12.5px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; cursor: pointer; transition: background 140ms ease; }
+.demo-ask-reopen button:hover { background: #2b2c32; }
+.demo-ask-reopen svg { width: 11px; height: 11px; stroke: #c9ccd4; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.demo-ask-reopen + .bc-softwrap, .demo-ask-reopen + .ph-compose { margin-top: 0; }
+.demo-ask-reopen._ph { width: auto; align-self: stretch; margin: auto 12px 8px; }
+.bc-softwrap._asking, .ph-compose._asking { display: none; } /* the card takes the composer's place while it is open */
 .demo-ask-opt { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0; padding: 11px 6px 11px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.07); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background 140ms ease; }
 .demo-ask-opt:first-of-type { border-top: 0; padding-top: 6px; }
 .demo-ask-opt:hover .demo-ask-n, .demo-ask-opt:focus-visible .demo-ask-n { background: #34353b; color: #e6e8ee; }
@@ -2323,11 +2334,11 @@ body {
 .demo-ask-skip { display: inline-flex; align-items: baseline; gap: 6px; margin: 0; padding: 7px 12px; border-radius: 9px; background: #232429; border: 1px solid rgba(255, 255, 255, 0.1); color: #e6e8ee; font-weight: 500; font-size: 13px; line-height: 1.2; font-family: inherit; cursor: pointer; transition: background 140ms ease; }
 .demo-ask-skip:hover { background: #2b2c32; }
 .demo-ask-skip small { font-size: 11px; color: #8b90a0; }
-.demo-ask._ph { margin: 12px 2px 0; padding: 12px 12px 10px; }
+.demo-ask._ph { width: auto; align-self: stretch; margin: auto 12px 16px; padding: 12px 12px 10px; }
 .demo-ask._ph .demo-ask-q { font-size: 14px; }
 .demo-ask._ph .demo-ask-opt { padding: 9px 4px 9px 0; }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
-body.tour-lock .demo-ask, body.tour-lock .demo-ask * { pointer-events: auto !important; } /* the question card takes clicks while the demo plays */
+body.tour-lock .demo-ask, body.tour-lock .demo-ask *, body.tour-lock .demo-ask-reopen, body.tour-lock .demo-ask-reopen * { pointer-events: auto !important; } /* the question card and its reopen chip take clicks while the demo plays */
 /* while the demo plays the thinking rows fold at the demo's pace (--demo-fit-ms is set by the demo from PACE) */
 body.tour-lock .gt-think, body.tour-lock .gt-think-echo, body.tour-lock .ph-think, body.tour-lock .ph-bar-think { --fit-ms: var(--demo-fit-ms, 520ms); }
 @media (prefers-reduced-motion: reduce) {
@@ -6262,13 +6273,18 @@ function chatScriptFor(title) {
   // numbered rows (title over a one-line sub), a Skip ⌘Enter button. One
   // controller drives the PC's card and the phone's copy: pick(i) marks the
   // row on both, skip() marks none; either resolves the wait.
-  function buildAskCard(extraClass, onPick, onSkip) {
+  function buildAskCard(extraClass, onPick, onSkip, onFold) {
     const card = add("div", "demo-ask demo-t" + (extraClass ? " " + extraClass : ""));
     card.setAttribute("role", "group");
     card.setAttribute("aria-label", ASK_Q);
     const q = add("div", "demo-ask-q");
     q.textContent = ASK_Q;
-    q.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 12 12"><path d="m3 4.6 3 3 3-3"/></svg>');
+    const fold = add("button", "demo-ask-fold");
+    fold.type = "button";
+    fold.setAttribute("aria-label", "Collapse the question");
+    fold.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 12 12"><path d="m3 4.6 3 3 3-3"/></svg>');
+    fold.addEventListener("click", onFold);
+    q.appendChild(fold);
     card.appendChild(q);
     const rows = ASK_OPTS.map(([title, sub], i) => {
       const row = add("button", "demo-ask-opt");
@@ -6312,30 +6328,61 @@ function chatScriptFor(title) {
     follow(th);
   }
 
-  // the card rises on the PC and the phone, waits for a pick (a click, 1/2/3,
-  // ⌘Enter to skip, or the demo's own pick after ASK_DWELL), marks the row,
-  // folds both copies away and posts the answer. Resolves with the pick's
-  // title, or null on a skip.
+  // the card docks where the composer is (reference: the question sits on the
+  // chat's bottom edge, the composer hidden behind it) on the PC and the
+  // phone, and waits for a pick (a click, 1/2/3, ⌘Enter to skip, or the
+  // demo's own pick after ASK_DWELL). The chevron folds it: the composer
+  // comes back with a "Reopen form ⌃" chip above it, which reopens the card.
+  // A pick marks the row, fades both copies away, restores the composers and
+  // posts the answer. Resolves with the pick's title, or null on a skip.
   function askContents(th, gen) {
     return new Promise((resolve) => {
       let settled = false;
-      const cards = [];
+      const cards = []; // { card, rows, composer, chip }
+      const restore = () => cards.forEach((c) => { c.composer.classList.remove("_asking"); if (c.chip) { c.chip.remove(); c.chip = null; } });
       const finish = async (i) => {
         if (settled || !alive(gen)) return;
         settled = true;
         clearTimeout(auto);
         document.removeEventListener("keydown", onKey, true);
-        cards.forEach((c) => c.rows.forEach((r, j) => r.classList.toggle("_pick", j === i)));
-        await new Promise((r) => setTimeout(r, REDUCED_MOTION ? 0 : 340)); // the marked row reads before the fold
+        cards.forEach((c) => { // a folded copy comes back so the pick reads on it
+          if (c.chip) { c.chip.remove(); c.chip = null; c.composer.classList.add("_asking"); c.composer.parentNode.insertBefore(c.card, c.composer); c.card.classList.add("_on"); }
+          c.rows.forEach((r, j) => r.classList.toggle("_pick", j === i));
+        });
+        await new Promise((r) => setTimeout(r, REDUCED_MOTION ? 0 : 340)); // the marked row reads before the fade
         if (!alive(gen)) return;
         cards.forEach((c) => c.card.classList.add("_off"));
         await new Promise((r) => setTimeout(r, REDUCED_MOTION ? 0 : 280));
         if (!alive(gen)) return;
         cards.forEach((c) => c.card.remove());
+        restore();
         const pick = i == null ? null : ASK_OPTS[i][0];
         if (pick) demoAnswer(P.gg, pick);
         resolve(pick);
       };
+      // fold: the card leaves, the composer returns under a reopen chip
+      const foldAll = () => { if (settled) return; cards.forEach((c) => {
+        if (c.chip) return;
+        c.card.remove();
+        c.card.classList.remove("_on");
+        const chip = add("div", "demo-ask-reopen demo-t" + (c.ph ? " _ph" : ""));
+        const b = add("button"); b.type = "button";
+        const lbl = add("span"); lbl.textContent = "Reopen form";
+        b.appendChild(lbl);
+        b.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 12 12"><path d="m3 7.4 3-3 3 3"/></svg>');
+        b.addEventListener("click", unfoldAll);
+        chip.appendChild(b);
+        c.composer.parentNode.insertBefore(chip, c.composer);
+        c.composer.classList.remove("_asking");
+        c.chip = chip;
+      }); };
+      const unfoldAll = () => { if (settled) return; cards.forEach((c) => {
+        if (!c.chip) return;
+        c.chip.remove(); c.chip = null;
+        c.composer.classList.add("_asking");
+        c.composer.parentNode.insertBefore(c.card, c.composer);
+        requestAnimationFrame(() => requestAnimationFrame(() => c.card.classList.add("_on")));
+      }); };
       const onKey = (e) => {
         if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
         const n = parseInt(e.key, 10);
@@ -6343,13 +6390,20 @@ function chatScriptFor(title) {
         else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); finish(null); }
       };
       document.addEventListener("keydown", onKey, true);
-      const pc = buildAskCard("", finish, () => finish(null));
-      th.appendChild(pc.card);
+      // the PC's card docks in the main column where the composer sits
+      const pcComposer = th.parentNode.querySelector(".bc-softwrap");
+      const pc = buildAskCard("", finish, () => finish(null), foldAll);
+      pc.composer = pcComposer; pc.chip = null; pc.ph = false;
+      pcComposer.classList.add("_asking");
+      pcComposer.parentNode.insertBefore(pc.card, pcComposer);
       cards.push(pc);
       follow(th);
-      if (window.phTourMount) { // the phone gets its own copy, driven by the same controller
-        const ph = buildAskCard("_ph", finish, () => finish(null));
-        window.phTourMount(ph.card);
+      const phCompose = document.querySelector("#phone .ph-compose, .ph-compose");
+      if (phCompose) { // the phone gets its own copy, docked on its composer, driven by the same controller
+        const ph = buildAskCard("_ph", finish, () => finish(null), foldAll);
+        ph.composer = phCompose; ph.chip = null; ph.ph = true;
+        phCompose.classList.add("_asking");
+        phCompose.parentNode.insertBefore(ph.card, phCompose);
         cards.push(ph);
       }
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -6359,7 +6413,7 @@ function chatScriptFor(title) {
       }));
       const auto = setTimeout(() => finish(0), ASK_DWELL / (KIT.speed || 1)); // the demo picks the first row unless the user beat it
       // a reset mid-wait: the nodes go with clearTourState; drop the listener and let the promise hang (its tour is dead)
-      const watch = setInterval(() => { if (!alive(gen)) { clearInterval(watch); clearTimeout(auto); document.removeEventListener("keydown", onKey, true); } else if (settled) clearInterval(watch); }, 200);
+      const watch = setInterval(() => { if (!alive(gen)) { clearInterval(watch); clearTimeout(auto); document.removeEventListener("keydown", onKey, true); restore(); } else if (settled) clearInterval(watch); }, 200);
     });
   }
 
@@ -6368,6 +6422,7 @@ function chatScriptFor(title) {
   function clearTourState() {
     if (window.closeFile) window.closeFile(); // a file popup left open from the last run
     document.querySelectorAll(".demo-t").forEach((el) => el.remove());
+    document.querySelectorAll("._asking").forEach((el) => el.classList.remove("_asking")); // a composer hidden behind a question card from the last run
     threadStore.delete(chatKey(P.gg, ASK));
     const wrap = document.querySelector("#bloom-ui .bc-softwrap");
     if (wrap) wrap.classList.remove("_awake");
