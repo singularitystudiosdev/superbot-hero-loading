@@ -2155,11 +2155,13 @@ body {
 }
 
 /* ---- the scripted demo: ChatGPT can't order it, superbot can (2026-09-12) --
-   After the settle the page docks ChatGPT, the user asks for a HTML file, a
-   thinking line under the ask tries ("Thinking"), gives up ("Unable to make
-   HTML file") and hands off ("Redirecting to superbot"), the refusal lands, and
-   a framed "superbot can do it!" card with a chat button rises into the
-   thread. body.tour-lock swallows pointer input while the demo plays. */
+   After the settle the page docks superbot, the user asks for a HTML file, a
+   thinking line under the ask reads "Thinking" while the ring carries the
+   thoughts, the tool calls run, the reply types and the file card lands
+   (user, 2026-09-14: the ChatGPT refusal and the "superbot can do it!" card
+   are gone; their .gt-sbcard styles below are kept for the phone's card
+   scaling and any future hand-off). body.tour-lock swallows pointer input
+   while the demo plays. */
 /* the thinking row, overhead in the composer (user, 2026-09-12: "like it was
    before in superbot"): .gt-think is the FIRST row of the ChatGPT pill, above
    the input row. It is a grid track that eases 0fr → 1fr (--fit-ms), so the
@@ -5852,11 +5854,11 @@ function chatScriptFor(title) {
 }
 
 // ---- the scripted demo that plays after the settle (2026-09-12) -----------
-// Claude has just docked: dwell 0.9s → ChatGPT; the user types "Make me a
-// HTML file"; a thinking line under the ask tries ("Thinking"), gives up
-// ("Unable to make HTML file") and hands off ("Redirecting to superbot"); the
-// refusal lands the way chatgpt.com paints a short reply; then a framed
-// "superbot can do it!" card with a chat button rises into the thread. A
+// Claude has just docked: dwell 0.9s → superbot; the user types "Make me a
+// HTML file"; the thinking line under the ask reads "Thinking" while the
+// composer ring carries the thoughts and the tool calls run one line at a
+// time; the reply types, and the file card lands under it (user, 2026-09-14:
+// no ChatGPT refusal, no "Redirecting to superbot" beat any more). A
 // double tap during the LOAD animation fast-forwards it to this point
 // (skipIntro); the demo itself always plays at normal speed. Replay-safe:
 // reset()'s fxGen bump cancels the demo between beats and a fresh run clears
@@ -5864,11 +5866,8 @@ function chatScriptFor(title) {
 (function () {
   const ASK = "Make me a HTML file";
   const ECHO = "Thinking"; // the thread line under the ask says only this (user, 2026-09-12)
-  const THOUGHTS = ["Unable to make HTML file", "Redirecting to superbot"]; // the bar's thoughts; it never says "Thinking"
-  const REFUSAL = "I can’t create or save files from this chat because there isn’t an active file workspace connected.";
-  const CARD_TITLE = "superbot can do it!";
-  const CARD_BUTTON = "chat";
-  // the superbot leg: the row's opening thought, the tool calls [icon,
+  // superbot does it straight away (user, 2026-09-14: no ChatGPT refusal, no
+  // "Redirecting to superbot"): the row's opening thought, the tool calls [icon,
   // running label, result, the row's thought while it runs], the reply and
   // the file card it hands over (a click opens the file popup, see openFile)
   const SB_OPEN = "Write a single-file HTML page and hand it over";
@@ -5889,7 +5888,6 @@ function chatScriptFor(title) {
     code: '<svg viewBox="0 0 12 12"><path d="M4.4 3.2 1.8 6l2.6 2.8M7.6 3.2 10.2 6 7.6 8.8"/></svg>',
     file: '<svg viewBox="0 0 12 12"><path d="M7 1.6H3.4a.9.9 0 0 0-.9.9v7a.9.9 0 0 0 .9.9h5.2a.9.9 0 0 0 .9-.9V4.2z"/><path d="M7 1.6v2.6h2.5"/></svg>',
   };
-  const CHATGPT_RAIL = UI_BY_RAIL.indexOf("chatgpt-ui");
   // ---- the kit's settings: speed, open --------------------------------------
   const KIT_KEY = "hero.thinkKit";
   let stored = {};
@@ -6035,35 +6033,6 @@ function chatScriptFor(title) {
     };
   }
 
-  // the refusal: ChatGPT's own reply block, typed in char by char with each
-  // char fading in (user, 2026-09-12: "smooth fade in typewriter"), stored;
-  // resolves once the last char has landed
-  const REPLY_CHAR_MS = 14;
-  async function reply(th, text, gen) {
-    const p = P.chatgpt;
-    const key = chatKey(p, liveChat.get(p.key));
-    if (threadStore.has(key)) threadStore.get(key).push({ who: "bot", text });
-    const wrap = add("div", p.wrap + " bc-app demo-t");
-    const t = add("div", p.rtxt);
-    wrap.appendChild(t);
-    th.appendChild(wrap);
-    const ph = window.phTourTyped ? window.phTourTyped() : null; // the phone types the same refusal in step
-    if (REDUCED_MOTION) { t.textContent = text; if (ph) ph.done(text); await sleep(250); return; }
-    const chars = Array.from(text); // code points, never half an emoji
-    for (let i = 0; i < chars.length; i++) {
-      if (!alive(gen)) return;
-      const c = add("span", "demo-ch");
-      c.textContent = chars[i];
-      t.appendChild(c);
-      if (ph) ph.char(chars[i]);
-      await sleep(REPLY_CHAR_MS);
-    }
-    await sleep(420); // the last char's fade finishes before the card rises
-    if (!alive(gen)) return;
-    t.textContent = text; // normalised to plain text once typed
-    if (ph) ph.done(text);
-  }
-
   // ---- the superbot leg -----------------------------------------------------
   const follow = (th) => { th.scrollTop = th.scrollHeight; }; // keep the newest line in view
 
@@ -6155,56 +6124,6 @@ function chatScriptFor(title) {
     while (alive(gen) && performance.now() - t0 < typed) { await sleep(120 * (KIT.speed || 1)); follow(th); }
   }
 
-  // the demo's own tap on the card's chat button: it presses, releases, and
-  // superbot docks (the phone follows)
-  async function pressChat(btns, gen) { // the PC's button and the phone's, pressed together
-    btns.forEach((b) => b.classList.add("_press"));
-    await sleep(REDUCED_MOTION ? 0 : 150); if (!alive(gen)) return;
-    btns.forEach((b) => b.classList.remove("_press"));
-    await sleep(REDUCED_MOTION ? 0 : 200); if (!alive(gen)) return;
-    dockUi(-1, gen);
-    if (window.syncFromRail) window.syncFromRail(-1);
-  }
-
-  // the card: the cat mark, "superbot can do it!", a chat button, in the
-  // rainbow frame; it rises in on its own transition once it has painted at
-  // rest. chat hands the ask over: superbot docks and the phone follows.
-  function buildCard(extraClass) {
-    const card = add("div", "gt-sbcard demo-t" + (extraClass ? " " + extraClass : "")); // the riser; the bloom is its ::before
-    const plate = add("div", "gt-sbcard-plate"); // the framed plate; the shine is its ::after
-    const title = add("div", "gt-sbcard-title");
-    const img = add("img");
-    img.src = "hero-assets/superbot-mark.svg";
-    img.alt = "";
-    img.draggable = false;
-    const t = add("span");
-    t.textContent = CARD_TITLE;
-    title.append(img, t);
-    const btn = add("button", "gt-sbcard-btn");
-    btn.type = "button";
-    btn.textContent = CARD_BUTTON;
-    btn.addEventListener("click", () => {
-      dockUi(-1, fxGen);
-      if (window.syncFromRail) window.syncFromRail(-1);
-    });
-    plate.append(title, btn);
-    card.appendChild(plate);
-    return { card, btn };
-  }
-  // the card on the PC and, scaled, on the phone; both rise together
-  function showCard(th, gen) {
-    const pc = buildCard();
-    th.appendChild(pc.card);
-    const ph = window.phTourMount ? buildCard("_ph") : null;
-    if (ph) window.phTourMount(ph.card);
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!alive(gen)) return;
-      pc.card.classList.add("_on");
-      if (ph) ph.card.classList.add("_on");
-    }));
-    return ph ? [pc.btn, ph.btn] : [pc.btn]; // the demo taps them once the card has landed
-  }
-
   // the file card: the generated file, handed over under superbot's reply
   // (a tilted code tile, the name and kind, a "Download and open" button).
   // A click, Enter or Space opens the file popup. The phone gets its own copy.
@@ -6261,7 +6180,6 @@ function chatScriptFor(title) {
   function clearTourState() {
     if (window.closeFile) window.closeFile(); // a file popup left open from the last run
     document.querySelectorAll(".demo-t").forEach((el) => el.remove());
-    threadStore.delete(chatKey(P.chatgpt, ASK));
     threadStore.delete(chatKey(P.gg, ASK));
     const wrap = document.querySelector("#bloom-ui .bc-softwrap");
     if (wrap) wrap.classList.remove("_awake");
@@ -6280,32 +6198,10 @@ function chatScriptFor(title) {
 
   async function tourBody(gen) {
     await sleep(900); if (!alive(gen)) return;
-    dockUi(CHATGPT_RAIL, gen); // ChatGPT (the pill walks to its tile) — phone follows
-    if (window.syncFromRail) window.syncFromRail(CHATGPT_RAIL);
+    dockUi(-1, gen); // superbot docks straight away (the pill walks to its tile) — phone follows
+    if (window.syncFromRail) window.syncFromRail(-1);
     await sleep(700); if (!alive(gen)) return;
-    await demoType(P.chatgpt, ASK, gen); if (!alive(gen)) return;
-    await sleep(320); if (!alive(gen)) return;
-    const th = demoSend(P.chatgpt, ASK);
-    if (window.phTourSend) window.phTourSend("ChatGPT"); // the phone mirrors the send
-    await sleep(420); if (!alive(gen)) return; // the line wakes a beat after the send, not with it
-    const think = openThink(P.chatgpt, th, gen);
-    await think.open(); if (!alive(gen)) return; // the thread line reads "Thinking" from here; the bar is still a plain pill
-    await sleep(700); if (!alive(gen)) return; // a beat of plain thinking before the bar opens with its first thought
-    await think.say(THOUGHTS[0]); if (!alive(gen)) return;
-    await sleep(1200); if (!alive(gen)) return;
-    await think.say(THOUGHTS[1]); if (!alive(gen)) return;
-    await sleep(900); if (!alive(gen)) return;
-    await think.done(); if (!alive(gen)) return; // both rows fold shut before the reply types
-    await sleep(120); if (!alive(gen)) return;
-    await reply(th, REFUSAL, gen); if (!alive(gen)) return;
-    await sleep(500); if (!alive(gen)) return;
-    const btns = showCard(th, gen);
-    // the superbot leg: the card is read, chat is tapped, superbot docks and
-    // does the order for real: the ask, the thinking row, the tool calls,
-    // and the reply that it is ordered
-    await sleep(1900); if (!alive(gen)) return; // the rise, the shine, a beat to read the card
-    await pressChat(btns, gen); if (!alive(gen)) return;
-    await sleep(700); if (!alive(gen)) return;
+    // the ask, the thinking row, the tool calls, the reply and the file
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th2 = demoSend(P.gg, ASK);
