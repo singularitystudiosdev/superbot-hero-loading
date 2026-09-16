@@ -6516,8 +6516,8 @@ function chatScriptFor(title) {
         const top = add("div", "bc-worker-top");
         const img = add("img"); img.src = st.worker.src; img.alt = ""; img.draggable = false;
         const name = add("span", "bc-worker-name");
-        name.textContent = "Worker " + (i + 1);
-        const model = add("small"); model.textContent = st.worker.name + " " + st.worker.model;
+        name.textContent = st.worker.name; // the provider in place of "Worker N" (user, 2026-09-16)
+        const model = add("small"); model.textContent = st.worker.sub; // the model without a repeated provider name: Hermes · 4, Claude · Sonnet 5
         name.appendChild(model);
         const pct = add("span", "bc-worker-pct"); pct.textContent = "0%";
         top.append(img, name, pct);
@@ -7041,6 +7041,10 @@ function chatScriptFor(title) {
     { id: "hermes", name: "Hermes", model: "Hermes 4", src: "hero-assets/hermes.png" },
   ];
   const WORKERS = ["1", "2", "4", "8", "auto"];
+  // the model shown beside a provider name: "Hermes 4" beside "Hermes" reads
+  // as "Hermes Hermes 4" (user, 2026-09-16), so a leading provider name is
+  // dropped: Hermes · 4, Grok · 4, Devin · 2, Claude · Opus 4.6
+  const modelSub = (m) => (m.model.toLowerCase().startsWith(m.name.toLowerCase()) ? m.model.slice(m.name.length).trim() : m.model);
   const KEY = "hero.super";
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { console.error("[super] bad stored settings", e); }
@@ -7053,10 +7057,11 @@ function chatScriptFor(title) {
     if (window.superChanged) window.superChanged(); // a worker panel in flight follows the change (off folds it, on opens it, a new count or model rebuilds it)
   };
   // read by the live think: is super on, which model the workers run on, how many at once
+  const withSub = (m) => Object.assign({ sub: modelSub(m) }, m);
   window.superState = () => ({
     on: S.on,
-    worker: MODELS.find((m) => m.id === S.worker) || MODELS[0],
-    manager: MODELS.find((m) => m.id === S.manager) || MODELS[0],
+    worker: withSub(MODELS.find((m) => m.id === S.worker) || MODELS[0]),
+    manager: withSub(MODELS.find((m) => m.id === S.manager) || MODELS[0]),
     workers: S.workers,
     review: S.review,
   });
@@ -7112,7 +7117,7 @@ function chatScriptFor(title) {
       const o = el("button", "bc-superopt"); o.type = "button"; o.setAttribute("role", "option");
       const oi = el("img"); oi.src = m.src; oi.alt = ""; oi.draggable = false;
       const on = el("span", "bc-supername");
-      const ob = el("span"); ob.textContent = m.name; const os = el("small"); os.textContent = m.model;
+      const ob = el("span"); ob.textContent = m.name; const os = el("small"); os.textContent = modelSub(m);
       on.append(ob, os);
       const chk = el("span", "bc-supercheck");
       o.append(oi, on, chk);
@@ -7122,7 +7127,7 @@ function chatScriptFor(title) {
     });
     const render = () => {
       const m = MODELS.find((x) => x.id === S[key]) || MODELS[0];
-      img.src = m.src; img.alt = m.name; big.textContent = m.name; small.textContent = m.model;
+      img.src = m.src; img.alt = m.name; big.textContent = m.name; small.textContent = modelSub(m);
       opts.forEach(({ m: om, o }) => o.setAttribute("aria-selected", om.id === m.id ? "true" : "false"));
     };
     const open = () => { pickers.forEach((p) => { if (p !== api) p.close(); }); list.classList.add("_open"); pick.setAttribute("aria-expanded", "true"); };
