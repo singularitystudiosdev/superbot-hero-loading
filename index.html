@@ -4902,8 +4902,26 @@ function panelSend(p, text, target, replyOverride) {
     const q = panelReplyTimers.get(p.key);
     if (q) { const i = q.indexOf(timer); if (i >= 0) q.splice(i, 1); if (!q.length) panelReplyTimers.delete(p.key); }
     const reply = replyOverride || CANNED_REPLIES[cannedIdx++ % CANNED_REPLIES.length];
-    threadStore.get(key).push({ who: "bot", text: reply });
-    if (liveChat.get(p.key) === title) panelAddReply(p, th, reply, target, true, submittedAt);
+    const land = (at) => {
+      threadStore.get(key).push({ who: "bot", text: reply });
+      if (liveChat.get(p.key) === title) panelAddReply(p, th, reply, target, true, at);
+    };
+    // superbot thinks first (user, 2026-09-16): the Thinking line under the
+    // ask and the ring row above the composer cycle thoughts for ~10s the way
+    // the demo's do, fold, and only then the reply types. "New chat" (the
+    // stream token bump) drops the reply; a chat switch lands it in the store
+    // only. The phone's copy of the reply waits for the fold too.
+    if (p.key === "gg" && window.pcLiveThink) {
+      const tok = panelStreamToken.get(p.key) || 0;
+      const cancelled = () => (panelStreamToken.get(p.key) || 0) !== tok || liveChat.get(p.key) !== title;
+      window.pcLiveThink(p, th, cancelled).then(() => {
+        if ((panelStreamToken.get(p.key) || 0) !== tok) return;
+        land(performance.now());
+        if (window.phLandReply) window.phLandReply("Superbot", reply);
+      });
+      return;
+    }
+    land(submittedAt);
   }, 220); // TTFT: 650ms → 220ms, 2026-09-07 — live-app time-to-first-token
   queue.push(timer);
   panelReplyTimers.set(p.key, queue);
@@ -5175,6 +5193,7 @@ document.querySelectorAll(".composer").forEach((c) => {
     threadStore.set(key, []);
     const timers = panelReplyTimers.get(p.key);
     if (timers) { timers.forEach((h) => clearTimeout(h)); panelReplyTimers.delete(p.key); }
+    panelStreamToken.set(p.key, (panelStreamToken.get(p.key) || 0) + 1); // a think in flight on the PC sees the bump and kills its rows
     const root = document.getElementById(p.root);
     const th = root && root.querySelector(p.thSel);
     if (th) th.innerHTML = "";
@@ -5404,25 +5423,31 @@ document.querySelectorAll(".composer").forEach((c) => {
     const submittedAt = performance.now();
     const pool = PH_REPLIES[a.name] || (a.reply ? [a.reply] : ["On it — give me a moment.", "Done. Anything else?"]);
     const replyText = pool[phReplyIdx++ % pool.length];
+    // the PC's reveal, verbatim: an empty reply node the fx engine fills, no
+    // whole-text pop. Superbot alone thinks first: its rows run on the PC and
+    // mirror here, and this reply waits for their fold (user, 2026-09-16)
+    const landPhone = (at) => {
+      const el = add("div", "ph-replytxt");
+      el.style.marginTop = "18px";
+      msgs.appendChild(el);
+      msgs.scrollTop = msgs.scrollHeight;
+      const desc = PH_FX[a.name] || { key: "ph-" + a.name.toLowerCase().replace(/\s+/g, "-"), fx: { kind: "instant", landAt: 350 } };
+      panelStreamReply(desc, el, replyText, () => {
+        const act = add("div", "ph-actrow");
+        act.innerHTML = PH_ACT;
+        msgs.appendChild(act);
+        msgs.scrollTop = msgs.scrollHeight;
+        phBusy = false;
+      }, at);
+    };
+    const thinks = a.name === "Superbot" && !!window.pcLiveThink;
+    let mirrored = false;
     if (!syncEcho) {
       syncEcho = true;
-      mirrorSendToPc(a.name, v, replyText);
+      mirrored = mirrorSendToPc(a.name, v, replyText, thinks ? () => landPhone(performance.now()) : null);
       syncEcho = false;
     }
-    // the PC's reveal, verbatim: an empty reply node the fx engine fills —
-    // NO Thinking step, no whole-text pop
-    const el = add("div", "ph-replytxt");
-    el.style.marginTop = "18px";
-    msgs.appendChild(el);
-    msgs.scrollTop = msgs.scrollHeight;
-    const desc = PH_FX[a.name] || { key: "ph-" + a.name.toLowerCase().replace(/\s+/g, "-"), fx: { kind: "instant", landAt: 350 } };
-    panelStreamReply(desc, el, replyText, () => {
-      const act = add("div", "ph-actrow");
-      act.innerHTML = PH_ACT;
-      msgs.appendChild(act);
-      msgs.scrollTop = msgs.scrollHeight;
-      phBusy = false;
-    }, submittedAt);
+    if (!(thinks && mirrored)) landPhone(submittedAt);
   }
   phCph.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendPh(); } });
   chat.querySelector(".ph-csend").addEventListener("click", sendPh);
@@ -5447,12 +5472,15 @@ document.querySelectorAll(".composer").forEach((c) => {
 
   // phone → PC: a phone send lands the same user bubble + reply text on the
   // docked panel (reply through the panel's own fx, 220ms TTFT like panelSend)
-  function mirrorSendToPc(name, userText, replyText) {
+  // after (optional): the phone's own reply landing, deferred behind superbot's
+  // think on the PC; returns true when this call took it over, false when the
+  // caller must land the phone's reply itself
+  function mirrorSendToPc(name, userText, replyText, after) {
     const p = PC_PANEL_BY_NAME[name];
-    if (!p) return;
+    if (!p) return false;
     const root = document.getElementById(p.root);
     const th = root && root.querySelector(p.thSel);
-    if (!th) return;
+    if (!th) return false;
     const title = liveChat.get(p.key) || userText;
     if (!liveChat.get(p.key)) liveChat.set(p.key, title);
     const key = chatKey(p, title);
@@ -5462,10 +5490,21 @@ document.querySelectorAll(".composer").forEach((c) => {
     bub.textContent = userText;
     th.appendChild(bub);
     panelAddRecent(p, userText);
-    setTimeout(() => {
+    const land = () => {
       threadStore.get(key).push({ who: "bot", text: replyText });
       if (liveChat.get(p.key) === title) panelAddReply(p, th, replyText, null, true, performance.now() - 220);
-    }, 220);
+    };
+    if (after && window.pcLiveThink) { // superbot: the think runs on the PC (mirrored here), then both replies land
+      const tok = panelStreamToken.get(p.key) || 0;
+      const cancelled = () => (panelStreamToken.get(p.key) || 0) !== tok || liveChat.get(p.key) !== title;
+      window.pcLiveThink(p, th, cancelled).then(() => {
+        if ((panelStreamToken.get(p.key) || 0) === tok) land();
+        after();
+      });
+      return true;
+    }
+    setTimeout(land, 220);
+    return false;
   }
 
   // PC → phone: a rail tile / mascot click mirrors the dock onto the phone
@@ -5494,6 +5533,7 @@ document.querySelectorAll(".composer").forEach((c) => {
     user.textContent = text;
     msgs.appendChild(user);
     msgs.scrollTop = msgs.scrollHeight;
+    if (p.key === "gg" && window.pcLiveThink) return replyText; // superbot thinks on the PC first; panelSend lands this reply through phLandReply after the fold
     setTimeout(() => {
       const el = add("div", "ph-replytxt");
       el.style.marginTop = "18px";
@@ -5506,6 +5546,22 @@ document.querySelectorAll(".composer").forEach((c) => {
       }, submittedAt);
     }, 220);
     return replyText;
+  };
+  // PC → phone, after superbot's think: the reply the PC just landed lands
+  // here too, through the same fx, if the phone is still on that app
+  window.phLandReply = function (name, text) {
+    if (PH_APPS[phApp].name !== name) return;
+    const msgs = chat.querySelector(".ph-msgs");
+    const el = add("div", "ph-replytxt");
+    el.style.marginTop = "18px";
+    msgs.appendChild(el);
+    msgs.scrollTop = msgs.scrollHeight;
+    panelStreamReply(PH_FX[name] || { key: "ph-" + name.toLowerCase(), fx: { kind: "instant", landAt: 350 } }, el, text, () => {
+      const act = add("div", "ph-actrow");
+      act.innerHTML = PH_ACT;
+      msgs.appendChild(act);
+      msgs.scrollTop = msgs.scrollHeight;
+    }, performance.now());
   };
 
   // tour → phone: the scripted demo mirrors its beats onto the phone so the
@@ -5993,6 +6049,7 @@ function chatScriptFor(title) {
   const RING = '<svg viewBox="0 0 12 12"><path d="M10.4 6A4.4 4.4 0 1 1 6 1.6"/></svg>';
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, T(ms)));
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms)); // real ms: the live think runs at the chat's pace, not the demo's
   const alive = (gen) => gen === fxGen;
   const P = {};
   CHAT_PANELS.forEach((p) => { P[p.key] = p; });
@@ -6040,7 +6097,11 @@ function chatScriptFor(title) {
   // shows thinking in the same way as the chat gpt"): p picks the composer
   // (ChatGPT's pill or superbot's ring, which stays lit while it carries the
   // row). The phone mirrors the Thinking line.
-  function openThink(p, th, gen) {
+  // live (optional): a cancelled() predicate for a real send's think — every
+  // beat then runs in real ms (no PACE, no speed slider) and stops on it too
+  function openThink(p, th, gen, live) {
+    const beat = live ? wait : sleep;
+    const ok = () => alive(gen) && !(live && live());
     const root = document.getElementById(p.root);
     const composer = root.querySelector(p.key === "chatgpt" ? ".gt-compose" : ".composer");
     const wrap = p.key === "gg" ? root.querySelector(".bc-softwrap") : null;
@@ -6066,25 +6127,26 @@ function chatScriptFor(title) {
     echo.appendChild(echoBody);
     th.appendChild(echo);
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
+    const kill = () => { row.remove(); echo.remove(); if (ph) ph.remove(); if (wrap) wrap.classList.remove("_awake"); }; // the rows go at once, no fold
     return {
       async open() { // the thread line only; the bar's row waits for its first thought
-        await sleep(30); // painted closed first, so the open is a transition
+        await beat(30); // painted closed first, so the open is a transition
         echo.classList.add("_on"); // the thread line fades up
         if (ph) ph.open(); // …and on the phone
-        await sleep(REDUCED_MOTION ? 0 : 450); // the open settles
+        await beat(REDUCED_MOTION ? 0 : 450); // the open settles
       },
       async say(text) { // the bar only
         const my = ++sayGen;
         if (!row.classList.contains("_on")) { // first thought: the pill opens around the row now (user, 2026-09-12: "only pops up when it starts thinking")
           row.classList.add("_on"); // the pill grows to make room
           if (ph) ph.bar.open(); // the phone's ring opens too
-          await sleep(REDUCED_MOTION ? 0 : 450); // the open settles before the line types
-          if (!alive(gen) || my !== sayGen) return;
+          await beat(REDUCED_MOTION ? 0 : 450); // the open settles before the line types
+          if (!ok() || my !== sayGen) return;
         } else if (textEl.textContent) { // the previous line lifts and fades out first
           textEl.classList.add("_out");
           if (ph) ph.bar.out();
-          await sleep(REDUCED_MOTION ? 0 : 260);
-          if (!alive(gen) || my !== sayGen) return;
+          await beat(REDUCED_MOTION ? 0 : 260);
+          if (!ok() || my !== sayGen) return;
         }
         textEl.textContent = "";
         if (REDUCED_MOTION) { textEl.classList.remove("_out"); textEl.textContent = text; if (ph) ph.bar.set(text); return; }
@@ -6097,12 +6159,12 @@ function chatScriptFor(title) {
         textEl.classList.remove("_in");
         const chars = Array.from(text); // code points, so an emoji never splits into two half-spans
         for (let i = 0; i < chars.length; i++) {
-          if (!alive(gen) || my !== sayGen) return;
+          if (!ok() || my !== sayGen) return;
           const c = add("span", "demo-ch");
           c.textContent = chars[i];
           textEl.appendChild(c);
           if (ph) ph.bar.char(chars[i]); // the phone's row types the same char
-          await sleep(CHAR_MS);
+          await beat(CHAR_MS);
         }
       },
       // done: the sheen and spinner stop, then both rows fold shut (the pill
@@ -6111,20 +6173,66 @@ function chatScriptFor(title) {
       async done() {
         // the ring and the sheen keep running into the fold: stopping them
         // first snapped both back to frame zero (the "not clean" stop)
-        await sleep(REDUCED_MOTION ? 0 : 160); // a short beat before the fold
-        if (!alive(gen)) return;
+        await beat(REDUCED_MOTION ? 0 : 160); // a short beat before the fold
+        if (!ok()) return;
         row.classList.remove("_on");
         echo.classList.remove("_on");
         if (ph) ph.fold();
-        await sleep(REDUCED_MOTION ? 0 : 560); // the 520ms fold settles
-        if (!alive(gen)) return;
-        row.remove();
-        echo.remove();
-        if (ph) ph.remove();
-        if (wrap) wrap.classList.remove("_awake");
+        await beat(REDUCED_MOTION ? 0 : 560); // the 520ms fold settles
+        if (!ok()) return;
+        kill();
       },
+      kill,
     };
   }
+
+  // ---- live thinking (user, 2026-09-16) ------------------------------------
+  // Every real send in superbot's composer thinks the way the demo does: the
+  // Thinking line under the ask and the ring row above the composer open, the
+  // row cycles LIVE_THOUGHTS across LIVE_THINK_MS of real time, then both fold
+  // and the reply types. The phone mirrors it through openThink's phTourThink
+  // hook. Sends chain: a second message thinks after the first has folded.
+  // cancelled() (New chat, a chat switch, a replay) kills the rows at the next
+  // beat. Resolves true when the think ran to its fold, false when it was cut.
+  const LIVE_THINK_MS = 10000;
+  const LIVE_THOUGHTS = [
+    "Reading the message",
+    "Working out what you are after",
+    "Checking the thread so far",
+    "Weighing a couple of angles",
+    "Drafting a reply",
+    "Tightening the wording",
+    "Checking it reads right",
+    "Wrapping up",
+  ];
+  let liveChain = Promise.resolve();
+  async function runLiveThink(p, th, cancelled) {
+    const gen = fxGen;
+    const dead = () => !alive(gen) || !!(cancelled && cancelled());
+    const tab = openThink(p, th, gen, dead);
+    const bail = () => { tab.kill(); return false; };
+    if (dead()) return bail();
+    await tab.open(); if (dead()) return bail();
+    follow(th);
+    const t0 = performance.now();
+    const every = LIVE_THINK_MS / LIVE_THOUGHTS.length;
+    for (let i = 0; i < LIVE_THOUGHTS.length; i++) {
+      await tab.say(LIVE_THOUGHTS[i]); if (dead()) return bail();
+      const due = t0 + every * (i + 1);
+      while (performance.now() < due) { // checked every 100ms so a New chat drops the rows at once
+        await wait(Math.min(100, due - performance.now()));
+        if (dead()) return bail();
+      }
+    }
+    await tab.done();
+    if (dead()) return bail();
+    return true;
+  }
+  window.pcLiveThink = function (p, th, cancelled) {
+    const run = liveChain.then(() => runLiveThink(p, th, cancelled));
+    liveChain = run.catch((e) => { console.error("[live-think]", e); });
+    return run;
+  };
 
   // ---- the superbot leg -----------------------------------------------------
   const follow = (th) => { th.scrollTop = th.scrollHeight; }; // keep the newest line in view
