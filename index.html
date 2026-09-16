@@ -284,6 +284,7 @@ body {
 .bcs-main { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; min-height: 0; min-width: 0; }
 .bcs-thread { display: flex; flex-direction: column; align-items: stretch; width: 560px; max-width: calc(100% - 48px); margin-top: 28px; text-align: left; box-sizing: border-box; flex: 0 1 auto; min-height: 0; overflow-y: auto; padding-bottom: 14px; scrollbar-width: none; } /* the scroll region: a long exchange scrolls above the pinned composer instead of running into it (2026-09-12) */
 .bcs-thread::-webkit-scrollbar { display: none; }
+.bcs-thread > * { flex-shrink: 0; } /* the thread scrolls; its items never compact when the composer grows under it (user, 2026-09-16: the file card was being squashed) */
 .bcs-bub {
   align-self: flex-end;
   background: #1a1a1c; border-radius: 12px;
@@ -5830,7 +5831,8 @@ document.querySelectorAll(".composer").forEach((c) => {
   };
   // the Thinking line under the ask, mirrored: opens with the PC's, folds
   // with it (user, 2026-09-13: "make mobile sync too")
-  window.phTourThink = function () {
+  // noLine: a live send keeps the thread clear of the Thinking line (2026-09-16)
+  window.phTourThink = function (noLine) {
     const msgs = chat.querySelector(".ph-msgs");
     const line = add("div", "ph-think demo-t");
     const body = add("div", "ph-think-body");
@@ -5841,7 +5843,7 @@ document.querySelectorAll(".composer").forEach((c) => {
     inner.appendChild(t);
     body.appendChild(inner);
     line.appendChild(body);
-    msgs.appendChild(line);
+    if (!noLine) msgs.appendChild(line);
     msgs.scrollTop = msgs.scrollHeight;
     // the popup thought row in the phone's composer ring: the PC's say()
     // drives it event by event (open, swap out, reset, each char) so the two
@@ -6358,7 +6360,7 @@ function chatScriptFor(title) {
     const composer = root.querySelector(p.key === "chatgpt" ? ".gt-compose" : ".composer");
     const wrap = p.key === "gg" ? root.querySelector(".bc-softwrap") : null;
     if (wrap) wrap.classList.add("_awake");
-    const ph = window.phTourThink ? window.phTourThink() : null;
+    const ph = window.phTourThink ? window.phTourThink(!!live) : null; // a live send skips the thread's Thinking line, here and on the phone
     const row = add("div", "gt-think demo-t _live");
     const body = add("div", "gt-think-body");
     const inner = add("div", "gt-think-in");
@@ -6377,7 +6379,7 @@ function chatScriptFor(title) {
     echoIn.appendChild(echoText);
     echoBody.appendChild(echoIn);
     echo.appendChild(echoBody);
-    th.appendChild(echo);
+    if (!live) th.appendChild(echo); // the demo shows the Thinking line under the ask; a live send does not (user, 2026-09-16), only the ring row carries it
     let sayGen = 0; // a newer say() cancels one still typing, so two lines never interleave
     const kill = () => { row.remove(); echo.remove(); if (ph) ph.remove(); if (wrap) wrap.classList.remove("_awake"); }; // the rows go at once, no fold
     return {
@@ -6478,44 +6480,69 @@ function chatScriptFor(title) {
     "Pulling the latest docs", "Comparing two approaches", "Reviewing the edge cases",
     "Naming the variables", "Running the example", "Trimming the intro",
   ];
+  // The panel is mounted for every live think, shown only while SUPER is on,
+  // and follows the frame while the think runs (user, 2026-09-16): OFF folds
+  // it, ON opens it, a new WORKERS count or WORKER model folds, rebuilds and
+  // reopens it. sync() reads window.superState and reconciles; the SUPER
+  // frame calls window.superChanged on every save.
+  const workerPanels = new Set();
+  window.superChanged = () => { workerPanels.forEach((w) => w.sync()); };
   function openWorkers(composer, dead) {
-    const st = window.superState ? window.superState() : null;
-    if (!st || !st.on || !composer) return null;
-    const n = st.workers === "auto" ? 3 : Math.max(1, parseInt(st.workers, 10) || 1);
-    const panel = add("div", "bc-workers demo-t" + (n >= 5 ? " _scroll" : ""));
+    if (!composer || !window.superState) return null;
+    const panel = add("div", "bc-workers demo-t");
     const body = add("div", "bc-workers-body");
-    const inner = add("div", "bc-workers-in" + (n === 4 ? " _grid" : n >= 5 ? " _grid _scroll" : ""));
+    const inner = add("div", "bc-workers-in");
     body.appendChild(inner);
     panel.appendChild(body);
     composer.insertBefore(panel, composer.querySelector(".composer-main")); // under the thinking row, above the input row
-    let live = true;
     const pool = [];
     const draw = () => { if (!pool.length) pool.push(...WORKER_TASKS); return pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; };
-    const cards = [];
-    for (let i = 0; i < n; i++) {
-      const c = add("div", "bc-worker");
-      c.style.setProperty("--i", String(i));
-      const top = add("div", "bc-worker-top");
-      const img = add("img"); img.src = st.worker.src; img.alt = ""; img.draggable = false;
-      const name = add("span", "bc-worker-name");
-      name.textContent = "Worker " + (i + 1);
-      const model = add("small"); model.textContent = st.worker.name + " " + st.worker.model;
-      name.appendChild(model);
-      const pct = add("span", "bc-worker-pct"); pct.textContent = "0%";
-      top.append(img, name, pct);
-      const task = add("div", "bc-worker-task"); task.textContent = draw();
-      const bar = add("div", "bc-worker-bar");
-      const fill = add("div", "bc-worker-fill");
-      bar.appendChild(fill);
-      c.append(top, task, bar);
-      inner.appendChild(c);
-      cards.push({ el: c, task, pct, fill });
+    let runGen = 0; // bumped on every rebuild or hide: the card loops of an older build stop at their next beat
+    let shown = false, removed = false, builtKey = "", busy = null;
+    const countOf = (st) => (st.workers === "auto" ? 3 : Math.max(1, parseInt(st.workers, 10) || 1));
+    const keyOf = (st) => countOf(st) + "|" + st.worker.id;
+
+    function build(st) {
+      const n = countOf(st);
+      const gen = ++runGen;
+      inner.className = "bc-workers-in" + (n === 4 ? " _grid" : n >= 5 ? " _grid _scroll" : "");
+      panel.classList.toggle("_scroll", n >= 5);
+      inner.style.maxHeight = "";
+      inner.textContent = "";
+      const cards = [];
+      for (let i = 0; i < n; i++) {
+        const c = add("div", "bc-worker");
+        c.style.setProperty("--i", String(i));
+        const top = add("div", "bc-worker-top");
+        const img = add("img"); img.src = st.worker.src; img.alt = ""; img.draggable = false;
+        const name = add("span", "bc-worker-name");
+        name.textContent = "Worker " + (i + 1);
+        const model = add("small"); model.textContent = st.worker.name + " " + st.worker.model;
+        name.appendChild(model);
+        const pct = add("span", "bc-worker-pct"); pct.textContent = "0%";
+        top.append(img, name, pct);
+        const task = add("div", "bc-worker-task"); task.textContent = draw();
+        const bar = add("div", "bc-worker-bar");
+        const fill = add("div", "bc-worker-fill");
+        bar.appendChild(fill);
+        c.append(top, task, bar);
+        inner.appendChild(c);
+        cards.push({ el: c, task, pct, fill });
+      }
+      if (n >= 5) { // the scroll viewport: one row, the gap, and a fifth of the next row (user, 2026-09-16: "up to 1.2"); border-box, so the padding rides on top
+        const h = cards[0].el.offsetHeight;
+        const cs = getComputedStyle(inner);
+        if (h) inner.style.maxHeight = Math.round(h * 1.2 + 6 + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) + "px";
+      }
+      cards.forEach((c, i) => setTimeout(() => { if (runGen === gen) run(c, true, gen); }, 300 + i * 90));
+      builtKey = keyOf(st);
     }
-    async function run(c, first) {
-      while (live) {
+    async function run(c, first, gen) {
+      const live = () => runGen === gen && !removed;
+      while (live()) {
         if (!first) { // a new task: the line lifts out, the bar resets, the next line settles in
           c.task.classList.add("_swap");
-          await wait(200); if (!live) return;
+          await wait(200); if (!live()) return;
           c.task.textContent = draw();
           c.task.classList.remove("_swap");
           c.el.classList.remove("_done");
@@ -6529,30 +6556,45 @@ function chatScriptFor(title) {
         const total = 2600 + Math.random() * 3400;
         const t0 = performance.now();
         let p = 0;
-        while (live && p < 100) {
-          await wait(120 + Math.random() * 220); if (!live) return;
+        while (live() && p < 100) {
+          await wait(120 + Math.random() * 220); if (!live()) return;
           const elapsed = performance.now() - t0;
           const target = Math.min(100, (elapsed / total) * 100);
           p = elapsed >= total ? 100 : Math.min(100, Math.max(p, target - Math.random() * 12)); // bursts, never backwards
           c.fill.style.width = p + "%";
           c.pct.textContent = Math.round(p) + "%";
         }
-        if (!live) return;
+        if (!live()) return;
         c.el.classList.add("_done");
         await wait(1000 + Math.random() * 300); // about a second in the gradient
       }
     }
-    if (n >= 5) { // the scroll viewport: one row, the gap, and a fifth of the next row (user, 2026-09-16: "up to 1.2"); border-box, so the padding rides on top
-      const h = cards[0].el.offsetHeight;
-      const cs = getComputedStyle(inner);
-      if (h) inner.style.maxHeight = Math.round(h * 1.2 + 6 + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) + "px";
+    const open = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => { if (!removed) panel.classList.add("_on"); r(); })));
+    const close = async () => { panel.classList.remove("_on"); await wait(REDUCED_MOTION ? 0 : 560); };
+    // reconcile with the frame: one change at a time, the next waits its turn
+    async function reconcile() {
+      if (removed) return;
+      const st = window.superState();
+      if (!st.on) {
+        if (!shown) return;
+        shown = false; runGen++; // the loops stop, the panel folds, the cards go once it has
+        await close();
+        if (!shown && !removed) inner.textContent = "";
+        return;
+      }
+      if (!shown) { shown = true; build(st); await open(); return; }
+      if (keyOf(st) === builtKey) return;
+      runGen++; await close(); if (removed || !shown) return; // a new count or model: fold, rebuild, reopen
+      build(st); await open();
     }
-    requestAnimationFrame(() => requestAnimationFrame(() => { if (live) panel.classList.add("_on"); }));
-    cards.forEach((c, i) => setTimeout(() => { if (live) run(c, true); }, 300 + i * 90));
-    return {
-      async fold() { live = false; panel.classList.remove("_on"); await wait(REDUCED_MOTION ? 0 : 560); panel.remove(); },
-      kill() { live = false; panel.remove(); },
+    const api = {
+      sync() { busy = (busy || Promise.resolve()).then(reconcile).catch((e) => console.error("[workers] sync", e)); return busy; },
+      async fold() { removed = true; runGen++; workerPanels.delete(api); if (panel.classList.contains("_on")) await close(); panel.remove(); },
+      kill() { removed = true; runGen++; workerPanels.delete(api); panel.remove(); },
     };
+    workerPanels.add(api);
+    api.sync();
+    return api;
   }
 
   let liveChain = Promise.resolve();
@@ -7006,7 +7048,10 @@ function chatScriptFor(title) {
   if (!MODELS.some((m) => m.id === S.manager)) S.manager = "claude-opus";
   if (!MODELS.some((m) => m.id === S.worker)) S.worker = "claude-sonnet";
   if (!WORKERS.includes(S.workers)) S.workers = "auto";
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { console.error("[super] save failed", e); } };
+  const save = () => {
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { console.error("[super] save failed", e); }
+    if (window.superChanged) window.superChanged(); // a worker panel in flight follows the change (off folds it, on opens it, a new count or model rebuilds it)
+  };
   // read by the live think: is super on, which model the workers run on, how many at once
   window.superState = () => ({
     on: S.on,
