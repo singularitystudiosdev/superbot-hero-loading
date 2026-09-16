@@ -556,6 +556,56 @@ body {
   .bc-superpop, .bc-superpop._on, .bc-superhead, .bc-superrow, .bc-superpop._on .bc-superhead, .bc-superpop._on .bc-superrow, .bc-superseg-thumb, .bc-superlist, .bc-superopt, .bc-superswitch::after, .bc-super-lab::after, .bc-super-dot { transition: none; }
 }
 
+/* the worker panel (user, 2026-09-16): while a live send thinks and SUPER is
+   on, one card per worker rides inside the composer under the thinking row
+   (the same grid track and fold as .gt-think): the worker's model, its task,
+   a progress bar and the percent. A finished bar turns into a moving pink →
+   blue → purple gradient, holds about a second, then the card takes a new
+   task. 1–3 cards stack, 4 make a 2×2 grid, 5+ grid and scroll. */
+.bc-workers { display: grid; grid-template-rows: 0fr; --fit-ms: 520ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); user-select: none; }
+.bc-workers._on { grid-template-rows: 1fr; }
+.bc-workers-body { min-height: 0; overflow: hidden; }
+.bc-workers-in {
+  display: flex; flex-direction: column; gap: 6px;
+  margin: 0 12px; padding: 10px 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: 0; transform: translateY(-6px);
+  transition: opacity calc(var(--fit-ms) * 0.85) ease, transform var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1);
+}
+.bc-workers._on .bc-workers-in { opacity: 1; transform: none; }
+.bc-workers-in._grid { display: grid; grid-template-columns: 1fr 1fr; }
+.bc-workers-in._scroll { max-height: 128px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+.bc-worker {
+  display: flex; flex-direction: column; gap: 5px; min-width: 0;
+  padding: 7px 9px; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06);
+  opacity: 0; transform: translateY(6px);
+  transition: opacity 260ms ease, transform 380ms cubic-bezier(0.32, 0.72, 0, 1), border-color 300ms ease;
+}
+.bc-workers._on .bc-worker { opacity: 1; transform: none; transition-delay: calc(var(--i, 0) * 40ms); }
+.bc-worker._done { border-color: rgba(160, 110, 255, 0.28); }
+.bc-worker-top { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.bc-worker-top img { width: 16px; height: 16px; border-radius: 24%; object-fit: cover; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.bc-worker-name { font-size: 11px; font-weight: 600; color: #e6e8ee; white-space: nowrap; letter-spacing: -0.1px; overflow: hidden; text-overflow: ellipsis; }
+.bc-worker-name small { font-weight: 500; color: #8b90a0; margin-left: 5px; font-size: 11px; }
+.bc-worker-pct { margin-left: auto; flex-shrink: 0; font-size: 11px; font-variant-numeric: tabular-nums; color: #8b90a0; transition: color 300ms ease; }
+.bc-worker._done .bc-worker-pct { color: #e6e8ee; }
+.bc-worker-task { font-size: 11px; color: #a4a8b5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; transition: opacity 200ms ease, transform 260ms cubic-bezier(0.32, 0.72, 0, 1); }
+.bc-worker-task._swap { opacity: 0; transform: translateY(-3px); }
+.bc-worker-bar { height: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.bc-worker-fill { height: 100%; width: 0%; border-radius: 999px; background: #9aa0b4; transition: width 380ms cubic-bezier(0.32, 0.72, 0, 1), background 300ms ease; }
+.bc-worker._reset .bc-worker-fill { transition: none; }
+.bc-worker._done .bc-worker-fill {
+  background: linear-gradient(90deg, #ff5fd2, #4f7bff, #c45cff, #ff5fd2);
+  background-size: 300% 100%;
+  animation: bc-worker-flow 1.6s linear infinite;
+}
+@keyframes bc-worker-flow { from { background-position: 0% 0; } to { background-position: 300% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .bc-workers, .bc-workers-in, .bc-worker, .bc-worker-task, .bc-worker-fill { transition: none; }
+  .bc-worker._done .bc-worker-fill { animation: none; }
+}
+
 /* the platform chip's anchor: the popover hangs off the Platforms chip, not
    the column center — right edge to right edge with the chip */
 .bc-platwrap { position: relative; display: inline-flex; flex-shrink: 0; }
@@ -6407,14 +6457,104 @@ function chatScriptFor(title) {
     "One more pass for accuracy",
     "Wrapping up",
   ];
+  // ---- the worker panel (user, 2026-09-16) ------------------------------------
+  // While the think runs and SUPER is on, one card per worker (the WORKERS
+  // setting; Auto = 3) rides in the composer under the thinking row: the
+  // worker's model from the WORKER pick, a task, a bar and the percent. Each
+  // task takes 2.6–6s, filling in bursts; done, the bar flows in the gradient
+  // for ~1s, then the card swaps to a new task. fold() closes the panel with
+  // the thinking row; kill() drops it at once.
+  const WORKER_TASKS = [
+    "Reading the thread so far", "Scanning the repo for callers", "Outlining the reply",
+    "Checking the numbers", "Writing the first section", "Verifying every link",
+    "Summarising the sources", "Testing the snippet", "Tightening the wording",
+    "Formatting the answer", "Cross-checking the facts", "Drafting the summary",
+    "Pulling the latest docs", "Comparing two approaches", "Reviewing the edge cases",
+    "Naming the variables", "Running the example", "Trimming the intro",
+  ];
+  function openWorkers(composer, dead) {
+    const st = window.superState ? window.superState() : null;
+    if (!st || !st.on || !composer) return null;
+    const n = st.workers === "auto" ? 3 : Math.max(1, parseInt(st.workers, 10) || 1);
+    const panel = add("div", "bc-workers demo-t");
+    const body = add("div", "bc-workers-body");
+    const inner = add("div", "bc-workers-in" + (n === 4 ? " _grid" : n >= 5 ? " _grid _scroll" : ""));
+    body.appendChild(inner);
+    panel.appendChild(body);
+    composer.insertBefore(panel, composer.querySelector(".composer-main")); // under the thinking row, above the input row
+    let live = true;
+    const pool = [];
+    const draw = () => { if (!pool.length) pool.push(...WORKER_TASKS); return pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; };
+    const cards = [];
+    for (let i = 0; i < n; i++) {
+      const c = add("div", "bc-worker");
+      c.style.setProperty("--i", String(i));
+      const top = add("div", "bc-worker-top");
+      const img = add("img"); img.src = st.worker.src; img.alt = ""; img.draggable = false;
+      const name = add("span", "bc-worker-name");
+      name.textContent = "Worker " + (i + 1);
+      const model = add("small"); model.textContent = st.worker.name + " " + st.worker.model;
+      name.appendChild(model);
+      const pct = add("span", "bc-worker-pct"); pct.textContent = "0%";
+      top.append(img, name, pct);
+      const task = add("div", "bc-worker-task"); task.textContent = draw();
+      const bar = add("div", "bc-worker-bar");
+      const fill = add("div", "bc-worker-fill");
+      bar.appendChild(fill);
+      c.append(top, task, bar);
+      inner.appendChild(c);
+      cards.push({ el: c, task, pct, fill });
+    }
+    async function run(c, first) {
+      while (live) {
+        if (!first) { // a new task: the line lifts out, the bar resets, the next line settles in
+          c.task.classList.add("_swap");
+          await wait(200); if (!live) return;
+          c.task.textContent = draw();
+          c.task.classList.remove("_swap");
+          c.el.classList.remove("_done");
+          c.el.classList.add("_reset");
+          c.fill.style.width = "0%";
+          c.pct.textContent = "0%";
+          void c.fill.offsetWidth;
+          c.el.classList.remove("_reset");
+        }
+        first = false;
+        const total = 2600 + Math.random() * 3400;
+        const t0 = performance.now();
+        let p = 0;
+        while (live && p < 100) {
+          await wait(120 + Math.random() * 220); if (!live) return;
+          const elapsed = performance.now() - t0;
+          const target = Math.min(100, (elapsed / total) * 100);
+          p = elapsed >= total ? 100 : Math.min(100, Math.max(p, target - Math.random() * 12)); // bursts, never backwards
+          c.fill.style.width = p + "%";
+          c.pct.textContent = Math.round(p) + "%";
+        }
+        if (!live) return;
+        c.el.classList.add("_done");
+        await wait(1000 + Math.random() * 300); // about a second in the gradient
+      }
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (live) panel.classList.add("_on"); }));
+    cards.forEach((c, i) => setTimeout(() => { if (live) run(c, true); }, 300 + i * 90));
+    return {
+      async fold() { live = false; panel.classList.remove("_on"); await wait(REDUCED_MOTION ? 0 : 560); panel.remove(); },
+      kill() { live = false; panel.remove(); },
+    };
+  }
+
   let liveChain = Promise.resolve();
   async function runLiveThink(p, th, cancelled) {
     const gen = fxGen;
     const dead = () => !alive(gen) || !!(cancelled && cancelled());
     const tab = openThink(p, th, gen, dead);
-    const bail = () => { tab.kill(); return false; };
+    let wk = null;
+    const bail = () => { tab.kill(); if (wk) wk.kill(); return false; };
     if (dead()) return bail();
     await tab.open(); if (dead()) return bail();
+    const composer = document.getElementById(p.root).querySelector(".composer");
+    wk = openWorkers(composer, dead); // the worker cards, if SUPER is on
     follow(th);
     const t0 = performance.now();
     const every = LIVE_THINK_MS / LIVE_THOUGHTS.length;
@@ -6426,7 +6566,10 @@ function chatScriptFor(title) {
         if (dead()) return bail();
       }
     }
-    await tab.done();
+    const folding = tab.done(); // the thinking row's fold, and the worker panel's a beat behind it
+    const wkFold = wk ? wait(REDUCED_MOTION ? 0 : 160).then(() => wk.fold()) : null;
+    await folding;
+    if (wkFold) await wkFold;
     if (dead()) return bail();
     return true;
   }
@@ -6848,11 +6991,19 @@ function chatScriptFor(title) {
   const KEY = "hero.super";
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { console.error("[super] bad stored settings", e); }
-  const S = Object.assign({ on: false, manager: "claude-opus", worker: "claude-sonnet", workers: "auto", review: true }, stored);
+  const S = Object.assign({ on: true, manager: "claude-opus", worker: "claude-sonnet", workers: "auto", review: true }, stored); // on by default (2026-09-16: the worker panel rides on it)
   if (!MODELS.some((m) => m.id === S.manager)) S.manager = "claude-opus";
   if (!MODELS.some((m) => m.id === S.worker)) S.worker = "claude-sonnet";
   if (!WORKERS.includes(S.workers)) S.workers = "auto";
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { console.error("[super] save failed", e); } };
+  // read by the live think: is super on, which model the workers run on, how many at once
+  window.superState = () => ({
+    on: S.on,
+    worker: MODELS.find((m) => m.id === S.worker) || MODELS[0],
+    manager: MODELS.find((m) => m.id === S.manager) || MODELS[0],
+    workers: S.workers,
+    review: S.review,
+  });
   const el = (tag, cls) => { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
   const CHEV = '<svg class="cl-ic" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg>';
 
