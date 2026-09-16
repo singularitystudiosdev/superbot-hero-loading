@@ -364,6 +364,33 @@ body {
 .bc-plat:hover { color: #e6e8ee; }
 .bc-plat .cl-ic { width: 10px; height: 10px; }
 
+/* the SUPER toggle (user, 2026-09-16): a chip left of Platforms with a status
+   dot to its right. Off: grey label, grey dot. On: the label and the dot take
+   the mascot icon's teal → blue → purple sweep and the dot glows. */
+.bc-super {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; line-height: 1;
+  color: #8b90a0; white-space: nowrap;
+  background: none; border: none; padding: 0;
+  font-family: inherit; cursor: pointer; flex-shrink: 0;
+  transition: color 160ms ease;
+}
+.bc-super:hover { color: #e6e8ee; }
+.bc-super-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #5c6070; flex-shrink: 0;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+.bc-super[aria-pressed="true"] {
+  color: transparent;
+  background: linear-gradient(135deg, #3fd6d0 0%, #4f7bff 48%, #c45cff 100%);
+  -webkit-background-clip: text; background-clip: text;
+}
+.bc-super[aria-pressed="true"] .bc-super-dot {
+  background: linear-gradient(135deg, #3fd6d0, #4f7bff 50%, #c45cff);
+  box-shadow: 0 0 6px rgba(120, 100, 255, 0.85), 0 0 12px rgba(196, 92, 255, 0.45);
+}
+
 /* the platform chip's anchor: the popover hangs off the Platforms chip, not
    the column center — right edge to right edge with the chip */
 .bc-platwrap { position: relative; display: inline-flex; flex-shrink: 0; }
@@ -2621,6 +2648,7 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
                 <div class="composer-main">
                   <span class="bc-plus"><svg class="cl-ic" viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg></span>
                   <input class="bc-ph" type="text" placeholder="How can superbot help you today?" autocomplete="off" />
+                  <button class="bc-super" id="bc-super" type="button" aria-pressed="false" aria-label="Super mode">SUPER<span class="bc-super-dot" aria-hidden="true"></span></button>
                   <span class="bc-platwrap">
                     <div class="bc-platpop" id="bc-platpop" role="listbox" aria-label="Chat platform" hidden></div>
                     <button class="bc-plat" id="bc-plat" type="button" aria-haspopup="listbox" aria-controls="bc-platpop" aria-expanded="false"><span id="bc-platlabel">Platforms</span> <svg class="cl-ic" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button>
@@ -6626,6 +6654,17 @@ function chatScriptFor(title) {
     });
   }
   buildKit();
+})();
+
+// ---- the SUPER toggle in superbot's composer (user, 2026-09-16) ------------
+// A click flips aria-pressed; the CSS lights the label and the dot in the
+// mascot's gradient while it is on and drops them back to grey when off.
+(function () {
+  const btn = document.getElementById("bc-super");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    btn.setAttribute("aria-pressed", btn.getAttribute("aria-pressed") === "true" ? "false" : "true");
+  });
 })();
 </script>
 </body>
