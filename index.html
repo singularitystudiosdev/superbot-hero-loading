@@ -486,6 +486,42 @@ body {
 }
 .bc-superseg._lit .bc-superseg-thumb { background: var(--super-grad); box-shadow: 0 0 10px rgba(120, 100, 255, 0.45); }
 
+/* the WORKERS stepper: − count + in a pill, an Auto chip beside it that takes
+   the gradient when on and dims the stepper */
+.bc-superstep-wrap { display: inline-flex; align-items: center; gap: 6px; }
+.bc-superstep {
+  display: inline-flex; align-items: center; gap: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px; padding: 2px;
+  transition: opacity 220ms ease;
+}
+.bc-superstep._dim { opacity: 0.45; }
+.bc-superstep button {
+  width: 22px; height: 22px; border: none; border-radius: 999px;
+  background: none; color: #c9ccd6;
+  font-family: inherit; font-size: 14px; font-weight: 600; line-height: 1;
+  display: grid; place-items: center; cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+.bc-superstep button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.bc-superstep button:disabled { opacity: 0.35; cursor: default; }
+.bc-superstep-val {
+  min-width: 18px; text-align: center; display: inline-block;
+  font-size: 12px; font-weight: 600; color: #f2f2f5; font-variant-numeric: tabular-nums;
+  transition: transform 220ms var(--super-ease), opacity 160ms ease;
+}
+.bc-superstep-val._bump { transform: translateY(-5px); opacity: 0; transition: none; }
+.bc-superauto {
+  border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.06);
+  color: #8b90a0; border-radius: 999px; padding: 6px 10px;
+  font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1; letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: color 220ms ease, background 240ms ease, box-shadow 240ms ease, border-color 240ms ease;
+}
+.bc-superauto:hover { color: #c9ccd6; }
+.bc-superauto[aria-pressed="true"] { color: #f2f2f5; background: var(--super-grad); border-color: transparent; box-shadow: 0 0 10px rgba(120, 100, 255, 0.35); }
+
 /* rows: a small-caps label, then the control */
 .bc-superrow { border-top: 1px solid rgba(255, 255, 255, 0.07); }
 .bc-superrow._inline { display: flex; align-items: center; justify-content: space-between; padding: 9px 4px 7px; }
@@ -6505,9 +6541,12 @@ function chatScriptFor(title) {
     function build(st) {
       const n = countOf(st);
       const gen = ++runGen;
-      inner.className = "bc-workers-in" + (n === 4 ? " _grid" : n >= 5 ? " _grid _scroll" : "");
-      panel.classList.toggle("_scroll", n >= 5);
-      inner.style.maxHeight = "";
+      // 1–3 stack, 4+ grid; from 2 up the viewport is the same fixed 1.2 rows
+      // as the 8-worker case, scrolling under the fade (user, 2026-09-16:
+      // "it should have the same height as 8"); a single card sits natural
+      inner.className = "bc-workers-in" + (n >= 4 ? " _grid" : "") + (n >= 2 ? " _scroll" : "");
+      panel.classList.toggle("_scroll", n >= 2);
+      inner.style.height = "";
       inner.textContent = "";
       const cards = [];
       for (let i = 0; i < n; i++) {
@@ -6529,10 +6568,10 @@ function chatScriptFor(title) {
         inner.appendChild(c);
         cards.push({ el: c, task, pct, fill });
       }
-      if (n >= 5) { // the scroll viewport: one row, the gap, and a fifth of the next row (user, 2026-09-16: "up to 1.2"); border-box, so the padding rides on top
+      if (n >= 2) { // the viewport: one row, the gap, and a fifth of the next row (user, 2026-09-16: "up to 1.2"); border-box, so the padding rides on top
         const h = cards[0].el.offsetHeight;
         const cs = getComputedStyle(inner);
-        if (h) inner.style.maxHeight = Math.round(h * 1.2 + 6 + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) + "px";
+        if (h) inner.style.height = Math.round(h * 1.2 + 6 + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) + "px";
       }
       cards.forEach((c, i) => setTimeout(() => { if (runGen === gen) run(c, true, gen); }, 300 + i * 90));
       builtKey = keyOf(st);
@@ -7040,7 +7079,7 @@ function chatScriptFor(title) {
     { id: "devin", name: "Devin", model: "Devin 2", src: "hero-assets/devin.png" },
     { id: "hermes", name: "Hermes", model: "Hermes 4", src: "hero-assets/hermes.png" },
   ];
-  const WORKERS = ["1", "2", "4", "8", "auto"];
+  const MIN_W = 1, MAX_W = 8; // the − / + stepper's range; the count starts at 2 (user, 2026-09-16)
   // the model shown beside a provider name: "Hermes 4" beside "Hermes" reads
   // as "Hermes Hermes 4" (user, 2026-09-16), so a leading provider name is
   // dropped: Hermes · 4, Grok · 4, Devin · 2, Claude · Opus 4.6
@@ -7048,10 +7087,13 @@ function chatScriptFor(title) {
   const KEY = "hero.super";
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { console.error("[super] bad stored settings", e); }
-  const S = Object.assign({ on: true, manager: "claude-opus", worker: "claude-sonnet", workers: "auto", review: true }, stored); // on by default (2026-09-16: the worker panel rides on it)
+  const S = Object.assign({ on: true, manager: "claude-opus", worker: "claude-sonnet", workers: "2", count: 2, review: true }, stored); // on by default (2026-09-16: the worker panel rides on it)
   if (!MODELS.some((m) => m.id === S.manager)) S.manager = "claude-opus";
   if (!MODELS.some((m) => m.id === S.worker)) S.worker = "claude-sonnet";
-  if (!WORKERS.includes(S.workers)) S.workers = "auto";
+  // workers: a count as a string, or "auto"; count remembers the stepper while Auto is on
+  const clampW = (k) => Math.min(MAX_W, Math.max(MIN_W, parseInt(k, 10) || 2));
+  S.count = clampW(S.count || (S.workers !== "auto" ? S.workers : 2));
+  S.workers = S.workers === "auto" ? "auto" : String(S.count);
   const save = () => {
     try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { console.error("[super] save failed", e); }
     if (window.superChanged) window.superChanged(); // a worker panel in flight follows the change (off folds it, on opens it, a new count or model rebuilds it)
@@ -7151,11 +7193,34 @@ function chatScriptFor(title) {
   const body = el("div", "bc-superbody");
   const manager = picker("MANAGER:", "manager");
   const worker = picker("WORKER:", "worker");
+  // WORKERS: a − / + stepper (1–8, starts at 2) and an Auto chip to its right;
+  // a step turns Auto off and takes the count, Auto dims the stepper
   const countRow = el("div", "bc-superrow _inline");
-  const countLab = el("div", "bc-superlab"); countLab.textContent = "WORKERS"; // how many at once, or Auto
-  const count = segment(WORKERS.map((w) => ({ value: w, label: w === "auto" ? "Auto" : w })), S.workers, (v) => { S.workers = v; save(); count.set(v); }, false);
-  count.el.setAttribute("aria-label", "Workers at once");
-  countRow.append(countLab, count.el);
+  const countLab = el("div", "bc-superlab"); countLab.textContent = "WORKERS";
+  const countCtl = el("div", "bc-superstep-wrap");
+  countCtl.setAttribute("aria-label", "Workers at once");
+  const step = el("div", "bc-superstep");
+  const minus = el("button"); minus.type = "button"; minus.textContent = "−"; minus.setAttribute("aria-label", "Fewer workers");
+  const val = el("span", "bc-superstep-val"); val.setAttribute("aria-live", "polite");
+  const plus = el("button"); plus.type = "button"; plus.textContent = "+"; plus.setAttribute("aria-label", "More workers");
+  step.append(minus, val, plus);
+  const auto = el("button", "bc-superauto"); auto.type = "button"; auto.textContent = "Auto"; auto.setAttribute("aria-pressed", "false");
+  countCtl.append(step, auto);
+  const paintCount = () => {
+    val.textContent = String(S.count);
+    const isAuto = S.workers === "auto";
+    step.classList.toggle("_dim", isAuto);
+    auto.setAttribute("aria-pressed", isAuto ? "true" : "false");
+    minus.disabled = S.count <= MIN_W;
+    plus.disabled = S.count >= MAX_W;
+  };
+  const bump = () => { val.classList.add("_bump"); void val.offsetWidth; val.classList.remove("_bump"); }; // the number drops into place
+  const stepTo = (k) => { S.count = clampW(k); S.workers = String(S.count); save(); paintCount(); bump(); };
+  minus.addEventListener("click", (e) => { e.stopPropagation(); stepTo(S.count - 1); });
+  plus.addEventListener("click", (e) => { e.stopPropagation(); stepTo(S.count + 1); });
+  auto.addEventListener("click", (e) => { e.stopPropagation(); S.workers = S.workers === "auto" ? String(S.count) : "auto"; save(); paintCount(); });
+  paintCount();
+  countRow.append(countLab, countCtl);
   const reviewRow = el("div", "bc-superrow _inline");
   const reviewLab = el("div", "bc-superlab"); reviewLab.textContent = "REVIEW";
   const review = el("button", "bc-superswitch"); review.type = "button"; review.setAttribute("role", "switch"); review.setAttribute("aria-label", "Review");
@@ -7189,7 +7254,7 @@ function chatScriptFor(title) {
     pop.classList.add("_on");
     if (wrap) wrap.classList.add("_super");
     btn.setAttribute("aria-expanded", "true");
-    onOff.place(); count.place(); // measured now that the frame is visible
+    onOff.place(); // measured now that the frame is visible
   };
   const closePop = () => {
     if (!isOpen()) return;
@@ -7202,7 +7267,7 @@ function chatScriptFor(title) {
   btn.addEventListener("click", (e) => { e.stopPropagation(); if (isOpen()) closePop(); else openPop(); });
   document.addEventListener("click", (e) => { if (isOpen() && !pop.contains(e.target) && !btn.contains(e.target)) closePop(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && isOpen()) { e.preventDefault(); closePop(); } });
-  requestAnimationFrame(() => { onOff.place(); count.place(); }); // first layout, so the thumbs sit right before the first open
+  requestAnimationFrame(() => { onOff.place(); }); // first layout, so the thumb sits right before the first open
 })();
 </script>
 </body>
