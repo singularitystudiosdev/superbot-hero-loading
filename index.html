@@ -599,6 +599,20 @@ body {
    a progress bar and the percent. A finished bar turns into a moving pink →
    blue → purple gradient, holds about a second, then the card takes a new
    task. 1–3 cards stack, 4 make a 2×2 grid, 5+ grid and scroll. */
+/* the manager chip (user, 2026-09-16): top right of the thinking row on a
+   live send, the MANAGER pick's icon and model; slides in, and swaps or hides
+   as the SUPER frame changes */
+.gt-think-mgr {
+  margin-left: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: -0.1px; color: #e6e8ee;
+  opacity: 0; transform: translateX(6px);
+  transition: opacity 260ms ease, transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.gt-think-mgr._on { opacity: 1; transform: none; }
+.gt-think-mgr small { font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em; color: #8b90a0; margin-right: 2px; }
+.gt-think-mgr img { width: 16px; height: 16px; border-radius: 24%; object-fit: cover; flex-shrink: 0; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.gt-think-mgr b { font-weight: inherit; white-space: nowrap; }
 .bc-workers { display: grid; grid-template-rows: 0fr; --fit-ms: 520ms; transition: grid-template-rows var(--fit-ms) cubic-bezier(0.32, 0.72, 0, 1); user-select: none; }
 .bc-workers._on { grid-template-rows: 1fr; }
 .bc-workers-body { min-height: 0; overflow: hidden; }
@@ -6523,6 +6537,39 @@ function chatScriptFor(title) {
   // frame calls window.superChanged on every save.
   const workerPanels = new Set();
   window.superChanged = () => { workerPanels.forEach((w) => w.sync()); };
+
+  // the manager chip in the top right of the thinking row (user, 2026-09-16):
+  // the MANAGER pick's icon and model while SUPER is on; a new pick swaps it
+  // with a short fade, OFF slides it away. Registered beside the worker panel
+  // so window.superChanged reaches it; kill() on the think's end or cancel.
+  function mountManager(composer) {
+    const row = composer && composer.querySelector(".gt-think._live .gt-think-in");
+    if (!row || !window.superState) return null;
+    const chip = add("span", "gt-think-mgr");
+    const lab = add("small"); lab.textContent = "MANAGER";
+    const img = add("img"); img.alt = ""; img.draggable = false;
+    const name = add("b");
+    chip.append(lab, img, name);
+    row.appendChild(chip);
+    let shownId = "", removed = false, busy = null;
+    const paint = (m) => { img.src = m.src; name.textContent = m.name + (m.sub ? " " + m.sub : ""); shownId = m.id; };
+    async function reconcile() {
+      if (removed) return;
+      const st = window.superState();
+      if (!st.on) { chip.classList.remove("_on"); return; }
+      if (!chip.classList.contains("_on")) { paint(st.manager); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); if (!removed) chip.classList.add("_on"); return; }
+      if (st.manager.id === shownId) return;
+      chip.classList.remove("_on"); await wait(REDUCED_MOTION ? 0 : 220); if (removed) return; // a new manager: out, swap, in
+      paint(window.superState().manager); chip.classList.add("_on");
+    }
+    const api = {
+      sync() { busy = (busy || Promise.resolve()).then(reconcile).catch((e) => console.error("[manager] sync", e)); return busy; },
+      kill() { removed = true; workerPanels.delete(api); chip.remove(); },
+    };
+    workerPanels.add(api);
+    api.sync();
+    return api;
+  }
   function openWorkers(composer, dead) {
     if (!composer || !window.superState) return null;
     const panel = add("div", "bc-workers demo-t");
@@ -6641,11 +6688,12 @@ function chatScriptFor(title) {
     const gen = fxGen;
     const dead = () => !alive(gen) || !!(cancelled && cancelled());
     const tab = openThink(p, th, gen, dead);
-    let wk = null;
-    const bail = () => { tab.kill(); if (wk) wk.kill(); return false; };
+    let wk = null, mgr = null;
+    const bail = () => { tab.kill(); if (wk) wk.kill(); if (mgr) mgr.kill(); return false; };
     if (dead()) return bail();
     await tab.open(); if (dead()) return bail();
     const composer = document.getElementById(p.root).querySelector(".composer");
+    mgr = mountManager(composer); // the manager chip, top right of the ring row
     wk = openWorkers(composer, dead); // the worker cards, if SUPER is on
     follow(th);
     const t0 = performance.now();
@@ -6662,6 +6710,7 @@ function chatScriptFor(title) {
     const wkFold = wk ? wait(REDUCED_MOTION ? 0 : 160).then(() => wk.fold()) : null;
     await folding;
     if (wkFold) await wkFold;
+    if (mgr) mgr.kill(); // the row is gone, the chip with it; drop it from the sync set
     if (dead()) return bail();
     return true;
   }
