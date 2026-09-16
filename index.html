@@ -408,9 +408,13 @@ body {
 }
 
 /* the settings frame: the Platforms popover's shell (colour, hairline,
-   shadow) centred directly above the chip; it fades in and grows up the y
-   axis from its bottom edge on open, shrinks back on close (visibility waits
-   for the fade so it never snaps away) (user, 2026-09-16) */
+   shadow) centred directly above the chip. Open is a height reveal anchored
+   at the bottom edge: the box is a grid track easing 0fr → 1fr (a clip, so
+   the type inside never squashes) and, because the frame hangs from
+   `bottom`, it grows upward; the head and each row fade in and slide up into
+   place on a short stagger. Close runs the reverse, faster, and visibility
+   waits for it so nothing snaps away (user, 2026-09-16: "anchor at the
+   bottom, content not squashed, fade and slide in while it scales up"). */
 .bc-superpop {
   position: absolute;
   bottom: calc(100% + 12px);
@@ -420,20 +424,34 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.09), 0 30px 90px -20px rgba(0, 0, 0, 0.95);
-  padding: 10px;
   box-sizing: border-box;
   z-index: 7;
-  transform-origin: 50% 100%;
+  transform: translateX(-50%); /* centring only; never animated */
+  display: grid;
+  grid-template-rows: 0fr;
   opacity: 0;
-  transform: translateX(-50%) scaleY(0.8);
   visibility: hidden;
-  transition: opacity 160ms ease, transform 180ms ease, visibility 0s 180ms;
+  transition: grid-template-rows 220ms ease-in, opacity 180ms ease-in 40ms, visibility 0s 220ms;
 }
 .bc-superpop._on {
+  grid-template-rows: 1fr;
   opacity: 1;
-  transform: translateX(-50%) scaleY(1);
   visibility: visible;
-  transition: opacity 220ms ease-out, transform 300ms var(--super-ease), visibility 0s;
+  transition: grid-template-rows 360ms var(--super-ease), opacity 200ms ease-out, visibility 0s;
+}
+.bc-superclip { overflow: hidden; min-height: 0; border-radius: inherit; }
+.bc-supercontent { padding: 10px; }
+/* the head and every row: hidden a little below their seat, then each fades
+   up into place, 45ms after the one before, once the box has started to open */
+.bc-superhead, .bc-superrow {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 140ms ease-in, transform 160ms ease-in;
+}
+.bc-superpop._on .bc-superhead, .bc-superpop._on .bc-superrow {
+  opacity: 1;
+  transform: none;
+  transition: opacity 260ms ease-out calc(70ms + var(--i, 0) * 45ms), transform 420ms var(--super-ease) calc(70ms + var(--i, 0) * 45ms);
 }
 .bc-superhead { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 10px; }
 .bc-supertitle { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #e6e8ee; display: inline-flex; align-items: center; gap: 6px; }
@@ -535,7 +553,7 @@ body {
 .bc-superswitch[aria-checked="true"] { background: var(--super-grad); box-shadow: 0 0 10px rgba(120, 100, 255, 0.4); }
 .bc-superswitch[aria-checked="true"]::after { transform: translateX(14px); background: #fff; }
 @media (prefers-reduced-motion: reduce) {
-  .bc-superpop, .bc-superpop._on, .bc-superseg-thumb, .bc-superlist, .bc-superopt, .bc-superswitch::after, .bc-super-lab::after, .bc-super-dot { transition: none; }
+  .bc-superpop, .bc-superpop._on, .bc-superhead, .bc-superrow, .bc-superpop._on .bc-superhead, .bc-superpop._on .bc-superrow, .bc-superseg-thumb, .bc-superlist, .bc-superopt, .bc-superswitch::after, .bc-super-lab::after, .bc-super-dot { transition: none; }
 }
 
 /* the platform chip's anchor: the popover hangs off the Platforms chip, not
@@ -6932,7 +6950,14 @@ function chatScriptFor(title) {
   review.addEventListener("click", (e) => { e.stopPropagation(); S.review = !S.review; save(); paint(); });
   reviewRow.append(reviewLab, review);
   body.append(manager.el, worker.el, countRow, reviewRow);
-  pop.append(head, body);
+  // the clip (the grid track's overflow) and the padded content inside it;
+  // --i staggers each block's fade-and-slide on open
+  const clip = el("div", "bc-superclip");
+  const content = el("div", "bc-supercontent");
+  content.append(head, body);
+  clip.appendChild(content);
+  pop.appendChild(clip);
+  [head, manager.el, worker.el, countRow, reviewRow].forEach((n, i) => n.style.setProperty("--i", String(i)));
   pop.addEventListener("click", (e) => e.stopPropagation()); // clicks inside never count as outside
 
   // paint: the chip, the frame's title dot and body dim, the switch
