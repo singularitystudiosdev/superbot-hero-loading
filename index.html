@@ -6194,15 +6194,21 @@ function chatScriptFor(title) {
   // hook. Sends chain: a second message thinks after the first has folded.
   // cancelled() (New chat, a chat switch, a replay) kills the rows at the next
   // beat. Resolves true when the think ran to its fold, false when it was cut.
-  const LIVE_THINK_MS = 10000;
-  const LIVE_THOUGHTS = [
+  const LIVE_THINK_MS = 30000; // 10s → 30s (user, 2026-09-16)
+  const LIVE_THOUGHTS = [ // 14 lines over 30s: a swap every ~2.1s, the cadence the 10s pass had
     "Reading the message",
     "Working out what you are after",
     "Checking the thread so far",
+    "Pulling the details that matter",
     "Weighing a couple of angles",
+    "Ruling out the obvious one",
+    "Settling on an approach",
     "Drafting a reply",
+    "Filling in the specifics",
     "Tightening the wording",
+    "Cutting what does not earn its place",
     "Checking it reads right",
+    "One more pass for accuracy",
     "Wrapping up",
   ];
   let liveChain = Promise.resolve();
