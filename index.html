@@ -574,7 +574,13 @@ body {
 }
 .bc-workers._on .bc-workers-in { opacity: 1; transform: none; }
 .bc-workers-in._grid { display: grid; grid-template-columns: 1fr 1fr; }
-.bc-workers-in._scroll { max-height: 128px; overflow-y: auto; padding-right: 4px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+/* 5+: the viewport is 1.2 rows tall (openWorkers measures a card and sets it
+   inline; 78px is the fallback) so the second row peeks in, and the bottom
+   edge fades out through a mask instead of a hard cut (user, 2026-09-16). The
+   hairline moves to the body so the fade never eats it. */
+.bc-workers-in._scroll { max-height: 98px; overflow-y: auto; padding-right: 4px; border-bottom: none; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent); }
+.bc-workers._scroll .bc-workers-body { position: relative; }
+.bc-workers._scroll .bc-workers-body::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 1px; background: rgba(255, 255, 255, 0.08); }
 .bc-worker {
   display: flex; flex-direction: column; gap: 5px; min-width: 0;
   padding: 7px 9px; border-radius: 10px;
@@ -6476,7 +6482,7 @@ function chatScriptFor(title) {
     const st = window.superState ? window.superState() : null;
     if (!st || !st.on || !composer) return null;
     const n = st.workers === "auto" ? 3 : Math.max(1, parseInt(st.workers, 10) || 1);
-    const panel = add("div", "bc-workers demo-t");
+    const panel = add("div", "bc-workers demo-t" + (n >= 5 ? " _scroll" : ""));
     const body = add("div", "bc-workers-body");
     const inner = add("div", "bc-workers-in" + (n === 4 ? " _grid" : n >= 5 ? " _grid _scroll" : ""));
     body.appendChild(inner);
@@ -6535,6 +6541,11 @@ function chatScriptFor(title) {
         c.el.classList.add("_done");
         await wait(1000 + Math.random() * 300); // about a second in the gradient
       }
+    }
+    if (n >= 5) { // the scroll viewport: one row, the gap, and a fifth of the next row (user, 2026-09-16: "up to 1.2"); border-box, so the padding rides on top
+      const h = cards[0].el.offsetHeight;
+      const cs = getComputedStyle(inner);
+      if (h) inner.style.maxHeight = Math.round(h * 1.2 + 6 + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) + "px";
     }
     requestAnimationFrame(() => requestAnimationFrame(() => { if (live) panel.classList.add("_on"); }));
     cards.forEach((c, i) => setTimeout(() => { if (live) run(c, true); }, 300 + i * 90));
