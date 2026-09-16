@@ -312,7 +312,7 @@ body {
   filter: saturate(0.35) brightness(0.6);
   transition: filter 450ms ease;
 }
-.bc-softwrap:focus-within, .bc-softwrap._awake { filter: none; } /* ._awake: the composer stays lit while the thinking tab rides on it (2026-09-12) */
+.bc-softwrap:focus-within, .bc-softwrap._awake, .bc-softwrap._super { filter: none; } /* ._awake: the composer stays lit while the thinking tab rides on it (2026-09-12); ._super: and while the SUPER frame is open, so a click on one of its labels never washes it grey (2026-09-16) */
 .bc-softwrap .composer {
   --surface: #1a1a1c;
   --radius: 16px;
@@ -408,12 +408,13 @@ body {
 }
 
 /* the settings frame: the Platforms popover's shell (colour, hairline,
-   shadow) anchored above the chip; it eases up and in on open and drops back
-   on close (visibility waits for the fade so it never snaps away) */
+   shadow) centred directly above the chip; it fades in and grows up the y
+   axis from its bottom edge on open, shrinks back on close (visibility waits
+   for the fade so it never snaps away) (user, 2026-09-16) */
 .bc-superpop {
   position: absolute;
   bottom: calc(100% + 12px);
-  right: 0;
+  left: 50%;
   width: 288px;
   background: #0e1015;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -422,17 +423,17 @@ body {
   padding: 10px;
   box-sizing: border-box;
   z-index: 7;
-  transform-origin: 90% 100%;
+  transform-origin: 50% 100%;
   opacity: 0;
-  transform: translateY(6px) scale(0.96);
+  transform: translateX(-50%) scaleY(0.8);
   visibility: hidden;
-  transition: opacity 170ms ease, transform 170ms ease, visibility 0s 170ms;
+  transition: opacity 160ms ease, transform 180ms ease, visibility 0s 180ms;
 }
 .bc-superpop._on {
   opacity: 1;
-  transform: none;
+  transform: translateX(-50%) scaleY(1);
   visibility: visible;
-  transition: opacity 240ms var(--super-ease), transform 240ms var(--super-ease), visibility 0s;
+  transition: opacity 220ms ease-out, transform 300ms var(--super-ease), visibility 0s;
 }
 .bc-superhead { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 10px; }
 .bc-supertitle { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #e6e8ee; display: inline-flex; align-items: center; gap: 6px; }
@@ -494,21 +495,28 @@ body {
 .bc-superlist { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 280ms var(--super-ease); }
 .bc-superlist._open { grid-template-rows: 1fr; }
 .bc-superlist > div { overflow: hidden; min-height: 0; }
-.bc-superlist > div > div { padding: 2px 0 6px; }
+/* the options: a compact two-column grid of tiles (icon, name, model), four
+   rows for eight models instead of a column of eight (user, 2026-09-16:
+   "cleaner and more compact"); the picked tile carries a hairline and a dot */
+.bc-superlist > div > div { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 2px 0 8px; }
 .bc-superopt {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; box-sizing: border-box;
-  padding: 5px 8px 5px 6px; margin-left: 30px; width: calc(100% - 30px);
-  border: none; border-radius: 8px;
-  background: none; color: #c9ccd6; font-size: 12px;
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; min-width: 0; box-sizing: border-box;
+  padding: 5px 7px 5px 6px;
+  border: 1px solid transparent; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03); color: #c9ccd6; font-size: 12px;
   font-family: inherit; text-align: left; cursor: pointer;
   opacity: 0; transform: translateY(-4px);
-  transition: background 160ms ease, color 160ms ease, opacity 220ms ease, transform 280ms var(--super-ease);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, opacity 220ms ease, transform 280ms var(--super-ease);
 }
+.bc-superopt img { width: 18px; height: 18px; }
+.bc-superopt .bc-supername { gap: 1px; }
+.bc-superopt .bc-supername > span { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bc-superopt .bc-supername small { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bc-superlist._open .bc-superopt { opacity: 1; transform: none; }
-.bc-superopt:hover { background: rgba(255, 255, 255, 0.07); color: #f2f2f5; }
-.bc-superopt[aria-selected="true"] { color: #f2f2f5; }
-.bc-superopt .bc-supercheck { width: 6px; height: 6px; border-radius: 50%; background: transparent; flex-shrink: 0; transition: background 200ms ease, box-shadow 200ms ease; }
+.bc-superopt:hover { background: rgba(255, 255, 255, 0.08); color: #f2f2f5; }
+.bc-superopt[aria-selected="true"] { color: #f2f2f5; background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
+.bc-superopt .bc-supercheck { width: 5px; height: 5px; border-radius: 50%; background: transparent; flex-shrink: 0; margin-left: auto; transition: background 200ms ease, box-shadow 200ms ease; }
 .bc-superopt[aria-selected="true"] .bc-supercheck { background: var(--super-grad); box-shadow: 0 0 6px rgba(120, 100, 255, 0.7); }
 
 /* the REVIEW switch: knob slides, track takes the gradient */
@@ -6938,15 +6946,18 @@ function chatScriptFor(title) {
 
   // ---- open / close -----------------------------------------------------------
   const isOpen = () => pop.classList.contains("_on");
+  const wrap = btn.closest(".bc-softwrap"); // ._super holds the composer's unfocused grey filter off while the frame is open
   const openPop = () => {
     if (isOpen()) return;
     pop.classList.add("_on");
+    if (wrap) wrap.classList.add("_super");
     btn.setAttribute("aria-expanded", "true");
     onOff.place(); count.place(); // measured now that the frame is visible
   };
   const closePop = () => {
     if (!isOpen()) return;
     pop.classList.remove("_on");
+    if (wrap) wrap.classList.remove("_super");
     btn.setAttribute("aria-expanded", "false");
     pickers.forEach((p) => p.close());
     if (pop.contains(document.activeElement)) btn.focus();
