@@ -103,11 +103,7 @@
 .act-sec .act-feed { padding-top: 2px; -webkit-mask-image: linear-gradient(transparent, #000 12px); mask-image: linear-gradient(transparent, #000 12px); }
 .act-sec--tools .act-feed { gap: 6px; padding-bottom: 12px; }
 .act-sec--tools .act-tool { padding: 5px 8px; }
-.act-sec--media .act-feed { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 8px; align-content: start; }
-.act-sec--media .act-img { border-radius: 8px; }
-.act-sec--media .act-dur { font-size: 9px; right: 4px; bottom: 4px; padding: 0 4px; }
-.act-sec--media .act-cap b { margin-top: 5px; font-size: 11px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.act-sec--media .act-cap span { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.act-sec--media .act-feed { gap: 12px; }
 /* tools top: a short call log over a taller results frame */
 .act--s2 .act-sec--tools { flex: 0 0 34%; }
 .act--s2 .act-sec--media { flex: 1; }
