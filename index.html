@@ -2086,6 +2086,56 @@ body {
    only dynamic bubbles/replies/system lines carry bc-app) */
 .bc-app { margin-top: 14px; }
 
+/* agent replies render as Discord message rows (user, 2026-09-24: "when the
+   agents respond, it looks like discord"): Discord dark chat surface #313338,
+   40px round avatar in the left gutter, role-coloured name, blurple APP tag,
+   muted "Today at" timestamp, then the reply itself as bubble-less body text.
+   The panel's own reply node sits in .dc-body untouched, so every fx engine
+   (dots, shimmer, caret stream, typewriter) still types into it. */
+.dc-msg {
+  --dc-font: "gg sans", "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  position: relative;
+  min-height: 40px;
+  padding: 8px 16px 9px 68px;
+  border-radius: 8px;
+  background: #313338;
+  font-family: var(--dc-font);
+  text-align: left;
+  transition: background-color 0.1s ease-out;
+}
+.dc-msg:hover { background: #2e3035; }
+.dc-ava {
+  position: absolute; left: 16px; top: 9px;
+  width: 40px; height: 40px; border-radius: 50%;
+  object-fit: cover; background: #1e1f22;
+}
+.dc-head { display: flex; align-items: center; min-width: 0; line-height: 22px; white-space: nowrap; }
+.dc-name { font-size: 16px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+.dc-tag {
+  display: inline-flex; align-items: center; flex: none;
+  height: 15px; margin-left: 4px; padding: 0 4px 0 2px; border-radius: 3px;
+  background: #5865f2; color: #fff;
+  font-size: 10px; font-weight: 600; line-height: 15px; letter-spacing: 0.02em;
+}
+.dc-tag svg { width: 12px; height: 12px; fill: #fff; }
+.dc-time { flex: none; margin-left: 6px; font-size: 12px; font-weight: 400; color: #949ba4; }
+.dc-msg > .dc-main > .dc-body > * {
+  margin: 0; padding: 0; width: auto; max-width: none;
+  background: none; border: 0; border-radius: 0; box-shadow: none;
+}
+.dc-msg .dc-body, .dc-msg .dc-body * {
+  font-family: var(--dc-font); font-size: 16px; font-weight: 400;
+  line-height: 1.375; letter-spacing: normal; color: #dbdee1;
+}
+.dc-msg .dc-body { overflow-wrap: anywhere; }
+/* the phone is Discord mobile: same row, one size down */
+.dc-msg._ph { min-height: 34px; padding: 6px 10px 7px 52px; border-radius: 6px; }
+.dc-msg._ph .dc-ava { left: 10px; top: 7px; width: 32px; height: 32px; }
+.dc-msg._ph .dc-name { font-size: 14px; }
+.dc-msg._ph .dc-time { font-size: 11px; }
+.dc-msg._ph .dc-body, .dc-msg._ph .dc-body * { font-size: 13.5px; line-height: 19px; }
+.ph-msgs > .dc-msg { margin-top: 14px; }
+
 /* list rows (recents) — hoverable and selectable, no
    navigation (panels that ship their own hover surface are not re-hovered) */
 .cl-item, .cd-chat, .gt-chat, .dv-item,
@@ -4932,6 +4982,50 @@ const CHAT_PANELS = [
     rowSel: ".cs-chat", rowCls: "cs-chat", rowTxt: "cs-txt", rowWhen: "cs-when", rowOn: "cs-on" },
 ];
 
+// Discord identity per agent: avatar + role colour (each brand's accent,
+// lifted where needed to read on #313338). Panels map by key, the phone by name.
+const DC_IDS = {
+  Superbot: { label: "superbot", src: "hero-assets/superbot-tile.svg", color: "#5fd08a" },
+  Claude: { label: "Claude", src: "hero-assets/claude.png", color: "#e8a284" },
+  Cursor: { label: "Cursor", src: "hero-assets/cursor.png", color: "#9fc0da" },
+  ChatGPT: { label: "ChatGPT", src: "hero-assets/chatgpt.webp", color: "#5fd0ab" },
+  Devin: { label: "Devin", src: "hero-assets/devin.png", color: "#9db4f0" },
+  Hermes: { label: "Hermes", src: "hero-assets/hermes.png", color: "#6ea8ff" },
+  Gemini: { label: "Gemini", src: "hero-assets/gemini-app-icon.png", color: "#7fa8f5" },
+  Grok: { label: "Grok", src: "hero-assets/grok.png", color: "#f2f3f5" },
+};
+const DC_KEY_NAME = { gg: "Superbot", claude: "Claude", cursor: "Cursor", chatgpt: "ChatGPT", devin: "Devin", hermes: "Hermes", gemini: "Gemini", grok: "Grok" };
+const DC_CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 11.2 3.3 8l1.1-1.1 2.1 2.1 5.1-5.1 1.1 1.1z"/></svg>';
+
+// wraps a reply node in a Discord message row and returns the row; the node
+// itself becomes the body, so callers keep streaming into the same element.
+// A demo-t node hands its class to the row so the tour's reset removes both.
+function dcMsg(body, name, phone) {
+  const id = DC_IDS[name] || { label: name, src: "hero-assets/superbot-mark.svg", color: "#f2f3f5" };
+  const row = add("div", "dc-msg" + (phone ? " _ph" : ""));
+  if (body.classList.contains("demo-t")) row.classList.add("demo-t");
+  const ava = add("img", "dc-ava");
+  ava.src = id.src;
+  ava.alt = "";
+  ava.draggable = false;
+  const main = add("div", "dc-main");
+  const head = add("div", "dc-head");
+  const who = add("span", "dc-name");
+  who.textContent = id.label;
+  who.style.color = id.color;
+  const tag = add("span", "dc-tag");
+  tag.innerHTML = DC_CHECK + "APP";
+  const when = add("time", "dc-time");
+  when.textContent = "Today at " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  head.append(who, tag, when);
+  const wrap = add("div", "dc-body");
+  body.style.marginTop = "";
+  wrap.appendChild(body);
+  main.append(head, wrap);
+  row.append(ava, main);
+  return row;
+}
+
 // the reply shape follows the panel: a card/block wrapper where the panel
 // renders one, a bare <p> where it renders flat prose. `stream` (a live reply
 // from panelSend) types the text in per the panel's fx; history renders
@@ -4942,8 +5036,10 @@ function panelAddReply(p, th, text, target, stream, submittedAt) {
   // node is distinguishable from the seeded HTML (which never carries it)
   const t = add(p.rtag || "div", p.wrap ? (p.rtxt || "") : (p.rtxt || "") + " bc-app");
   t.textContent = stream ? "" : text;
-  if (wrap) { wrap.appendChild(t); th.appendChild(wrap); }
-  else th.appendChild(t);
+  if (wrap) wrap.appendChild(t);
+  const row = dcMsg(wrap || t, DC_KEY_NAME[p.key] || p.key);
+  row.classList.add("bc-app");
+  th.appendChild(row);
   if (stream) {
     // gg routing: the "sent to <platform>" line waits until the reply has
     // finished typing, the way a receipt lands after the response completes
@@ -5518,7 +5614,7 @@ document.querySelectorAll(".composer").forEach((c) => {
         el.textContent = m.text;
         const act = add("div", "ph-actrow");
         act.innerHTML = PH_ACT;
-        msgs.appendChild(el);
+        msgs.appendChild(dcMsg(el, name, true));
         msgs.appendChild(act);
       }
     });
@@ -5769,8 +5865,7 @@ document.querySelectorAll(".composer").forEach((c) => {
     // mirror here, and this reply waits for their fold (user, 2026-09-16)
     const landPhone = (at) => {
       const el = add("div", "ph-replytxt");
-      el.style.marginTop = "18px";
-      msgs.appendChild(el);
+      msgs.appendChild(dcMsg(el, a.name, true));
       msgs.scrollTop = msgs.scrollHeight;
       const desc = PH_FX[a.name] || { key: "ph-" + a.name.toLowerCase().replace(/\s+/g, "-"), fx: { kind: "instant", landAt: 350 } };
       panelStreamReply(desc, el, replyText, () => {
@@ -5877,8 +5972,7 @@ document.querySelectorAll(".composer").forEach((c) => {
     if (p.key === "gg" && window.pcLiveThink) return replyText; // superbot thinks on the PC first; panelSend lands this reply through phLandReply after the fold
     setTimeout(() => {
       const el = add("div", "ph-replytxt");
-      el.style.marginTop = "18px";
-      msgs.appendChild(el);
+      msgs.appendChild(dcMsg(el, name, true));
       panelStreamReply(PH_FX[name], el, replyText, () => {
         const act = add("div", "ph-actrow");
         act.innerHTML = PH_ACT;
@@ -5894,8 +5988,7 @@ document.querySelectorAll(".composer").forEach((c) => {
     if (PH_APPS[phApp].name !== name) return;
     const msgs = chat.querySelector(".ph-msgs");
     const el = add("div", "ph-replytxt");
-    el.style.marginTop = "18px";
-    msgs.appendChild(el);
+    msgs.appendChild(dcMsg(el, name, true));
     msgs.scrollTop = msgs.scrollHeight;
     panelStreamReply(PH_FX[name] || { key: "ph-" + name.toLowerCase(), fx: { kind: "instant", landAt: 350 } }, el, text, () => {
       const act = add("div", "ph-actrow");
@@ -5976,7 +6069,7 @@ document.querySelectorAll(".composer").forEach((c) => {
   window.phTourTyped = function () {
     const msgs = chat.querySelector(".ph-msgs");
     const el = add("div", "ph-replytxt demo-t");
-    msgs.appendChild(el);
+    msgs.appendChild(dcMsg(el, PH_APPS[phApp].name, true));
     return {
       char(ch) { const c = add("span", "demo-ch"); c.textContent = ch; el.appendChild(c); msgs.scrollTop = msgs.scrollHeight; },
       done(text) { el.textContent = text; const act = add("div", "ph-actrow demo-t"); act.innerHTML = PH_ACT; msgs.appendChild(act); msgs.scrollTop = msgs.scrollHeight; },
@@ -6009,8 +6102,7 @@ document.querySelectorAll(".composer").forEach((c) => {
   window.phTourReply = function (text, ttft) {
     const msgs = chat.querySelector(".ph-msgs");
     const el = add("div", "ph-replytxt");
-    el.style.marginTop = "18px";
-    msgs.appendChild(el);
+    msgs.appendChild(dcMsg(el, PH_APPS[phApp].name, true));
     const done = () => {
       const act = add("div", "ph-actrow");
       act.innerHTML = PH_ACT;
