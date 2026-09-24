@@ -49,9 +49,28 @@
     { t: "thought", text: "Eight solid picks across big wall, sport, ice and alpine. Handing them over." },
   ];
 
+  // Inline trail shows no thoughts, so it gets a denser run of searches and calls.
+  const SCRIPT_TRAIL = [
+    { t: "tool", name: "youtube.search", args: 'q: "rock climbing"', result: "24 results", ms: 620 },
+    { t: "tool", name: "youtube.search", args: 'q: "bouldering session"', result: "18 results", ms: 540 },
+    { t: "tool", name: "youtube.search", args: 'q: "big wall climb"', result: "15 results", ms: 560 },
+    { t: "tool", name: "web.search", args: 'q: "best rock climbing films"', result: "10 links", ms: 700 },
+    { t: "tool", name: "results.merge", args: "sources: 4", result: "61 unique", ms: 380 },
+    { t: "tool", name: "results.filter", args: "min: 5m, dedupe: channel", result: "8 kept", ms: 420 },
+    { t: "tool", name: "youtube.videos", args: "ids: vid_01..vid_04", result: "4 videos", ms: 520 },
+    video(0), video(1), video(2), video(3),
+    { t: "tool", name: "youtube.search", args: 'q: "ice climbing lead"', result: "9 results", ms: 520 },
+    { t: "tool", name: "youtube.search", args: 'q: "alpine summit day"', result: "12 results", ms: 500 },
+    { t: "tool", name: "youtube.videos", args: "ids: vid_05..vid_08", result: "4 videos", ms: 520 },
+    video(4), video(5), video(6), video(7),
+    { t: "tool", name: "youtube.stats", args: "ids: 8", result: "views, dates", ms: 460 },
+    { t: "tool", name: "results.rank", args: "by: views, recency", result: "sorted", ms: 380 },
+  ];
+
   const param = new URLSearchParams(location.search).get("v");
   const vid = VARIANTS[param] ? param : "s1";
   const cfg = VARIANTS[vid];
+  const script = vid === "s1" ? SCRIPT_TRAIL : SCRIPT;
 
   // preload so a tile never lands blank
   VIDEOS.forEach((v) => { const im = new Image(); im.src = v.src; });
@@ -317,7 +336,7 @@
     ui.aside.classList.add("open");
     await sleep(520); if (!live()) return;
     R.t0 = performance.now();
-    for (const ev of SCRIPT) {
+    for (const ev of script) {
       if (!live()) return;
       if (ev.t === "thought") await onThought(ev, live);
       else if (ev.t === "tool") await onTool(ev, live);

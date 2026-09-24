@@ -34,8 +34,8 @@
 
 /* head */
 .act-head { display: flex; align-items: center; gap: 8px; height: 22px; flex-shrink: 0; font-size: 13px; font-weight: 600; letter-spacing: -0.1px; }
-.act-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: act-pulse 1.6s ease-out infinite; }
-.act--done .act-dot { background: #6b6a66; animation: none; }
+.act-dot { width: 9px; height: 9px; flex-shrink: 0; border-radius: 50%; background: radial-gradient(circle at 34% 30%, #eafff1 0%, #8ef5b4 22%, #34d27a 52%, #0e8a55 82%, #06603f 100%); animation: act-pulse 1.6s ease-out infinite; }
+.act--done .act-dot { background: radial-gradient(circle at 34% 30%, #d8d6d0 0%, #8d8b85 45%, #4a4945 100%); animation: none; }
 .act-status { margin-left: auto; font-size: 11px; font-weight: 500; color: #8d8b85; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
 @keyframes act-pulse { 0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, .5); } 70%, 100% { box-shadow: 0 0 0 7px rgba(74, 222, 128, 0); } }
 
