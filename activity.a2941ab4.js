@@ -2,10 +2,10 @@
 // rock climbing" and plays one scripted run (thoughts, tool calls, videos).
 // Each variant places those three event kinds differently. ?v=s1..s10|t1..t5.
 (function () {
-  // thought: feed | group | top | stream   tool: feed | group | ticker | nest | timeline | strip
+  // thought: none | feed | group | top | stream  tool: feed | group | ticker | nest | timeline | strip
   // video: feed | group | nest | slot | timeline   vtool (per-video fetch): none | row | overlay | scrim | line
   const VARIANTS = {
-    s1: { name: "Inline trail", fam: "stack", thought: "feed", tool: "feed", video: "feed", vtool: "none" },
+    s1: { name: "Inline trail", fam: "stack", thought: "none", tool: "feed", video: "feed", vtool: "none" },
     s2: { name: "Reasoned cards", fam: "stack", thought: "group", tool: "group", video: "group", vtool: "row" },
     s3: { name: "Tool chips", fam: "stack", thought: "top", tool: "feed", video: "feed", vtool: "overlay" },
     s4: { name: "Collapsing steps", fam: "stack", thought: "group", tool: "group", video: "feed", vtool: "none", collapse: true },
@@ -219,6 +219,7 @@
   // ---- event handlers --------------------------------------------------------
   async function onThought(ev, live) {
     ui.status.textContent = "Thinking";
+    if (cfg.thought === "none") return;
     if (cfg.thought === "stream") {
       const p = ui.streamText;
       p.querySelectorAll(".seg.cur").forEach((s) => s.classList.remove("cur"));
