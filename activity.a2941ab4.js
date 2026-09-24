@@ -6,20 +6,6 @@
   // video: feed | group | nest | slot | timeline   vtool (per-video fetch): none | row | overlay | scrim | line
   const VARIANTS = {
     s1: { name: "Inline trail", fam: "stack", thought: "none", tool: "feed", video: "feed", vtool: "none" },
-    s2: { name: "Reasoned cards", fam: "stack", thought: "group", tool: "group", video: "group", vtool: "row" },
-    s3: { name: "Tool chips", fam: "stack", thought: "top", tool: "feed", video: "feed", vtool: "overlay" },
-    s4: { name: "Collapsing steps", fam: "stack", thought: "group", tool: "group", video: "feed", vtool: "none", collapse: true },
-    s5: { name: "Chat turns", fam: "stack", thought: "feed", tool: "feed", video: "feed", vtool: "none" },
-    s6: { name: "Pinned thought + ticker", fam: "stack", thought: "top", tool: "ticker", video: "feed", vtool: "none" },
-    s7: { name: "Skeleton fill", fam: "stack", thought: "top", tool: "feed", video: "slot", vtool: "overlay" },
-    s8: { name: "Call blocks", fam: "stack", thought: "feed", tool: "feed", video: "feed", vtool: "row" },
-    s9: { name: "Nested results", fam: "stack", thought: "feed", tool: "nest", video: "nest", vtool: "none" },
-    s10: { name: "Scrim status", fam: "stack", thought: "feed", tool: "feed", video: "feed", vtool: "scrim" },
-    t1: { name: "Stream + tool nodes", fam: "tl", thought: "stream", tool: "timeline", video: "timeline", vtool: "none" },
-    t2: { name: "Tools inside entries", fam: "tl", thought: "stream", tool: "timeline", video: "timeline", vtool: "line" },
-    t3: { name: "Wide thumbs", fam: "tl", thought: "stream", tool: "timeline", video: "timeline", vtool: "none", words: true },
-    t4: { name: "Tool strip", fam: "tl", thought: "stream", tool: "strip", video: "timeline", vtool: "none" },
-    t5: { name: "Compact", fam: "tl", thought: "stream", tool: "timeline", video: "timeline", vtool: "line" },
   };
 
   const VIDEOS = [
@@ -35,21 +21,7 @@
 
   const FETCH_MS = [84, 112, 96, 140, 78, 122, 101, 90];
   const video = (i) => ({ t: "video", i, ms: FETCH_MS[i] });
-  const SCRIPT = [
-    { t: "thought", text: "They want rock climbing videos. I'll search YouTube first, then weed out the noise." },
-    { t: "tool", name: "youtube.search", args: 'q: "rock climbing", max: 25', result: "24 results", ms: 900 },
-    { t: "thought", text: "Lots of shorts and reposts. Keeping full climbs over five minutes, one per channel." },
-    { t: "tool", name: "results.filter", args: "min: 5m, dedupe: channel", result: "8 kept", ms: 650, slots: 8 },
-    { t: "tool", name: "youtube.videos", args: "ids: vid_01..vid_04", result: "4 videos", ms: 700 },
-    video(0), video(1), video(2), video(3),
-    { t: "thought", text: "El Cap by headlamp is the standout so far. Fetching four more, with ice and alpine in the mix." },
-    { t: "tool", name: "youtube.videos", args: "ids: vid_05..vid_08", result: "4 videos", ms: 700 },
-    video(4), video(5), video(6), video(7),
-    { t: "tool", name: "results.rank", args: "by: views, recency", result: "sorted", ms: 520 },
-    { t: "thought", text: "Eight solid picks across big wall, sport, ice and alpine. Handing them over." },
-  ];
-
-  // Inline trail shows no thoughts, so it gets a denser run of searches and calls.
+  // A dense run of searches and calls, videos landing between the batches.
   const SCRIPT_TRAIL = [
     { t: "tool", name: "youtube.search", args: 'q: "rock climbing"', result: "24 results", ms: 620 },
     { t: "tool", name: "youtube.search", args: 'q: "bouldering session"', result: "18 results", ms: 540 },
@@ -70,7 +42,7 @@
   const param = new URLSearchParams(location.search).get("v");
   const vid = VARIANTS[param] ? param : "s1";
   const cfg = VARIANTS[vid];
-  const script = vid === "s1" ? SCRIPT_TRAIL : SCRIPT;
+  const script = SCRIPT_TRAIL;
 
   // preload so a tile never lands blank
   VIDEOS.forEach((v) => { const im = new Image(); im.src = v.src; });
