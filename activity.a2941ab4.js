@@ -6,6 +6,8 @@
   // video: feed | group | nest | slot | timeline   vtool (per-video fetch): none | row | overlay | scrim | line
   const VARIANTS = {
     s1: { name: "Inline trail", fam: "stack", thought: "none", tool: "feed", video: "feed", vtool: "none" },
+    s2: { name: "Tools top", fam: "stack", thought: "none", tool: "pane", video: "feed", vtool: "none", split: "tools-top" },
+    s3: { name: "Images top", fam: "stack", thought: "none", tool: "pane", video: "feed", vtool: "none", split: "images-top" },
   };
 
   const VIDEOS = [
@@ -76,7 +78,21 @@
       inner.append(parts.stream);
     }
     if (cfg.tool === "strip") inner.append((parts.strip = el("div", "act-strip")));
-    inner.append((parts.feed = el("div", "act-feed")));
+    if (cfg.split) {
+      const section = (cls, label) => {
+        const s = el("section", `act-sec ${cls}`);
+        const h = el("div", "act-sec-h");
+        const count = el("span", "act-sec-n", "0");
+        h.append(el("span", null, label), count);
+        const list = el("div", "act-feed");
+        s.append(h, list);
+        return { s, list, count };
+      };
+      const tools = section("act-sec--tools", "Tool calls");
+      const media = section("act-sec--media", "Results");
+      Object.assign(parts, { feed: media.list, tools: tools.list, toolsN: tools.count, mediaN: media.count });
+      inner.append(...(cfg.split === "tools-top" ? [tools.s, media.s] : [media.s, tools.s]));
+    } else inner.append((parts.feed = el("div", "act-feed")));
     if (cfg.tool === "ticker") {
       parts.ticker = el("div", "act-ticker");
       parts.tickerRows = el("div", "act-trows");
@@ -89,15 +105,14 @@
   }
 
   // ---- primitives ----------------------------------------------------------
-  function follow(smooth) {
+  function follow(smooth, box = ui.feed) {
     if (cfg.video === "slot") return;
-    const f = ui.feed;
-    f.scrollTo({ top: f.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    box.scrollTo({ top: box.scrollHeight, behavior: smooth ? "smooth" : "auto" });
   }
 
   function put(parent, node) {
     parent.append(node);
-    follow(true);
+    follow(true, parent.classList.contains("act-feed") ? parent : ui.feed);
     requestAnimationFrame(() => requestAnimationFrame(() => node.classList.add("in")));
     return node;
   }
@@ -239,7 +254,8 @@
   async function onTool(ev, live) {
     ui.status.textContent = `Calling ${ev.name}`;
     const row = toolRow(ev.name, ev.args);
-    if (cfg.tool === "feed") put(ui.feed, row);
+    if (cfg.tool === "pane") { put(ui.tools, row); ui.toolsN.textContent = ++R.calls; }
+    else if (cfg.tool === "feed") put(ui.feed, row);
     else if (cfg.tool === "group") { put(group(), row); R.group.calls++; }
     else if (cfg.tool === "strip") put(ui.strip, row);
     else if (cfg.tool === "timeline") { const n = el("div", "act-node tool"); n.append(row); put(ui.feed, n); }
@@ -293,6 +309,7 @@
     }
     R.count++;
     ui.status.textContent = `${R.count} of ${VIDEOS.length}`;
+    if (ui.mediaN) ui.mediaN.textContent = R.count;
     await sleep(item._vt ? 180 : 360);
   }
 
