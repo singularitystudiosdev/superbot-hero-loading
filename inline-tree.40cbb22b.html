@@ -7893,15 +7893,21 @@ function chatScriptFor(title) {
   --it-shot-crop: 256;
   --it-dim: 0.45;
   --it-rise: var(--it-s1);
-  /* motion (page ease; tokens.css duration-200 / 250; spin and breathe are
+  /* motion (page ease; tokens.css duration-200 / 250; breathe and sheen are
      loops, not entrances, and stop under reduced motion) */
   --it-ease: cubic-bezier(0.32, 0.72, 0, 1);
   --it-dur: 240ms;
   --it-dur-fade: 200ms;
   --it-dur-quick: 150ms;
-  --it-dur-spin: 800ms;
   --it-dur-breathe: 1200ms;
-  --it-turn: 1turn;
+  /* the old composer think row's swap (base .gt-think-text, .demo-ch) */
+  --it-ease-up: cubic-bezier(0.22, 1, 0.36, 1);
+  --it-dur-up: 320ms;
+  --it-dur-ch: 420ms;
+  --it-dur-sheen: 1.8s;
+  --it-blur-out: 2px;
+  --it-sheen-size: 220% 100%;
+  --it-sheen-end: -220%;
 
   margin: var(--it-s3) 0 var(--it-s2);
   font: var(--it-w-body) var(--it-fs) / var(--it-lh) var(--it-sans);
@@ -8028,8 +8034,29 @@ function chatScriptFor(title) {
   min-width: 0;
   color: var(--it-muted);
 }
-.it-host .it-v1-sub-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.it-host .it-v1-sub-text > span { animation: it-v1-fade var(--it-dur-fade) var(--it-ease) both; }
+.it-host .it-v1-sub-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateY(0);
+  transition: opacity var(--it-dur) ease, transform var(--it-dur-up) var(--it-ease-up), filter var(--it-dur) ease;
+}
+/* the next line starts a touch low (no transition), then eases up */
+.it-host .it-v1-sub-text._in { transform: translateY(var(--it-rise)); transition: none; }
+/* the previous line lifts, blurs and fades out first */
+.it-host .it-v1-sub-text._out { opacity: 0; transform: translateY(calc(-1 * var(--it-rise))); filter: blur(var(--it-blur-out)); }
+.it-host .it-v1-ch { opacity: 0; animation: it-v1-ch-in var(--it-dur-ch) ease-out forwards; }
+/* the grey sheen rides a live subthought and a running tool line */
+.it-host .it-v1-agent[data-state="run"] .it-v1-sub-text,
+.it-host .it-v1-tool[data-state="run"] {
+  background: linear-gradient(90deg, var(--it-muted) 0%, var(--it-muted) 35%, var(--it-text) 50%, var(--it-muted) 65%, var(--it-muted) 100%);
+  background-size: var(--it-sheen-size);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: it-v1-sheen var(--it-dur-sheen) linear infinite;
+}
 .it-host .it-v1-state {
   width: var(--it-check);
   height: var(--it-check);
@@ -8041,7 +8068,7 @@ function chatScriptFor(title) {
   width: var(--it-dot);
   height: var(--it-dot);
   border-radius: var(--it-round);
-  background: var(--it-accent);
+  background: var(--it-muted);
   animation: it-v1-breathe var(--it-dur-breathe) var(--it-ease) infinite alternate;
 }
 .it-host .it-v1-check {
@@ -8070,35 +8097,17 @@ function chatScriptFor(title) {
 }
 .it-host .it-v1-empty { color: var(--it-muted); font-size: var(--it-fs-meta); }
 
-/* a tool step: one raised mono row, name, args, then the result */
+/* a tool step: one short plain-English line, the verb then its object;
+   the grey sheen rides it while it runs */
 .it-host .it-v1-tool {
-  display: grid;
-  grid-template-columns: var(--it-spin) minmax(0, 1fr) auto;
-  grid-template-areas: "state call ms" ". res res";
-  column-gap: var(--it-s2);
-  width: 100%;
-  padding: var(--it-s1) var(--it-s2);
-  border-radius: var(--it-r-row);
-  background: var(--it-raised);
-  font: var(--it-fs-meta) / var(--it-lh) var(--it-mono);
-  letter-spacing: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--it-muted);
 }
-.it-host .it-v1-tool .it-v1-state { grid-area: state; align-self: center; width: var(--it-spin); height: var(--it-spin); }
-.it-host .it-v1-call { grid-area: call; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.it-host .it-v1-args { color: var(--it-muted); }
-.it-host .it-v1-tool[aria-expanded="true"] .it-v1-call { white-space: normal; overflow-wrap: anywhere; }
-.it-host .it-v1-ms { grid-area: ms; color: var(--it-muted); font-variant-numeric: tabular-nums; }
-.it-host .it-v1-res { grid-area: res; color: var(--it-muted); overflow-wrap: anywhere; }
-.it-host .it-v1-res:empty { display: none; }
-.it-host .it-v1-spin {
-  width: var(--it-spin);
-  height: var(--it-spin);
-  border-radius: var(--it-round);
-  border: var(--it-line) solid var(--it-hairline);
-  border-top-color: var(--it-accent);
-  animation: it-v1-spin var(--it-dur-spin) linear infinite;
-}
-.it-host .it-v1-tool .it-v1-check { width: var(--it-spin); height: var(--it-spin); }
+.it-host .it-v1-verb { color: var(--it-text); }
+.it-host .it-v1-tool[data-state="run"] .it-v1-verb { color: inherit; }
 
 /* a screenshot step: url bar above, the real JPEG in a 12px frame */
 .it-host .it-v1-shot {
@@ -8144,16 +8153,19 @@ function chatScriptFor(title) {
 }
 @keyframes it-v1-fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes it-v1-fade-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes it-v1-spin { to { transform: rotate(var(--it-turn)); } }
+@keyframes it-v1-ch-in { to { opacity: 1; } }
+@keyframes it-v1-sheen { from { background-position: 0% 0; } to { background-position: var(--it-sheen-end) 0; } }
 @keyframes it-v1-breathe { from { opacity: 1; } to { opacity: var(--it-dim); } }
 
 @media (prefers-reduced-motion: reduce) {
   .it-host .it-v1-agent,
   .it-host .it-v1-think > *,
-  .it-host .it-v1-sub-text > span,
   .it-host .it-v1-check,
-  .it-host .it-v1-dot { animation: none; }
-  .it-host .it-v1-spin { animation: none; border-color: var(--it-accent); }
+  .it-host .it-v1-dot,
+  .it-host .it-v1-agent[data-state="run"] .it-v1-sub-text,
+  .it-host .it-v1-tool[data-state="run"] { animation: none; }
+  .it-host .it-v1-ch { animation: none; opacity: 1; }
+  .it-host .it-v1-sub-text { transition: none; }
   .it-host .it-v1-think > [data-leaving] { display: none; }
   .it-host .it-v1-body,
   .it-host .it-v1-detail,
@@ -8215,9 +8227,35 @@ function chatScriptFor(title) {
   };
   // "Opus 5.5" when the provider is Claude, the full label otherwise
   const display = (m) => (m.name === "Claude" ? m.model : m.label) || m.label || m.name;
-  const secs = (ms) => (ms / 1000).toFixed(1) + " s";
-  const argText = (v) => (typeof v === "string" ? JSON.stringify(v) : String(v));
-  const compact = (args) => Object.keys(args || {}).map((k) => k + ": " + argText(args[k])).join(", ");
+  // a tool step reads as one short plain-English line ("Read #pricing"):
+  // present tense while it runs, past tense once it lands
+  const hostPath = (u) => String(u || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  const TOOL_WORDS = {
+    "thread.search": (a) => ["Searching", "Searched", "the thread for " + a.query],
+    "files.open": (a) => ["Opening", "Opened", a.path],
+    "files.read": (a) => ["Reading", "Read", a.path + (a.lines ? " L" + a.lines : "")],
+    "browser.open": (a) => ["Opening", "Opened", hostPath(a.url)],
+    "browser.read": (a) => ["Reading", "Read", a.selector + " on the page"],
+    "memory.get": (a) => ["Recalling", "Recalled", "your " + String(a.key).split(".").pop()],
+    "draft.write": (a) => ["Drafting", "Drafted", a.max_lines ? "a " + a.max_lines + " line reply" : "a reply"],
+    "web.search": (a) => ["Searching", "Searched", "the web for " + a.query],
+    "links.check": (a) => ["Checking", "Checked", "links in " + a.path],
+    "perf.audit": (a) => ["Measuring", "Measured", "page speed on " + (a.device || "desktop")],
+    "comments.list": (a) => ["Reading", "Read", (a.status ? a.status + " " : "") + "comments on " + a.file],
+  };
+  const toolWords = (s) => {
+    const words = TOOL_WORDS[s.name];
+    if (words) return words(s.args || {});
+    const verb = String(s.name).split(".").pop();
+    const title = verb.charAt(0).toUpperCase() + verb.slice(1);
+    const first = Object.values(s.args || {})[0];
+    return [title, title, first == null ? "" : String(first)];
+  };
+  // subthought swaps reuse the old composer think row: the line lifts out,
+  // the next starts a touch low and eases up while its chars type in
+  const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const CHAR_MS = 22; // the page's typewriter cadence
+  const OUT_MS = 260; // the lift-out settles before the next line types
   const toggle = (btn, region) => {
     const open = btn.getAttribute("aria-expanded") !== "true";
     btn.setAttribute("aria-expanded", String(open));
@@ -8318,8 +8356,28 @@ function chatScriptFor(title) {
       });
 
       const setSub = (a, text) => {
-        const span = el("span", "", text);
-        a.subText.replaceChildren(span);
+        const gen = (a.subGen = (a.subGen || 0) + 1);
+        const box = a.subText;
+        const put = () => {
+          if (gen !== a.subGen) return;
+          box.classList.remove("_out");
+          const line = el("span", "");
+          box.replaceChildren(line);
+          if (REDUCED) { line.textContent = text; return; }
+          box.classList.add("_in");
+          void box.offsetHeight;
+          box.classList.remove("_in");
+          const chars = Array.from(text);
+          let i = 0;
+          const type = () => {
+            if (gen !== a.subGen || i >= chars.length) return;
+            line.appendChild(el("span", "it-v1-ch", chars[i++]));
+            setTimeout(type, CHAR_MS);
+          };
+          type();
+        };
+        if (REDUCED || !box.textContent) put();
+        else { box.classList.add("_out"); setTimeout(put, OUT_MS); }
       };
       const ensureStarted = (i) => {
         const a = agents[i];
@@ -8332,17 +8390,11 @@ function chatScriptFor(title) {
 
       // ---- steps ------------------------------------------------------------
       const toolRow = (s) => {
-        const b = el("button", "it-v1-tool");
-        b.type = "button";
-        b.setAttribute("aria-expanded", "false");
-        const st = el("span", "it-v1-state");
-        const call = el("span", "it-v1-call");
-        call.append(document.createTextNode(s.name), el("span", "it-v1-args", "(" + compact(s.args) + ")"));
-        const ms = el("span", "it-v1-ms");
-        const res = el("span", "it-v1-res");
-        b.append(st, call, ms, res);
-        b.addEventListener("click", () => { if (toggle(b)) userOpened(); });
-        return { node: b, st, ms, res };
+        const line = el("div", "it-v1-tool");
+        const verb = el("span", "it-v1-verb");
+        const obj = el("span", "it-v1-obj");
+        line.append(verb, document.createTextNode(" "), obj);
+        return { node: line, verb, obj, words: toolWords(s) };
       };
       const shotRow = (s) => {
         const fig = el("figure", "it-v1-shot");
@@ -8394,15 +8446,10 @@ function chatScriptFor(title) {
               a.steps.appendChild(li);
             }
             if (s.kind !== "shot") {
+              const [running, landed, object] = r.words;
               r.node.dataset.state = s.state;
-              if (s.state === "done") {
-                r.st.replaceChildren(check());
-                r.res.textContent = s.result == null ? "" : String(s.result);
-                if (s.ms != null) r.ms.textContent = secs(s.ms);
-              } else {
-                r.st.replaceChildren(el("span", "it-v1-spin"));
-                r.res.textContent = "";
-              }
+              r.verb.textContent = s.state === "done" ? landed : running;
+              r.obj.textContent = object;
             }
           });
         },
