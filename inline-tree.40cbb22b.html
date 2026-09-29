@@ -7962,8 +7962,10 @@ function chatScriptFor(title) {
   height: var(--it-logo-mgr);
 }
 .it-host .it-v1-head { display: flex; align-items: center; gap: var(--it-s2); min-width: 0; }
-.it-host .it-v1-name { font-weight: var(--it-w-name); white-space: nowrap; }
-.it-host .it-v1-role { color: var(--it-muted); font-size: var(--it-fs-meta); }
+/* what it is doing reads first in the text colour, the model after it in
+   muted, both regular weight (no bold) */
+.it-host .it-v1-name { font-weight: var(--it-w-body); color: var(--it-muted); white-space: nowrap; }
+.it-host .it-v1-role { color: var(--it-text); }
 .it-host .it-v1-head .it-v1-chev { color: var(--it-muted); }
 .it-host .it-v1-think {
   grid-column: 2;
@@ -8025,7 +8027,7 @@ function chatScriptFor(title) {
 .it-host .it-v1-row:hover { background: var(--it-raised); }
 .it-host .it-v1-row .it-v1-logo { grid-area: logo; align-self: center; }
 .it-host .it-v1-goal { grid-area: goal; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.it-host .it-v1-goal .it-v1-name { margin-right: var(--it-s2); }
+.it-host .it-v1-goal .it-v1-name { margin-left: var(--it-s2); }
 .it-host .it-v1-sub {
   grid-area: sub;
   display: flex;
@@ -8286,7 +8288,7 @@ function chatScriptFor(title) {
       mgr.setAttribute("aria-expanded", "true");
       mgr.setAttribute("aria-controls", bodyId);
       const head = el("span", "it-v1-head");
-      head.append(el("span", "it-v1-name", display(model.manager)), el("span", "it-v1-role", model.manager.role || "Manager"), chevron());
+      head.append(el("span", "it-v1-role", model.manager.role || "Manager"), el("span", "it-v1-name", display(model.manager)), chevron());
       const think = el("span", "it-v1-think");
       think.setAttribute("aria-live", "polite");
       mgr.append(logo(model.manager.src), head, think);
@@ -8328,7 +8330,7 @@ function chatScriptFor(title) {
         row.setAttribute("aria-expanded", "false");
         row.setAttribute("aria-controls", detailId);
         const goal = el("span", "it-v1-goal");
-        goal.append(el("span", "it-v1-name", display(a.model)), document.createTextNode(a.goal));
+        goal.append(document.createTextNode(a.goal), el("span", "it-v1-name", display(a.model)));
         const sub = el("span", "it-v1-sub");
         const state = el("span", "it-v1-state");
         state.appendChild(el("span", "it-v1-dot"));
