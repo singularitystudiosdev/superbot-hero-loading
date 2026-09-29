@@ -8149,7 +8149,6 @@ function chatScriptFor(title) {
   to { opacity: 1; transform: none; }
 }
 @keyframes it-v1-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes it-v1-fade-out { from { opacity: 1; } to { opacity: 0; } }
 @keyframes it-v1-ch-in { to { opacity: 1; } }
 @keyframes it-v1-sheen { from { background-position: 0% 0; } to { background-position: var(--it-sheen-end) 0; } }
 @keyframes it-v1-breathe { from { opacity: 1; } to { opacity: var(--it-dim); } }
@@ -8193,7 +8192,6 @@ function chatScriptFor(title) {
   "use strict";
   const NS = "http://www.w3.org/2000/svg";
   const NEAR = 48; // px from the bottom that still counts as "at the bottom"
-  const FADE_MS = 200; // matches --it-dur-fade
   let uid = 0;
 
   const el = (tag, cls, text) => {
