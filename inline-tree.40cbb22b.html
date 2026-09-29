@@ -7967,22 +7967,15 @@ function chatScriptFor(title) {
 .it-host .it-v1-name { font-weight: var(--it-w-body); color: var(--it-muted); white-space: nowrap; }
 .it-host .it-v1-role { color: var(--it-text); }
 .it-host .it-v1-head .it-v1-chev { color: var(--it-muted); }
+/* the manager's live line: the same typed swap and sheen as a subthought */
 .it-host .it-v1-think {
   grid-column: 2;
-  display: grid;
-  color: var(--it-muted);
-  min-width: 0;
-}
-.it-host .it-v1-think > * {
-  grid-area: 1 / 1;
   display: flex;
   align-items: center;
   gap: var(--it-s2);
+  color: var(--it-muted);
   min-width: 0;
-  animation: it-v1-fade var(--it-dur-fade) var(--it-ease) both;
 }
-.it-host .it-v1-think > [data-leaving] { animation: it-v1-fade-out var(--it-dur-fade) var(--it-ease) both; }
-.it-host .it-v1-think-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .it-host .it-v1-completed .it-v1-check { stroke: var(--it-text); }
 .it-host .it-v1-completed .it-v1-think-text { color: var(--it-text); }
 .it-host .it-v1-chev {
@@ -8049,7 +8042,9 @@ function chatScriptFor(title) {
 /* the previous line lifts, blurs and fades out first */
 .it-host .it-v1-sub-text._out { opacity: 0; transform: translateY(calc(-1 * var(--it-rise))); filter: blur(var(--it-blur-out)); }
 .it-host .it-v1-ch { opacity: 0; animation: it-v1-ch-in var(--it-dur-ch) ease-out forwards; }
-/* the grey sheen rides a live subthought and a running tool line */
+/* the grey sheen rides the manager's live line, a live subthought and a
+   running tool line */
+.it-host .it-v1[data-state="run"] .it-v1-think .it-v1-sub-text,
 .it-host .it-v1-agent[data-state="run"] .it-v1-sub-text,
 .it-host .it-v1-tool[data-state="run"] {
   background: linear-gradient(90deg, var(--it-muted) 0%, var(--it-muted) 35%, var(--it-text) 50%, var(--it-muted) 65%, var(--it-muted) 100%);
@@ -8161,14 +8156,13 @@ function chatScriptFor(title) {
 
 @media (prefers-reduced-motion: reduce) {
   .it-host .it-v1-agent,
-  .it-host .it-v1-think > *,
   .it-host .it-v1-check,
   .it-host .it-v1-dot,
+  .it-host .it-v1[data-state="run"] .it-v1-think .it-v1-sub-text,
   .it-host .it-v1-agent[data-state="run"] .it-v1-sub-text,
   .it-host .it-v1-tool[data-state="run"] { animation: none; }
   .it-host .it-v1-ch { animation: none; opacity: 1; }
   .it-host .it-v1-sub-text { transition: none; }
-  .it-host .it-v1-think > [data-leaving] { display: none; }
   .it-host .it-v1-body,
   .it-host .it-v1-detail,
   .it-host .it-v1-shot img,
@@ -8290,7 +8284,9 @@ function chatScriptFor(title) {
       const head = el("span", "it-v1-head");
       head.append(el("span", "it-v1-role", model.manager.role || "Manager"), el("span", "it-v1-name", display(model.manager)), chevron());
       const think = el("span", "it-v1-think");
-      think.setAttribute("aria-live", "polite");
+      const thinkText = el("span", "it-v1-sub-text it-v1-think-text");
+      think.appendChild(thinkText);
+      const mgrLine = {}; // generation of the manager's typed swaps
       mgr.append(logo(model.manager.src), head, think);
 
       const body = el("div", "it-v1-body");
@@ -8308,16 +8304,6 @@ function chatScriptFor(title) {
         root.dataset.open = String(open);
         pinned = false; // a fold or unfold never yanks the thread
       });
-
-      const swapThought = (node) => {
-        Array.from(think.children).forEach((old) => {
-          if (old.dataset.leaving) return;
-          old.dataset.leaving = "true";
-          old.setAttribute("aria-hidden", "true");
-          setTimeout(() => old.remove(), FADE_MS);
-        });
-        think.appendChild(node);
-      };
 
       // ---- the agents -------------------------------------------------------
       const agents = model.agents.map((a) => {
@@ -8357,11 +8343,12 @@ function chatScriptFor(title) {
         return { li, row, state, subText, steps, empty, rows: new Map(), started: false };
       });
 
-      const setSub = (a, text) => {
-        const gen = (a.subGen = (a.subGen || 0) + 1);
-        const box = a.subText;
+      // one typed swap for the manager's line and every subthought; `owner`
+      // holds the generation so a newer line cancels one still typing
+      const typeInto = (owner, box, text) => {
+        const gen = (owner.gen = (owner.gen || 0) + 1);
         const put = () => {
-          if (gen !== a.subGen) return;
+          if (gen !== owner.gen) return;
           box.classList.remove("_out");
           const line = el("span", "");
           box.replaceChildren(line);
@@ -8372,7 +8359,7 @@ function chatScriptFor(title) {
           const chars = Array.from(text);
           let i = 0;
           const type = () => {
-            if (gen !== a.subGen || i >= chars.length) return;
+            if (gen !== owner.gen || i >= chars.length) return;
             line.appendChild(el("span", "it-v1-ch", chars[i++]));
             setTimeout(type, CHAR_MS);
           };
@@ -8381,6 +8368,7 @@ function chatScriptFor(title) {
         if (REDUCED || !box.textContent) put();
         else { box.classList.add("_out"); setTimeout(put, OUT_MS); }
       };
+      const setSub = (a, text) => typeInto(a, a.subText, text);
       const ensureStarted = (i) => {
         const a = agents[i];
         if (!a || a.started) return a;
@@ -8421,11 +8409,7 @@ function chatScriptFor(title) {
 
       return {
         managerThought(text) {
-          mutate(() => {
-            const line = el("span");
-            line.appendChild(el("span", "it-v1-think-text", text));
-            swapThought(line);
-          });
+          mutate(() => { typeInto(mgrLine, thinkText, text); });
         },
         agentStart(i) { mutate(() => { ensureStarted(i); }); },
         agentThought(i, text) {
@@ -8468,9 +8452,9 @@ function chatScriptFor(title) {
           mutate(() => {
             root.dataset.state = "done";
             root.removeAttribute("aria-busy");
-            const line = el("span", "it-v1-completed");
-            line.append(check(), el("span", "it-v1-think-text", "Completed"));
-            swapThought(line);
+            think.classList.add("it-v1-completed");
+            think.prepend(check());
+            typeInto(mgrLine, thinkText, "Completed");
           });
         },
       };
