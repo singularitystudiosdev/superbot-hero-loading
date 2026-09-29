@@ -7233,7 +7233,7 @@ function chatScriptFor(title) {
   // as "Hermes Hermes 4" (user, 2026-09-16), so a leading provider name is
   // dropped: Hermes · 4, Grok · 4, Devin · 2, Claude · Opus 4.6
   const modelSub = (m) => (m.model.toLowerCase().startsWith(m.name.toLowerCase()) ? m.model.slice(m.name.length).trim() : m.model);
-  const KEY = "hero.super";
+  const KEY = "hero.super.inline-tree"; // inline-tree build: its own picks, never index.html's
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { console.error("[super] bad stored settings", e); }
   const S = Object.assign({ on: true, manager: "claude-opus", worker: "claude-sonnet", workers: "3", count: 3, review: true }, stored); // on by default (2026-09-16: the worker panel rides on it)
@@ -8174,8 +8174,8 @@ function chatScriptFor(title) {
  * a button row (logo, "Sonnet 5.5", goal, chevron, then the live subthought
  * with a running dot). A row expands inline under itself to its step list
  * (tool rows and screenshots), which streams while open. No connector lines,
- * no notes block, no tool or time counts on the rows. On done the manager's
- * thought line becomes a check mark and "Completed".
+ * no notes block, no tool or time counts on the rows. On done each agent's
+ * line and the manager's thought line become a check mark and "Completed".
  *
  * Scroll-follow: the thread's bottom stays in view while the reader sits at
  * it; scrolling up, or expanding anything, unpins it until they scroll back
@@ -8406,13 +8406,13 @@ function chatScriptFor(title) {
             }
           });
         },
-        agentDone(i, result) {
+        agentDone(i) {
           mutate(() => {
             const a = ensureStarted(i);
             if (!a) return;
             a.li.dataset.state = "done";
             a.state.replaceChildren(check());
-            setSub(a, result || "Done");
+            setSub(a, "Completed"); // the row's done line reads Completed, not the result
           });
         },
         done() {
