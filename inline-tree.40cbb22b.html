@@ -7864,6 +7864,9 @@ function chatScriptFor(title) {
   /* type (page: 14px body, 12px meta as .demo-file-kind) */
   --it-fs: 14px;
   --it-fs-meta: 12px;
+  --it-fs-bar: 13px; /* the base composer's .bc-ph size */
+  --it-bar-ic: 12px; /* the base composer's .bc-mic icon size */
+  --it-bar-border: color-mix(in srgb, var(--it-muted) 40%, transparent);
   --it-lh: 1.45;
   --it-w-name: 600;
   --it-w-body: 400;
@@ -8149,6 +8152,46 @@ function chatScriptFor(title) {
   to { opacity: 1; transform: none; }
 }
 @keyframes it-v1-fade { from { opacity: 0; } to { opacity: 1; } }
+/* a mini composer at the foot of an open feed: the main bar's anatomy with a
+   plain grey border instead of the gradient ring */
+.it-host .it-v1-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--it-s2);
+  margin-top: var(--it-s2);
+  padding: var(--it-s2) var(--it-s3);
+  border: var(--it-line) solid var(--it-bar-border);
+  border-radius: var(--it-r-panel);
+  background: var(--it-surface);
+  color: var(--it-muted);
+  cursor: text;
+}
+.it-host .it-v1-bar:focus-within { border-color: var(--it-muted); }
+.it-host .it-v1-bar-ic {
+  flex: none;
+  width: var(--it-bar-ic);
+  height: var(--it-bar-ic);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.it-host .it-v1-bar-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  appearance: none;
+  background: none;
+  color: var(--it-text);
+  font: inherit;
+  font-size: var(--it-fs-bar);
+}
+.it-host .it-v1-bar-input::placeholder { color: var(--it-muted); }
+
 @keyframes it-v1-ch-in { to { opacity: 1; } }
 @keyframes it-v1-sheen { from { background-position: 0% 0; } to { background-position: var(--it-sheen-end) 0; } }
 @keyframes it-v1-breathe { from { opacity: 1; } to { opacity: var(--it-dim); } }
@@ -8303,6 +8346,37 @@ function chatScriptFor(title) {
         pinned = false; // a fold or unfold never yanks the thread
       });
 
+      // a mini composer at the foot of an open feed: the main bar's anatomy
+      // (+, input, mic, same icons) at a smaller size, with a grey border
+      const barIcon = (inner) => {
+        const s = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        s.setAttribute("viewBox", "0 0 12 12");
+        s.setAttribute("class", "it-v1-bar-ic");
+        s.setAttribute("aria-hidden", "true");
+        s.innerHTML = inner;
+        return s;
+      };
+      const miniBar = (m) => {
+        const bar = el("div", "it-v1-bar");
+        const input = el("input", "it-v1-bar-input");
+        input.type = "text";
+        input.autocomplete = "off";
+        input.placeholder = "Message " + display(m);
+        input.setAttribute("aria-label", "Message " + display(m));
+        bar.append(
+          barIcon('<path d="M6 1.5v9M1.5 6h9"/>'),
+          input,
+          barIcon('<rect x="4.4" y="1.3" width="3.2" height="6" rx="1.6"/><path d="M2.8 5.8a3.2 3.2 0 0 0 6.4 0M6 9v1.7"/>'),
+        );
+        bar.addEventListener("click", () => input.focus());
+        // keep the page's global shortcuts out of this field; Enter clears it
+        input.addEventListener("keydown", (e) => {
+          e.stopPropagation();
+          if (e.key === "Enter") input.value = "";
+        });
+        return bar;
+      };
+
       // ---- the agents -------------------------------------------------------
       const agents = model.agents.map((a) => {
         const li = el("li", "it-v1-agent");
@@ -8333,7 +8407,7 @@ function chatScriptFor(title) {
         const steps = el("ol", "it-v1-steps");
         const empty = el("li", "it-v1-empty", "No tool requests yet");
         steps.appendChild(empty);
-        detailIn.appendChild(steps);
+        detailIn.append(steps, miniBar(a.model));
         detail.appendChild(detailIn);
         row.addEventListener("click", () => { if (toggle(row, detail)) userOpened(); });
 
