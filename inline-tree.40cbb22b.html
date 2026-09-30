@@ -7233,10 +7233,10 @@ function chatScriptFor(title) {
   // as "Hermes Hermes 4" (user, 2026-09-16), so a leading provider name is
   // dropped: Hermes · 4, Grok · 4, Devin · 2, Claude · Opus 4.6
   const modelSub = (m) => (m.model.toLowerCase().startsWith(m.name.toLowerCase()) ? m.model.slice(m.name.length).trim() : m.model);
-  const KEY = "hero.super.inline-tree"; // inline-tree build: its own picks, never index.html's
+  const KEY = "hero.super.inline-tree.v2"; // inline-tree build: its own picks, never index.html's
   let stored = {};
   try { stored = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) { console.error("[super] bad stored settings", e); }
-  const S = Object.assign({ on: true, manager: "claude-opus", worker: "claude-sonnet", workers: "3", count: 3, review: true }, stored); // on by default (2026-09-16: the worker panel rides on it)
+  const S = Object.assign({ on: false, manager: "claude-opus", worker: "claude-sonnet", workers: "3", count: 3, review: true }, stored); // on by default (2026-09-16: the worker panel rides on it)
   if (!MODELS.some((m) => m.id === S.manager)) S.manager = "claude-opus";
   if (!MODELS.some((m) => m.id === S.worker)) S.worker = "claude-sonnet";
   // workers: a count as a string, or "auto"; count remembers the stepper while Auto is on
@@ -7747,6 +7747,225 @@ function chatScriptFor(title) {
     }, 60);
   }
 
+  // ---- waking up (user, 2026-09-29) --------------------------------------------
+  // The first send in a chat finds superbot asleep: a small mark (the ad end
+  // card's sb-mark, eyes swapped for closed lids) breathes with drifting Z's
+  // beside "Waking up" in the thread under the ask, then pops its eyes open
+  // with a hop. SUPER on: the row fades and the tree mounts in its place.
+  // SUPER off: the awake mark stays on that top thought row, glancing and
+  // blinking, the row types the composer bar's thoughts as they land, and the
+  // tool calls run as a feed under it; the bar itself keeps its ring (user:
+  // the mascot only on the top thought). Mask ids are unique per row.
+  const WAKE = { sleepMs: 1900, wakeMs: 600, outMs: 200 };
+  let wakeSeq = 0;
+  function wakeMark(uid) {
+    return '<svg class="it-wake-mark" viewBox="0 0 100 100" aria-hidden="true" focusable="false"><defs><mask id="' + uid + '" maskUnits="userSpaceOnUse" x="-30" y="-30" width="160" height="160"><g fill="white"><rect x="14" y="32" width="72" height="54" rx="15"/><path class="it-wake-ear it-wake-ear-l" d="M14 46V28Q14 20 21 21Q28 24 36 32Z"/><path class="it-wake-ear it-wake-ear-r" d="M86 46V28Q86 20 79 21Q72 24 64 32Z"/></g><g class="it-wake-eyes" fill="black"><ellipse cx="35" cy="58" rx="8" ry="11"/><ellipse cx="65" cy="58" rx="8" ry="11"/></g><g class="it-wake-lids" fill="none" stroke="black" stroke-width="6" stroke-linecap="round"><path d="M27 58Q35 65 43 58"/><path d="M57 58Q65 65 73 58"/></g></mask></defs><g class="it-wake-body"><rect class="it-wake-a" x="-30" y="-30" width="160" height="160" mask="url(#' + uid + ')"/><rect class="it-wake-b" x="-30" y="-30" width="160" height="160" mask="url(#' + uid + ')"/><rect class="it-wake-c" x="-30" y="-30" width="160" height="160" mask="url(#' + uid + ')"/></g></svg>';
+  }
+  // the top thought row, under the ask; asleep says "Waking up", awake starts empty
+  function petRow(th, anchor, asleep) {
+    const row = document.createElement("div");
+    row.className = "it-host it-wake" + (asleep ? "" : " is-awake is-idle");
+    row.setAttribute("role", "status");
+    row.innerHTML = '<div class="it-wake-head"><span class="it-wake-pet">' + wakeMark("it-wake-mask-" + (++wakeSeq)) +
+      '<span class="it-wake-z" aria-hidden="true"><i>z</i><i>z</i><i>z</i></span></span>' +
+      '<span class="gt-think-text it-wake-text">' + (asleep ? "Waking up" : "") + "</span></div>";
+    if (anchor && anchor.parentNode === th) th.insertBefore(row, anchor.nextSibling);
+    else th.appendChild(row);
+    if (th.scrollHeight - th.scrollTop - th.clientHeight < 160) th.scrollTop = th.scrollHeight;
+    return row;
+  }
+  // resolves true after ms, or false as soon as the send dies
+  function hold(ms, dead) {
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => { clearInterval(watch); resolve(!dead()); }, ms);
+      const watch = setInterval(() => {
+        if (!dead()) return;
+        clearTimeout(timer);
+        clearInterval(watch);
+        resolve(false);
+      }, 100);
+    });
+  }
+  // asleep, then eyes open and a hop; false (row gone) when the send dies
+  async function wakeRow(row, dead) {
+    if (!(await hold(WAKE.sleepMs, dead))) { row.remove(); return false; }
+    row.classList.add("is-awake");
+    if (!(await hold(WAKE.wakeMs, dead))) { row.remove(); return false; }
+    row.classList.add("is-idle");
+    return true;
+  }
+  function fadeRow(row) {
+    if (!row.isConnected || row.classList.contains("is-out")) return;
+    row.classList.add("is-out");
+    setTimeout(() => row.remove(), WAKE.outMs);
+  }
+  // SUPER on: the wake beat, then the row goes and the tree takes its place
+  async function wakeUp(th, anchor, dead) {
+    const row = petRow(th, anchor, true);
+    if (!(await wakeRow(row, dead))) return false;
+    fadeRow(row);
+    return hold(WAKE.outMs, dead);
+  }
+  // SUPER off: the top row types what the composer's thinking bar types. The
+  // bar (.gt-think) opens on its first thought and swaps lines by lifting the
+  // old one out (_out) and typing the next char by char; the row mirrors both,
+  // tells hooks.line(k) as thought k starts, and hooks.fold() when the bar
+  // folds. Returns the observer's stop.
+  function mirrorBar(p, row, hooks) {
+    const root = document.getElementById(p.root);
+    const composer = root && root.querySelector(".composer");
+    const textEl = row.querySelector(".it-wake-text");
+    if (!composer || !textEl) return () => {};
+    let opened = false;
+    let lines = 0;
+    let shown = null; // the bar line the row is typing; null between lines
+    const sync = () => {
+      const bar = composer.querySelector(".gt-think");
+      if (!bar) { if (opened) hooks.fold(); return; }
+      if (bar.classList.contains("_on")) opened = true;
+      else { if (opened) hooks.fold(); return; }
+      const src = bar.querySelector(".gt-think-text");
+      const line = src ? src.textContent : "";
+      if (!line || (src && src.classList.contains("_out"))) { textEl.classList.add("_out"); shown = null; return; }
+      if (shown === null || !line.startsWith(shown)) { // a new line settles up from just below
+        textEl.textContent = "";
+        shown = "";
+        textEl.classList.add("_in");
+        textEl.classList.remove("_out");
+        void textEl.offsetHeight;
+        textEl.classList.remove("_in");
+        hooks.line(lines++);
+      }
+      for (const ch of Array.from(line.slice(shown.length))) {
+        const c = document.createElement("span");
+        c.className = "demo-ch";
+        c.textContent = ch;
+        textEl.appendChild(c);
+      }
+      shown = line;
+    };
+    const mo = new MutationObserver(sync);
+    mo.observe(composer, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class"] });
+    sync();
+    return () => mo.disconnect();
+  }
+
+  // ---- the activity under the top thought (user, 2026-09-29) --------------------
+  // SUPER off: the tool calls the tree's agents make play as one feed under
+  // the thought row, FEED[k] as thought k of the page's 14 lands. A call reads
+  // in the tree's words ("Searching the thread for open tasks") with a
+  // breathing dot and the grey sheen while it runs, then a check, the past
+  // tense and its result. When the bar folds the row closes to "Worked for
+  // 32s · 12 tool calls", a button that opens the feed again.
+  const FEED = [
+    [["a", 0]], [["c", 0]], [["a", 1]], [["h", 0]], [["b", 0]], [["b", 2]], [["d", 0], ["d", 1]],
+    [["c", 1]], [["e", 0]], [], [], [["f", 0]], [["g", 0]], [],
+  ];
+  const FEED_GAP_MS = 250; // a thought's first call starts just after its line, the next after the last lands
+  const FEED_CALL_MS = 800; // a step with no ms of its own
+  const FEED_RESULT_MAX = 40; // a longer result (the drafted reply itself) stays off the row
+  const icon = (cls, box, d) => '<svg class="' + cls + '" viewBox="' + box + '" aria-hidden="true"><path d="' + d + '" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const CHECK = icon("it-v1-check", "0 0 10 10", "M2 5.3 4.2 7.5 8 2.9");
+  const CHEVRON = icon("it-v1-chev", "0 0 12 12", "M3 4.5 6 7.5 9 4.5");
+  const feedStep = ([id, i]) => { const a = AGENTS.find((x) => x.id === id); return a && a.steps[i]; };
+  const stepWords = (s) => {
+    const r = window.InlineTreeRenderer;
+    return r && r.words ? r.words(s) : [s.name, s.name, ""];
+  };
+  function activityFeed(row, th) {
+    const detail = document.createElement("div");
+    detail.className = "it-wake-detail";
+    detail.dataset.open = "true";
+    const list = document.createElement("ul");
+    list.className = "it-wake-feed";
+    list.id = row.querySelector("mask").id + "-feed";
+    detail.appendChild(document.createElement("div")).appendChild(list);
+    row.appendChild(detail);
+    const t0 = performance.now();
+    const timers = new Set();
+    const running = new Set();
+    let calls = 0;
+    let folded = false;
+    const later = (ms, fn) => { const t = setTimeout(() => { timers.delete(t); fn(); }, ms); timers.add(t); };
+    const follow = () => { if (th.scrollHeight - th.scrollTop - th.clientHeight < 160) th.scrollTop = th.scrollHeight; };
+    const land = (r) => {
+      if (!running.delete(r)) return;
+      r.li.dataset.state = "done";
+      r.tool.dataset.state = "done";
+      r.state.innerHTML = CHECK;
+      r.verb.textContent = r.words[1];
+      const result = String(r.step.result || "");
+      if (result && result.length <= FEED_RESULT_MAX) r.result.textContent = " · " + result;
+    };
+    const start = (s) => {
+      const li = document.createElement("li");
+      li.className = "it-wake-step";
+      li.dataset.state = "run";
+      li.innerHTML = '<span class="it-v1-state"><span class="it-v1-dot"></span></span><span class="it-v1-tool" data-state="run"><span class="it-v1-verb"></span> <span class="it-v1-obj"></span><span class="it-wake-res"></span></span>';
+      const r = { li, step: s, words: stepWords(s), state: li.firstChild, tool: li.lastChild, verb: li.querySelector(".it-v1-verb"), result: li.querySelector(".it-wake-res") };
+      r.verb.textContent = r.words[0];
+      li.querySelector(".it-v1-obj").textContent = r.words[2];
+      list.appendChild(li);
+      running.add(r);
+      calls++;
+      follow();
+      later(s.ms || FEED_CALL_MS, () => land(r));
+    };
+    return {
+      line(k) {
+        if (folded) return;
+        let at = FEED_GAP_MS;
+        for (const ref of FEED[k] || []) {
+          const s = feedStep(ref);
+          if (!s || s.kind !== "tool") continue;
+          later(at, () => start(s));
+          at += (s.ms || FEED_CALL_MS) + FEED_GAP_MS;
+        }
+      },
+      // the bar folded (or the send ended): every call lands, the row closes to its summary
+      fold() {
+        if (folded) return;
+        folded = true;
+        timers.forEach(clearTimeout);
+        timers.clear();
+        running.forEach(land);
+        if (!calls) { fadeRow(row); return; }
+        const secs = Math.max(1, Math.round((performance.now() - t0) / 1000));
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "it-wake-sum";
+        btn.setAttribute("aria-expanded", "false");
+        btn.setAttribute("aria-controls", list.id);
+        btn.innerHTML = "<span>Worked for " + secs + "s · " + calls + " tool call" + (calls === 1 ? "" : "s") + "</span>" + CHEVRON;
+        btn.addEventListener("click", () => {
+          const open = btn.getAttribute("aria-expanded") !== "true";
+          btn.setAttribute("aria-expanded", String(open));
+          detail.dataset.open = String(open);
+        });
+        row.classList.remove("is-idle");
+        row.classList.add("is-done");
+        row.removeAttribute("role");
+        row.querySelector(".it-wake-text").replaceWith(btn);
+        detail.dataset.open = "false";
+      },
+    };
+  }
+  async function thinkWithPet(original, self, args, p, th, dead) {
+    const bubbles = th.querySelectorAll(".bcs-bub");
+    const last = bubbles.length ? bubbles[bubbles.length - 1] : null;
+    const asleep = !th.querySelector(".bcs-reply");
+    const row = petRow(th, last, asleep);
+    if (asleep && !(await wakeRow(row, dead))) return false;
+    const feed = activityFeed(row, th);
+    const stop = mirrorBar(p, row, feed);
+    try {
+      return await original.apply(self, args);
+    } finally {
+      stop();
+      feed.fold();
+    }
+  }
+
   // ---- the hook ---------------------------------------------------------------
   let chain = Promise.resolve();
   function install() {
@@ -7754,13 +7973,19 @@ function chatScriptFor(title) {
     if (typeof original !== "function" || original.__inlineTree) return !!(original && original.__inlineTree);
     const wrapped = function (p, th, cancelled) {
       const st = window.superState ? window.superState() : null;
-      if (!st || !st.on || !p || p.key !== "gg" || !th) return original.apply(this, arguments);
+      if (!p || p.key !== "gg" || !th) return original.apply(this, arguments);
       const gen = typeof fxGen !== "undefined" ? fxGen : null; // eslint-disable-line no-undef
       const dead = () => !th.isConnected || !!(cancelled && cancelled()) || (gen !== null && typeof fxGen !== "undefined" && fxGen !== gen); // eslint-disable-line no-undef
+      if (!st || !st.on) return thinkWithPet(original, this, arguments, p, th, dead);
       const run = chain.then(() => {
         if (dead()) return false;
         const bubbles = th.querySelectorAll(".bcs-bub");
         const last = bubbles.length ? bubbles[bubbles.length - 1] : null;
+        if (th.querySelector(".it-host")) return mount(last);
+        return wakeUp(th, last, dead).then((ok) => (ok ? mount(last) : false));
+      });
+      const mount = (last) => {
+        if (dead()) return false;
         const host = document.createElement("div");
         host.className = "it-host";
         if (last && last.parentNode === th) th.insertBefore(host, last.nextSibling);
@@ -7770,7 +7995,7 @@ function chatScriptFor(title) {
           if (ok) followReply(th, model.reply);
           return ok;
         });
-      });
+      };
       chain = run.catch((e) => { console.error("[inline-tree]", e); });
       return run;
     };
@@ -8196,6 +8421,222 @@ function chatScriptFor(title) {
 @keyframes it-v1-sheen { from { background-position: 0% 0; } to { background-position: var(--it-sheen-end) 0; } }
 @keyframes it-v1-breathe { from { opacity: 1; } to { opacity: var(--it-dim); } }
 
+/* ---- waking up: the first send finds superbot asleep ---------------------
+   The ad end card's mark (sb-mark-live: storm layers #00e5c3 / #c026d3 over
+   #ececec, the same glitch offsets) at the manager row's place, eyes shut,
+   breathing, Z's drifting off its ear; .is-awake pops the eyes and hops it,
+   .is-out fades the row before the tree mounts where it stood. */
+.it-host.it-wake {
+  --it-wake-mark: 24px;
+  --it-wake-storm-0: #00e5c3;
+  --it-wake-storm-3: #c026d3;
+  --it-wake-fg: #ececec;
+  --it-wake-tilt: -9deg;
+  --it-wake-z: 9px;
+  --it-wake-z-rise: -16px;
+  --it-wake-z-drift: 13px;
+  --it-wake-dur-z: 1500ms;
+  --it-wake-dur-breathe: 1300ms;
+  --it-wake-dur-open: 320ms;
+  --it-wake-dur-hop: 520ms;
+  --it-wake-hop: -5px;
+  --it-wake-bob: -1.5px;
+  --it-wake-glance-x: 4px;
+  --it-wake-glance-y: -3px;
+  --it-wake-dur-bob: 900ms;
+  --it-wake-dur-glance: 4200ms;
+  --it-wake-dur-blink: 3400ms;
+  --it-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: block;
+  padding: var(--it-row-pad) var(--it-s1) var(--it-row-pad) var(--it-row-inset);
+  color: var(--it-muted);
+  animation: it-v1-in var(--it-dur) var(--it-ease) both;
+  transition: opacity var(--it-dur-fade) var(--it-ease), transform var(--it-dur-fade) var(--it-ease);
+}
+.it-host.it-wake.is-out { opacity: 0; transform: translateY(calc(-1 * var(--it-rise))); }
+.it-host .it-wake-pet {
+  position: relative;
+  flex: none;
+  width: var(--it-wake-mark);
+  height: var(--it-wake-mark);
+}
+.it-host .it-wake-mark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform: rotate(var(--it-wake-tilt)) translateY(var(--it-line));
+  transform-origin: 50% 100%;
+  transition: transform var(--it-dur-open) var(--it-spring);
+}
+.it-host .it-wake-body {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: it-wake-breathe var(--it-wake-dur-breathe) ease-in-out infinite alternate;
+}
+.it-host .it-wake-a { fill: var(--it-wake-storm-0); transform: translate(-1.2px, -1.2px); }
+.it-host .it-wake-b { fill: var(--it-wake-storm-3); transform: translate(1.2px, 1.2px); }
+.it-host .it-wake-c { fill: var(--it-wake-fg); }
+.it-host .it-wake-ear { transform-box: fill-box; transform-origin: 50% 100%; transform: rotate(8deg) scaleY(0.82); transition: transform var(--it-dur-open) var(--it-spring); }
+.it-host .it-wake-ear-r { transform: rotate(-8deg) scaleY(0.82); }
+.it-host .it-wake-eyes ellipse {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: scaleY(0.08);
+  opacity: 0;
+  transition: transform var(--it-dur-open) var(--it-spring), opacity var(--it-dur-quick) var(--it-ease);
+}
+.it-host .it-wake-lids { transition: opacity var(--it-dur-quick) var(--it-ease); }
+/* the Z's leave the top-right of the head, grow a little and fade upward */
+.it-host .it-wake-z {
+  position: absolute;
+  left: 78%;
+  top: -10%;
+  pointer-events: none;
+  transition: opacity var(--it-dur-quick) var(--it-ease);
+}
+.it-host .it-wake-z i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font: var(--it-w-name) var(--it-wake-z) / 1 var(--it-sans);
+  font-style: normal;
+  color: var(--it-text);
+  opacity: 0;
+  animation: it-wake-z var(--it-wake-dur-z) ease-out infinite;
+}
+.it-host .it-wake-z i:nth-child(2) { animation-delay: calc(var(--it-wake-dur-z) / 3); }
+.it-host .it-wake-z i:nth-child(3) { animation-delay: calc(var(--it-wake-dur-z) * 2 / 3); }
+.it-host .it-wake-text {
+  background: linear-gradient(90deg, var(--it-muted) 0%, var(--it-muted) 35%, var(--it-text) 50%, var(--it-muted) 65%, var(--it-muted) 100%);
+  background-size: var(--it-sheen-size);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: it-v1-sheen var(--it-dur-sheen) linear infinite;
+}
+/* awake: lids off, eyes spring open, ears perk, head up, one hop */
+.it-host.it-wake.is-awake .it-wake-mark { transform: none; }
+.it-host.it-wake.is-awake .it-wake-pet { animation: it-wake-hop var(--it-wake-dur-hop) var(--it-ease) both; }
+.it-host.it-wake.is-awake .it-wake-body { animation: none; }
+.it-host.it-wake.is-awake .it-wake-eyes ellipse { transform: none; opacity: 1; }
+.it-host.it-wake.is-awake .it-wake-lids,
+.it-host.it-wake.is-awake .it-wake-z { opacity: 0; }
+.it-host.it-wake.is-awake .it-wake-ear { transform: none; }
+/* thinking (SUPER off, the top thought row): awake beside the thoughts, the
+   head bobs, the eyes glance up and aside now and then, and it blinks */
+.it-host.it-wake.is-idle .it-wake-mark { animation: it-wake-bob var(--it-wake-dur-bob) ease-in-out infinite alternate; }
+.it-host.it-wake.is-idle .it-wake-eyes { animation: it-wake-glance var(--it-wake-dur-glance) ease-in-out infinite; }
+.it-host.it-wake.is-idle .it-wake-eyes ellipse { animation: it-wake-blink var(--it-wake-dur-blink) linear infinite; }
+.it-host.it-wake .it-wake-text { flex: 0 1 auto; min-width: 0; }
+.it-host .it-wake-head { display: flex; align-items: center; gap: var(--it-s2); min-width: 0; }
+
+/* the activity feed under the top thought: one tool call per line, hung
+   under the thought text; a running call breathes a dot and carries the
+   grey sheen, a landed one shows a check and its result */
+.it-host .it-wake-detail {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--it-dur) var(--it-ease);
+}
+.it-host .it-wake-detail[data-open="false"] { grid-template-rows: 0fr; }
+.it-host .it-wake-detail > div { overflow: hidden; min-height: 0; }
+.it-host .it-wake-feed {
+  list-style: none;
+  margin: 0;
+  display: grid;
+  gap: var(--it-s1);
+  padding: var(--it-s2) 0 var(--it-s1) calc(var(--it-wake-mark) + var(--it-s2));
+  font-size: var(--it-fs-bar);
+  line-height: var(--it-lh);
+  transition: padding-left var(--it-dur) var(--it-ease);
+}
+.it-host .it-wake-feed:empty { padding-top: 0; padding-bottom: 0; }
+.it-host .it-wake-step {
+  display: flex;
+  align-items: center;
+  gap: var(--it-s2);
+  min-width: 0;
+  animation: it-v1-in var(--it-dur) var(--it-ease) both;
+}
+.it-host .it-wake-res { color: var(--it-muted); }
+
+/* done: the mark steps aside and the row closes to a summary button that
+   opens the feed again */
+.it-host.it-wake.is-done .it-wake-pet {
+  width: 0;
+  opacity: 0;
+  margin-right: calc(-1 * var(--it-s2));
+  transition: width var(--it-dur) var(--it-ease), opacity var(--it-dur-fade) var(--it-ease), margin var(--it-dur) var(--it-ease);
+}
+.it-host.it-wake.is-done .it-wake-feed { padding-left: var(--it-s3); }
+.it-host .it-wake-sum {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--it-s1);
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--it-muted);
+  cursor: pointer;
+  transition: color var(--it-dur-quick) var(--it-ease);
+  animation: it-v1-fade var(--it-dur-fade) var(--it-ease) both;
+}
+.it-host .it-wake-sum:hover,
+.it-host .it-wake-sum:focus-visible { color: var(--it-text); }
+.it-host .it-wake-sum:focus-visible { outline: 2px solid var(--it-accent); outline-offset: 2px; border-radius: var(--it-r-row); }
+.it-host .it-wake-sum[aria-expanded="false"] .it-v1-chev { transform: rotate(var(--it-chev-shut)); }
+
+@keyframes it-wake-breathe {
+  from { transform: scale(1, 0.96); }
+  to { transform: scale(1.03, 1.04); }
+}
+@keyframes it-wake-z {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  20% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--it-wake-z-drift), var(--it-wake-z-rise)) scale(1.25); }
+}
+@keyframes it-wake-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(var(--it-wake-bob)); }
+}
+@keyframes it-wake-glance {
+  0%, 30%, 62%, 100% { transform: translate(0, 0); }
+  38%, 54% { transform: translate(var(--it-wake-glance-x), var(--it-wake-glance-y)); }
+}
+@keyframes it-wake-blink {
+  0%, 88%, 100% { transform: scaleY(1); }
+  93% { transform: scaleY(0.1); }
+}
+@keyframes it-wake-hop {
+  0%, 100% { transform: none; }
+  40% { transform: translateY(var(--it-wake-hop)); }
+  70% { transform: translateY(0); }
+  85% { transform: translateY(calc(var(--it-wake-hop) / 3)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .it-host.it-wake,
+  .it-host .it-wake-body,
+  .it-host .it-wake-z i,
+  .it-host .it-wake-text,
+  .it-host.it-wake.is-awake .it-wake-pet,
+  .it-host.it-wake.is-idle .it-wake-mark,
+  .it-host.it-wake.is-idle .it-wake-eyes,
+  .it-host.it-wake.is-idle .it-wake-eyes ellipse,
+  .it-host .it-wake-step,
+  .it-host .it-wake-sum { animation: none; }
+  .it-host .it-wake-detail,
+  .it-host .it-wake-feed,
+  .it-host.it-wake.is-done .it-wake-pet { transition: none; }
+  .it-host .it-wake-z i:first-child { opacity: 0.9; }
+  .it-host.it-wake,
+  .it-host .it-wake-mark,
+  .it-host .it-wake-ear,
+  .it-host .it-wake-eyes ellipse { transition: none; }
+}
 @media (prefers-reduced-motion: reduce) {
   .it-host .it-v1-agent,
   .it-host .it-v1-check,
@@ -8301,6 +8742,7 @@ function chatScriptFor(title) {
   };
 
   window.InlineTreeRenderer = {
+    words: toolWords, // the SUPER-off activity feed words its tool calls the same way
     mount(host, model) {
       // ---- scroll-follow --------------------------------------------------
       const th = host.closest(".bcs-thread") || host.parentNode;
