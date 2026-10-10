@@ -1,0 +1,2 @@
+spotify.png: Spotify app icon, App Store artwork (app id 324684580, artworkUrl512 resized to 120x120 via itunes.apple.com/lookup), retrieved 2026-10-10. Trademark of Spotify AB; used nominatively to name the app.
+apple-music.png: Apple Music app icon, App Store artwork (app id 1108187390, artworkUrl512 resized to 120x120 via itunes.apple.com/lookup), retrieved 2026-10-10. Trademark of Apple Inc.; used nominatively to name the app.

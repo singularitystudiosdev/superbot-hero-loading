@@ -323,19 +323,22 @@ body {
   position: relative;
   min-height: 46px; /* the bar grows when the thinking row opens inside it (2026-09-12) */
   border-radius: var(--radius);
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    var(--rainbow) border-box;
-  border: 1px solid transparent;
+  /* the superbot-desktop bar (user, 2026-10-10: "remove this purple and pink
+     outline"): the night raised fill and one storm-1 blue hairline, no ring, no glow */
+  --surface: #101013;
+  background: var(--surface);
+  border: 1px solid #2b6bff;
   padding: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  animation: spin var(--speed) linear infinite;
   box-sizing: border-box;
 }
-/* the input row: the bar's original 46px flex row, now the bottom row */
-.bc-softwrap .composer-main { height: 44px; padding: 0 8px 0 14px; display: flex; align-items: center; gap: 10px; }
+/* the bar after the superbot-desktop composer (user, 2026-10-10): the input row on
+   top, the control row (.bc-bar) under it. SUPER and Platforms stay in the DOM for
+   the demo scripts that reach for them by id, hidden */
+.bc-softwrap .composer-main { height: 36px; padding: 8px 16px 0; display: flex; align-items: center; gap: 10px; }
+.bc-softwrap .bc-superwrap, .bc-softwrap .bc-platwrap { display: none; }
 /* Bloom layers: hug the border, sit behind the box */
 .bc-softwrap .composer::before,
 .bc-softwrap .composer::after {
@@ -346,14 +349,34 @@ body {
   background: var(--rainbow);
   z-index: -1;
 }
-/* bloom opacities are 30% of the demo's 0.6 / 0.35 (2026-09-12, user: "make the glow 70% less here") */
-.bc-softwrap .composer::before { filter: blur(16px); opacity: 0.18; animation: spin var(--speed) linear infinite; }
-.bc-softwrap .composer::after { inset: -10px; border-radius: calc(var(--radius) + 8px); filter: blur(40px); opacity: 0.105; animation: spin var(--speed) linear infinite; }
+/* no bloom on the desktop bar (user, 2026-10-10): the purple and pink glow is gone */
+.bc-softwrap .composer::before, .bc-softwrap .composer::after { content: none; }
 .bc-plus { color: #8b90a0; display: inline-flex; flex-shrink: 0; }
 .bc-plus .cl-ic { width: 14px; height: 14px; }
 .bc-ph { flex: 1; color: #8b90a0; font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .bc-mic { color: #8b90a0; display: inline-flex; flex-shrink: 0; }
 .bc-mic .cl-ic { width: 12px; height: 12px; }
+/* the control row: + | the mode pill (Auto with its gradient spark, then the
+   computer-use pointer) ... the model (superbot High), screen, voice, mic, send */
+.bc-bar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 8px 6px 12px; }
+.bc-bar .bc-plus { color: #c9ccd4; width: 22px; height: 22px; align-items: center; justify-content: center; }
+.bc-bar .bc-plus .cl-ic { width: 13px; height: 13px; }
+.bc-mode { display: inline-flex; align-items: center; height: 26px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 999px; overflow: hidden; color: #e6e8ee; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+.bc-mode-spark { align-self: stretch; width: 30px; display: grid; place-items: center; background: linear-gradient(120deg, #2b6bff, #6a1fd8 70%, #c026d3); }
+.bc-mode-spark svg { width: 12px; height: 12px; fill: #ffffff; }
+.bc-mode-lab { padding: 0 4px 0 9px; }
+.bc-chev { width: 10px; height: 10px; color: #8b90a0; flex-shrink: 0; }
+.bc-mode .bc-chev { margin-right: 8px; }
+.bc-mode-div { width: 1px; height: 14px; background: rgba(255, 255, 255, 0.12); margin-right: 8px; }
+.bc-mode-cur { width: 13px; height: 13px; color: #c9ccd4; margin-right: 3px; }
+.bc-bar-r { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.bc-model { display: inline-flex; align-items: center; gap: 6px; color: #c9ccd4; font-size: 12.5px; margin-right: 8px; white-space: nowrap; }
+.bc-model img { width: 15px; height: 15px; display: block; }
+.bc-icbtn { display: inline-flex; color: #c9ccd4; margin-right: 6px; }
+.bc-icbtn .cl-ic { width: 13px; height: 13px; }
+.bc-round { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.03); color: #c9ccd4; flex-shrink: 0; box-sizing: border-box; }
+.bc-round .cl-ic { width: 12px; height: 12px; }
+.bc-send { border-color: transparent; background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.35); } /* empty composer: send reads disabled */
 
 /* platform selector chip — the .cu-mode slot of the Claude composer */
 .bc-plat {
@@ -2334,7 +2357,8 @@ body {
 .ph-addsearch svg { width: 11px; height: 11px; stroke: #7d7d7d; fill: none; stroke-width: 1.4; stroke-linecap: round; flex-shrink: 0; }
 .ph-addsearch input { flex: 1; min-width: 0; background: none; border: none; outline: none; color: #ececec; font: 400 12px ui-sans-serif, -apple-system, system-ui, sans-serif; }
 .ph-addsearch input::placeholder { color: #7d7d7d; }
-.ph-addlist { overflow-y: auto; min-height: 0; }
+.ph-addlist { overflow-y: auto; min-height: 0; scrollbar-width: none; -ms-overflow-style: none; }
+.ph-addlist::-webkit-scrollbar { display: none; }
 .ph-addrow { display: flex; align-items: center; gap: 10px; padding: 6px 7px; border-radius: 10px; }
 .ph-addrow:hover { background: #1c1c1c; }
 .ph-addrow img { width: 28px; height: 28px; border-radius: 8px; object-fit: contain; background: #1a1a1c; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1); padding: 3px; flex-shrink: 0; box-sizing: border-box; }
@@ -2359,7 +2383,10 @@ body {
   flex-direction: column;
   text-align: left;
   overflow-y: auto;
+  scrollbar-width: none; /* the longer two-exchange thread scrolls here: hidden, still scrollable (user, 2026-10-10) */
+  -ms-overflow-style: none;
 }
+.ph-msgs::-webkit-scrollbar { display: none; }
 /* user prompt: right-aligned ChatGPT mobile pill (bubble tinted per IDE) */
 .ph-user {
   align-self: flex-end;
@@ -2395,6 +2422,7 @@ body {
 .ph-tools { display: flex; flex-direction: column; gap: 7px; font-size: 11px; font-weight: 500; letter-spacing: -0.1px; }
 .ph-tool { display: flex; align-items: center; gap: 6px; color: #8b90a0; animation: demo-in 0.2s ease-out; transition: color 300ms ease; }
 .ph-tool svg { width: 10px; height: 10px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+.ph-tool img { width: 10px; height: 10px; flex-shrink: 0; border-radius: 2.5px; }
 .ph-tool._run { color: #c9ccd4; }
 .ph-tool._run span { background: linear-gradient(90deg, #a5a9b6 0%, #a5a9b6 35%, #f2f3f7 50%, #a5a9b6 65%, #a5a9b6 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
 @media (prefers-reduced-motion: reduce) {
@@ -2480,6 +2508,9 @@ body {
 }
 .ph-compose._rainbow .ph-ring::before { inset: -1.5px; filter: blur(6px); opacity: 0.25; animation: spin var(--speed) linear infinite; }
 .ph-compose._rainbow .ph-ring::after { inset: -4px; border-radius: calc(var(--radius) + 3px); filter: blur(13px); opacity: 0.15; animation: spin var(--speed) linear infinite; }
+@media (prefers-reduced-motion: reduce) { /* the phone ring holds its static frame like the PC composer's (the rule at .bc-softwrap .composer) */
+  .ph-compose._rainbow .ph-ring, .ph-compose._rainbow .ph-ring::before, .ph-compose._rainbow .ph-ring::after { animation: none; }
+}
 .ph-cplus { display: inline-flex; color: #9b9b9b; }
 .ph-cplus svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; }
 .ph-cph { flex: 1; min-width: 0; border: none; background: none; outline: none; padding: 0; font-family: inherit; font-size: 13px; color: #ececec; }
@@ -2605,6 +2636,7 @@ body {
 .demo-tools { align-self: flex-start; display: flex; flex-direction: column; gap: 9px; margin-top: 12px; font: 500 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; }
 .demo-step { display: flex; align-items: center; gap: 8px; min-height: 16px; color: #8b90a0; animation: demo-in 0.2s ease-out; transition: color 300ms ease; }
 .demo-step svg { width: 12px; height: 12px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+.demo-step img { width: 12px; height: 12px; flex-shrink: 0; border-radius: 3px; } /* an app's own icon on its tool call ("Opening Spotify") */
 .demo-step._run { color: #c9ccd4; }
 .demo-step._run .demo-step-label { background: linear-gradient(90deg, #a5a9b6 0%, #a5a9b6 35%, #f2f3f7 50%, #a5a9b6 65%, #a5a9b6 100%); background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: demo-shimmer 1.6s linear infinite; }
 .demo-step._run .demo-step-label b, .demo-step._run .demo-step-label .bc-fade-chunk { color: inherit; }
@@ -2622,23 +2654,32 @@ body {
 .demo-file:focus-visible { outline: 2px solid #2b6bff; outline-offset: 1px; }
 .demo-file-ic { flex-shrink: 0; width: 34px; height: 46px; margin: -6px 0 -14px; display: grid; place-items: center; border-radius: 7px; background: #1a1c22; border: 1px solid rgba(255, 255, 255, 0.14); color: #d5d8e0; transform: rotate(-7deg); box-shadow: 0 8px 18px rgba(0, 0, 0, 0.55); }
 .demo-file-ic svg { width: 16px; height: 16px; margin-top: -8px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.demo-file-ic._app { width: 38px; height: 38px; margin: -4px 0 -8px; border: 0; background: none; overflow: hidden; border-radius: 9px; } /* the now-playing card's tile: the picked app's icon, tilted like the file tile was */
+.demo-file-ic._app img { width: 100%; height: 100%; display: block; }
 .demo-file-meta { flex: 1; min-width: 0; display: grid; gap: 2px; }
 .demo-file-title { font: 600 14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; letter-spacing: -0.1px; color: #e6e8ee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .demo-file-kind { font: 500 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #8b90a0; }
 .demo-file-btn { flex-shrink: 0; display: flex; align-items: center; gap: 7px; padding: 7px 4px 7px 11px; border-radius: 10px; background: #1e2027; border: 1px solid rgba(255, 255, 255, 0.1); font: 600 12.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #e6e8ee; white-space: nowrap; }
-.demo-file-btn img { width: 14px; height: 14px; display: block; }
+.demo-file-btn img { width: 14px; height: 14px; display: block; border-radius: 3.5px; }
+.demo-file-glyph { width: 14px; height: 14px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; } /* a typed app's button glyph, where a picked app has its icon (user, 2026-10-10) */
 .demo-file-btn i { width: 1px; height: 16px; background: rgba(255, 255, 255, 0.16); margin-left: 4px; }
 .demo-file-caret { width: 13px; height: 13px; margin-right: 3px; stroke: #8b90a0; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .demo-file._ph { margin: 12px 2px 0; padding: 9px 10px 9px 8px; gap: 9px; }
 .demo-file._ph .demo-file-btn span { display: none; }
 .demo-file._ph .demo-file-btn { padding-left: 8px; }
-/* the question card (user, 2026-09-15): the moment the ask lands, superbot
-   asks "What should it contain?" in the reference's format — a bold question
-   line with a chevron, numbered rows (a title over a one-line sub) split by
-   hairlines, and a "Skip ⌘Enter" button bottom-right. It rises in like the
-   file card and stays clickable through the tour lock; the demo picks the
-   first row after a beat unless the user clicks one (or presses 1/2/3)
-   first, ⌘Enter skips. The pick lands as the user's bubble and the card
+/* the question card (user, 2026-09-15; music, 2026-10-10): the moment the ask
+   lands, superbot asks "Which app should play it?" in the reference's format:
+   a bold question line with a chevron, numbered rows (the app's App Store
+   icon and a title, Spotify's title carrying a "Recommended" pill) split by
+   hairlines, and a "Skip ⌘Enter" button bottom-right with a white AUTO bar
+   beside it. It rises in like the file card and stays clickable through the
+   tour lock. The demo WAITS on it: nothing moves until the user clicks a row
+   (or presses 1/2/3), skips with ⌘Enter (the recommended app), or, after 10s
+   with no answer, the AUTO bar fades in and fills (30s) and picks the
+   recommended row itself (user, 2026-10-10). The last row, Other, becomes a
+   text field (Enter answers with the typed text). Rows may carry a grey
+   sub-line (.demo-ask-s) and no icon: the second ask, "Which strategy should I
+   run?", is the same card. The pick lands as the user's bubble and the card
    folds away (_off). The phone's copy (_ph) is tighter. */
 .demo-ask { align-self: center; width: 560px; max-width: calc(100% - 48px); box-sizing: border-box; flex-shrink: 0; margin: auto 0 18px; padding: 14px 16px 12px; border-radius: 14px; background: #17181c; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03), 0 18px 40px -18px rgba(0, 0, 0, 0.8); display: grid; gap: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; opacity: 0; transform: translateY(10px); transition: opacity 420ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1); user-select: none; }
 .demo-ask._on { opacity: 1; transform: none; }
@@ -2647,39 +2688,60 @@ body {
 .demo-ask-fold { flex-shrink: 0; margin-left: auto; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 6px; background: none; display: grid; place-items: center; cursor: pointer; transition: background 140ms ease; }
 .demo-ask-fold:hover { background: #26272c; }
 .demo-ask-fold svg { width: 12px; height: 12px; stroke: #8b90a0; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-/* folded: the card goes, the composer comes back with a "Reopen form ⌃" chip
-   above it (reference 3); the chip reopens the card */
-.demo-ask-reopen { align-self: center; width: 560px; max-width: calc(100% - 48px); box-sizing: border-box; flex-shrink: 0; margin: auto 0 8px; display: flex; justify-content: flex-end; }
-.demo-ask-reopen button { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.1); background: #232429; color: #e6e8ee; font: 500 12.5px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; cursor: pointer; transition: background 140ms ease; }
-.demo-ask-reopen button:hover { background: #2b2c32; }
-.demo-ask-reopen svg { width: 11px; height: 11px; stroke: #c9ccd4; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.demo-ask-reopen + .bc-softwrap, .demo-ask-reopen + .ph-compose { margin-top: 0; }
-.demo-ask-reopen._ph { width: auto; align-self: stretch; margin: auto 12px 8px; }
+/* folded: the card goes and the composer comes back with the chosen reopen variant (reopen-variants/*.js)
+   attached to its top edge. The composer's own wrapper is the variants' anchor: position: relative,
+   no box change (the wrapper is already the composer's flex item and carries its resting grey wake filter) */
+.sbr-anchor { position: relative; }
 .bc-softwrap._asking, .ph-compose._asking { display: none; } /* the card takes the composer's place while it is open */
-.demo-ask-opt { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0; padding: 11px 6px 11px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.07); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background 140ms ease; }
+.demo-ask-opt { box-sizing: border-box; display: flex; align-items: center; gap: 12px; width: 100%; margin: 0; padding: 11px 6px 11px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, 0.07); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background 140ms ease; }
 .demo-ask-opt:first-of-type { border-top: 0; padding-top: 6px; }
 .demo-ask-opt:hover .demo-ask-n, .demo-ask-opt:focus-visible .demo-ask-n { background: #34353b; color: #e6e8ee; }
 .demo-ask-opt:hover .demo-ask-t, .demo-ask-opt:focus-visible .demo-ask-t { color: #ffffff; }
 .demo-ask-opt:focus-visible { outline: 2px solid #2b6bff; outline-offset: -2px; border-radius: 8px; }
+.demo-ask-opt._sel .demo-ask-n { background: #2b6bff; color: #ffffff; } /* a click or number key only selects (user, 2026-10-10): the selected row's tile goes accent, on both copies; Submit then answers */
 .demo-ask-opt._pick .demo-ask-n { background: #ffffff; color: #0d0d0d; }
 .demo-ask-opt._pick .demo-ask-t { color: #ffffff; }
-.demo-ask-n { flex-shrink: 0; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: #26272c; color: #9a9ea8; font-weight: 500; font-size: 11px; line-height: 1; transition: background 140ms ease, color 140ms ease; }
+.demo-ask-n { flex-shrink: 0; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: #26272c; color: #9a9ea8; font-weight: 500; font-size: 11px; line-height: 1; transition: none; } /* the selected state (and hover) of the tile is instant, both ways (user, 2026-10-10) */
 .demo-ask-body { min-width: 0; display: grid; gap: 2px; }
 .demo-ask-t { font-weight: 500; font-size: 14px; line-height: 1.25; letter-spacing: -0.1px; color: #ececec; transition: color 140ms ease; }
-.demo-ask-s { font-weight: 400; font-size: 12px; line-height: 1.3; color: #8b90a0; }
-.demo-ask-foot { display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
-.demo-ask-skip { display: inline-flex; align-items: baseline; gap: 6px; margin: 0; padding: 7px 12px; border-radius: 9px; background: #232429; border: 1px solid rgba(255, 255, 255, 0.1); color: #e6e8ee; font-weight: 500; font-size: 13px; line-height: 1.2; font-family: inherit; cursor: pointer; transition: background 140ms ease; }
+.demo-ask-s { font-weight: 400; font-size: 12px; line-height: 1.3; color: #8b90a0; } /* the one-line grey sub under a title (the money card's rows; the music rows have none), restored (user, 2026-10-10) */
+.demo-ask-app { flex-shrink: 0; width: 30px; height: 30px; margin-left: -2px; border-radius: 7px; display: block; } /* a plain rounded app icon, no outline (user, 2026-10-10) */
+.demo-ask-in { display: block; width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; outline: 0; border-radius: 0; background: transparent; color: #ffffff; font: inherit; font-weight: 400; font-size: 14px; line-height: 1.25; letter-spacing: -0.1px; user-select: text; caret-color: #ffffff; } /* the Other row's own text box, always there where a title would be (user, 2026-10-10): reads "Other" as its placeholder, weight 400, no box of its own */
+.demo-ask-in::placeholder { color: #8b90a0; opacity: 1; }
+.demo-ask-badge { display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 999px; background: rgba(43, 107, 255, 0.14); border: 1px solid rgba(43, 107, 255, 0.34); color: #9db8ff; font-weight: 600; font-size: 10.5px; line-height: 1.25; letter-spacing: 0.1px; vertical-align: 1px; }
+.demo-ask-foot { display: flex; align-items: center; justify-content: flex-end; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+/* the auto-pick countdown (user, 2026-10-10): "AUTO" and a bar, all white, filling over 30s.
+   It shows only after 10s with no answer (_show): until then it holds its place
+   (opacity 0, visibility hidden) so the footer never shifts, and it fades in
+   over 200ms. It hides again while the Other field is open. */
+.demo-ask-auto { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; margin-right: 16px; opacity: 0; visibility: hidden; transition: opacity 200ms ease-out, visibility 0s linear 200ms; }
+.demo-ask-auto._show { opacity: 1; visibility: visible; transition: opacity 200ms ease-out, visibility 0s; }
+.demo-ask-auto-l { flex-shrink: 0; font-weight: 600; font-size: 10.5px; line-height: 1; letter-spacing: 0.8px; color: #ffffff; }
+.demo-ask-auto-track { flex: 1; height: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.demo-ask-auto-track i { display: block; width: 100%; height: 100%; border-radius: inherit; background: #ffffff; transform: scaleX(0); transform-origin: left center; }
+.demo-ask-skip { display: inline-flex; align-items: baseline; gap: 6px; margin: 0; padding: 7px 12px; border-radius: 9px; background: #232429; border: 1px solid rgba(255, 255, 255, 0.1); color: #e6e8ee; font-weight: 500; font-size: 13px; line-height: 1.2; font-family: inherit; cursor: pointer; transition: none; } /* no colour tween: the Skip/Submit swap is instant, both ways, and so is the hover (user, 2026-10-10) */
 .demo-ask-skip:hover { background: #2b2c32; }
 .demo-ask-skip small { font-size: 11px; color: #8b90a0; }
-.demo-ask._ph { width: auto; align-self: stretch; margin: auto 12px 16px; padding: 12px 12px 10px; }
+.demo-ask-skip._submit { background: #ffffff; border-color: #ffffff; color: #17181c; } /* with a row selected the button becomes Submit, filled (inverted for the dark card): the card's own surface colour on white (user, 2026-10-10) */
+.demo-ask-skip._submit small { color: #17181c; opacity: 0.6; }
+.demo-ask-skip._submit:hover { background: #e6e8ee; border-color: #e6e8ee; }
+.demo-ask._ph { width: auto; max-width: none; align-self: stretch; margin: auto 12px 16px; padding: 12px 12px 10px; border-color: transparent; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 18px 40px -18px rgba(0, 0, 0, 0.8); } /* max-width: none, or the PC card's calc(100% - 48px) cap leaves it 24px short on the right: off-centre in the phone (user, 2026-10-10) */
+/* the phone copy's edge (user, 2026-10-10: a bright arc at its top-left corner): the phone is scaled, so a real 1px border is snapped to whole device pixels on the straight edges but anti-aliased as a path on the rounded corner, which reads brighter. The hairline is drawn as a spread shadow instead, which is anti-aliased the same way all round; the border stays (transparent) so the layout does not move */
 .demo-ask._ph .demo-ask-q { font-size: 14px; }
-.demo-ask._ph .demo-ask-opt { padding: 9px 4px 9px 0; }
+.demo-ask._ph .demo-ask-opt { padding: 9px 4px 9px 0; gap: 10px; }
+.demo-ask._ph .demo-ask-app { width: 26px; height: 26px; border-radius: 6px; }
+.demo-ask._ph .demo-ask-badge { margin-left: 6px; padding: 1px 6px; font-size: 10px; }
+.demo-ask._ph .demo-ask-auto { gap: 8px; margin-right: 10px; }
+.demo-ask._ph .demo-ask-auto-l { font-size: 10px; }
 body.tour-lock, body.tour-lock * { pointer-events: none !important; }
-body.tour-lock .demo-ask, body.tour-lock .demo-ask *, body.tour-lock .demo-ask-reopen, body.tour-lock .demo-ask-reopen * { pointer-events: auto !important; } /* the question card and its reopen chip take clicks while the demo plays */
+body.tour-lock .demo-ask, body.tour-lock .demo-ask * { pointer-events: auto !important; } /* the question card takes clicks while the demo plays (the reopen variants carry their own exemption in reopen-variants/*.css) */
+body.tour-lock .bc-softwrap:has(.sbr-peek), body.tour-lock .bc-softwrap:has(.sbr-peek) * { pointer-events: auto !important; } /* a folded question hands the bar back: click anywhere in it and type (user, 2026-10-10) */
+body.tour-lock .demo-file, body.tour-lock .demo-file * { pointer-events: auto !important; } /* the music card stays clickable while the second ask plays below it (user, 2026-10-10) */
 /* while the demo plays the thinking rows fold at the demo's pace (--demo-fit-ms is set by the demo from PACE) */
 body.tour-lock .gt-think, body.tour-lock .gt-think-echo, body.tour-lock .ph-think, body.tour-lock .ph-bar-think { --fit-ms: var(--demo-fit-ms, 520ms); }
 @media (prefers-reduced-motion: reduce) {
   .demo-file, .demo-ask, .demo-ask._off { transition: none; }
+  .demo-ask-auto, .demo-ask-auto._show { transition: none; } /* the AUTO bar appears at once (user, 2026-10-10) */
   .gt-think, .gt-think-in, .gt-think-echo, .gt-think-echo-in, .gt-think-text, .gt-sbcard._on, .gt-sbcard::before { transition: none; }
   .gt-sbcard, .gt-sbcard._on::before, .gt-sbcard._on .gt-sbcard-plate::after { animation: none; } /* static frame, static bloom, no sweep */
   .gt-think._live .gt-think-text, .gt-think._live svg, .gt-think-echo._live .gt-think-text, .gt-think-echo._live svg { animation: none; }
@@ -2703,6 +2765,9 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
 .think-kit-replay:active { transform: scale(0.97); }
 .think-kit-replay:disabled { opacity: 0.45; cursor: default; }
 </style>
+<!-- the folded question card's way back: the Peek variant (reopen-variants/peek.js), its title row tucked behind the composer (user, 2026-10-10: Peek only) -->
+<link rel="stylesheet" href="reopen-variants/peek.css" />
+<script src="reopen-variants/peek.js"></script>
 </head>
 <body>
 <svg id="sync-cord" aria-hidden="true" data-shape="sag" data-look="glow" data-reveal="bloom">
@@ -2953,10 +3018,9 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
           </aside>
           <main class="bcs-main">
             <div class="bcs-thread"></div>
-            <div class="bc-softwrap">
+            <div class="bc-softwrap sbr-anchor">
               <div class="composer">
                 <div class="composer-main">
-                  <span class="bc-plus"><svg class="cl-ic" viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg></span>
                   <input class="bc-ph" type="text" placeholder="How can superbot help you today?" autocomplete="off" />
                   <span class="bc-superwrap">
                     <div class="bc-superpop" id="bc-superpop" role="dialog" aria-label="Super settings"></div>
@@ -2966,7 +3030,25 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
                     <div class="bc-platpop" id="bc-platpop" role="listbox" aria-label="Chat platform" hidden></div>
                     <button class="bc-plat" id="bc-plat" type="button" aria-haspopup="listbox" aria-controls="bc-platpop" aria-expanded="false"><span id="bc-platlabel">Platforms</span> <svg class="cl-ic" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button>
                   </span>
-                  <span class="bc-mic"><svg class="cl-ic" viewBox="0 0 12 12"><rect x="4.4" y="1.3" width="3.2" height="6" rx="1.6"/><path d="M2.8 5.8a3.2 3.2 0 0 0 6.4 0M6 9v1.7"/></svg></span>
+                </div>
+                <!-- the control row, after the superbot-desktop composer (user, 2026-10-10) -->
+                <div class="bc-bar">
+                  <span class="bc-plus"><svg class="cl-ic" viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg></span>
+                  <span class="bc-mode" aria-hidden="true">
+                    <span class="bc-mode-spark"><svg viewBox="0 0 12 12"><path d="M6 1.2c.35 2.6 1.6 3.85 4.8 4.8-3.2.95-4.45 2.2-4.8 4.8-.35-2.6-1.6-3.85-4.8-4.8 3.2-.95 4.45-2.2 4.8-4.8z"/></svg></span>
+                    <span class="bc-mode-lab">Auto</span>
+                    <svg class="cl-ic bc-chev" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg>
+                    <i class="bc-mode-div"></i>
+                    <svg class="cl-ic bc-mode-cur" viewBox="0 0 12 12"><path d="M5.2 5.2l5 1.9-2.1.9-.9 2.1z"/><path d="M3.7 1.4l.4 1.6M1.4 3.7l1.6.4M2 2l1.1 1.1M6.3 2.1l-.7 1.2M2.1 6.3l1.2-.7"/></svg>
+                    <svg class="cl-ic bc-chev" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg>
+                  </span>
+                  <span class="bc-bar-r" aria-hidden="true">
+                    <span class="bc-model"><img src="hero-assets/superbot-mark.svg" alt="" draggable="false" /><span>superbot</span><span>High</span><svg class="cl-ic bc-chev" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg></span>
+                    <span class="bc-icbtn"><svg class="cl-ic" viewBox="0 0 12 12"><rect x="1.3" y="1.8" width="9.4" height="6.4" rx="1"/><path d="M4.4 10.4h3.2M6 8.2v2.2"/></svg></span>
+                    <span class="bc-round"><svg class="cl-ic" viewBox="0 0 12 12"><path d="M1.8 5v2M3.9 3.6v4.8M6 2v8M8.1 3.6v4.8M10.2 5v2"/></svg></span>
+                    <span class="bc-round bc-mic"><svg class="cl-ic" viewBox="0 0 12 12"><rect x="4.4" y="1.3" width="3.2" height="6" rx="1.6"/><path d="M2.8 5.8a3.2 3.2 0 0 0 6.4 0M6 9v1.7"/></svg></span>
+                    <span class="bc-round bc-send"><svg class="cl-ic" viewBox="0 0 12 12"><path d="M6 9.8V2.4M3 5.3 6 2.3l3 3"/></svg></span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -3093,7 +3175,7 @@ body.tour-lock .think-kit, body.tour-lock .think-kit * { pointer-events: auto !i
             </header>
             <div class="ph-menu" id="ph-menu" role="listbox" aria-label="Platform" hidden></div>
             <div class="ph-msgs"></div>
-            <div class="ph-compose">
+            <div class="ph-compose sbr-anchor">
               <div class="ph-ring">
                 <!-- the demo prepends its thought row (.ph-bar-think) here, inside the ring, above the input row -->
                 <div class="ph-ring-row">
@@ -5304,6 +5386,9 @@ CHAT_PANELS.forEach((p) => {
       panelSend(p, text, target, replyOverride);
       inp.value = "";
     });
+    // a press anywhere in the bar puts the caret in its field (user, 2026-10-10: "i click anywhere on the chat box it doesnt allow me to type in")
+    const box = inp.closest(".composer");
+    if (box) box.addEventListener("mousedown", (e) => { if (e.target === inp) return; e.preventDefault(); inp.focus(); });
   }
   // "New chat": clear that panel's thread and reset its draft
   const newBtn = root.querySelector(p.newSel);
@@ -5908,7 +5993,19 @@ document.querySelectorAll(".composer").forEach((c) => {
   // tour → phone: the scripted demo mirrors its beats onto the phone so the
   // two surfaces stay in lockstep — a send switches the phone to Superbot and
   // shows the same user bubble, a reply streams the same text
-  window.phTourSend = function (appName) {
+  // text (optional): a follow-up in the chat already on screen (the second ask,
+  // an answer bubble; user, 2026-10-10). The phone then just appends the user
+  // bubble, because re-rendering from the store would wipe the tool rows and
+  // cards of the exchange above it. Off Superbot it falls back to the re-render.
+  window.phTourSend = function (appName, text) {
+    if (text != null && PH_APPS[phApp].name === (appName || "Superbot")) {
+      const m = chat.querySelector(".ph-msgs");
+      const u = add("div", "ph-user demo-t");
+      u.textContent = text;
+      m.appendChild(u);
+      m.scrollTop = m.scrollHeight;
+      return;
+    }
     // applyApp → renderPhThread re-renders the PC's threadStore, which
     // already holds this send — appending here would duplicate it
     syncEcho = true;
@@ -6340,31 +6437,111 @@ function chatScriptFor(title) {
 // reset()'s fxGen bump cancels the demo between beats and a fresh run clears
 // every node it stamped .demo-t.
 (function () {
-  const ASK = "Make me a HTML file";
+  const ASK = "Play me music"; // (user, 2026-10-10; was "Make me a HTML file")
+  const PLAYLIST = "Night Drive", TRACK = "Midnight City", ARTIST = "M83";
   const ECHO = "Thinking"; // the thread line under the ask says only this (user, 2026-09-12)
   // superbot does it straight away (user, 2026-09-14: no ChatGPT refusal, no
   // "Redirecting to superbot"): the row's opening thought, the tool calls [icon,
   // running label, result, the row's thought while it runs], the reply and
-  // the file card it hands over (a click opens the file popup, see openFile)
-  const SB_OPEN = "Write a single-file HTML page and hand it over";
+  // the now-playing card it hands over. {app} is the app picked on the
+  // question card (music, 2026-10-10); a typed answer ("Other") stands in for
+  // the app's name the same way (user, 2026-10-10)
+  const SB_OPEN = "Find music you'll like and play it in {app}";
   const SB_STEPS = [
-    ["tag", "Picking a **layout**", "**Landing page**, one column, dark", "Picking a layout"],
-    ["code", "Writing **index.html**", "**index.html**, 28 lines of HTML and CSS", "Writing the page"], // no emoji: the sheen's text clip paints them as grey blobs (user, 2026-09-13)
-    ["search", "Checking it **renders**", "Renders clean in **Chrome**", "Checking the render"],
-    ["file", "Saving the **file**", "Saved **index.html**, 1.4 KB", "Saving it"],
+    ["music", "Reading your **listening history**", "Mostly **indie and lo-fi**, late evenings", "Reading your taste"],
+    ["list", "Building a **playlist**", "**Night Drive**, 24 tracks", "Building the playlist"], // no emoji: the sheen's text clip paints them as grey blobs (user, 2026-09-13)
+    ["app", "Opening **{app}**", "**{app}** is open on this Mac", "Opening {app}"],
+    ["play", "Starting **playback**", "Now playing **Midnight City** by M83", "Pressing play"],
   ];
-  const SB_REPLY = "Done. One index.html, plain HTML and CSS, no build step. Open it in any browser and it renders as-is.";
-  // the question superbot asks once the ask lands (user, 2026-09-15): the
-  // pick names the page (FILE_TITLE follows it); a skip keeps the default
-  const ASK_Q = "What should it contain?";
-  const ASK_OPTS = [
-    ["Olympus", "Mount of the gods, marble and sky."],
-    ["Rocks", "Stone, grit and earthy textures."],
-    ["Treadmills", "Fitness gear, motion and momentum."],
+  const SB_REPLY = "Playing Night Drive in {app}: 24 tracks of indie and lo-fi, starting with Midnight City by M83.";
+  // the question superbot asks once the ask lands (user, 2026-09-15; music,
+  // 2026-10-10): which app plays it. One spec drives the card (the second ask
+  // below has its own): q is the question, rows are { t title, s optional
+  // grey sub-line, icon optional image, url the web player search URL, badge },
+  // and other is the last "Other" row where the user types their own answer
+  // (user, 2026-10-10). The music rows have an app icon and no sub-line; the
+  // badged row is the recommended one: a skip plays there, and so does the AUTO
+  // bar's pick, which never chooses Other
+  const MUSIC_ASK = {
+    q: "Which app should play it?",
+    rows: [
+      { t: "Spotify", icon: "hero-assets/spotify.png", url: "https://open.spotify.com/search/", badge: "Recommended" },
+      { t: "Apple Music", icon: "hero-assets/apple-music.png", url: "https://music.apple.com/us/search?term=" },
+    ],
+    other: { t: "Other" },
+  };
+  const askDefault = (spec) => Math.max(0, spec.rows.findIndex((r) => r.badge));
+  // the AUTO bar (user, 2026-10-10): nothing AUTO shows for the first
+  // AUTO_GRACE_MS of no answer; then the label and bar fade in and the bar
+  // fills over AUTO_MS, and the recommended row is picked. Both in real ms, not
+  // scaled by the kit's speed; the clock holds while the card is folded or the
+  // Other field is open
+  const AUTO_GRACE_MS = 10000;
+  const AUTO_MS = 30000;
+  // the second ask (user, 2026-10-10): once the music exchange has landed, the
+  // same chat goes on with "Make me money", and superbot asks which strategy.
+  // Rows have a title and a one-line sub and no icon; the first is recommended
+  const ASK2 = "Make me money";
+  const MONEY_ASK = {
+    q: "Which strategy should I run?",
+    rows: [
+      { t: "Freelance gigs", s: "Find matching Upwork jobs and send tailored proposals.", badge: "Recommended" },
+      { t: "Digital products", s: "Make a Notion template pack and sell it on Gumroad." },
+      { t: "Reselling", s: "Spot underpriced eBay listings and relist them for profit." },
+      { t: "Faceless YouTube", s: "Script, voice and upload short videos on a schedule." },
+    ],
+    other: { t: "Other" }, // just the tile and the box: no sub-line, no icon (user, 2026-10-10)
+  };
+  // what superbot does for each strategy: [open thought, tool calls (same shape
+  // as SB_STEPS), reply]; no card at the end
+  const MONEY_PLANS = [
+    { open: "Find paying work that fits you and pitch for it", steps: [
+      ["search", "Searching **Upwork**", "**38 open jobs** match your skills", "Searching Upwork"],
+      ["list", "Ranking the **best fits**", "Top **5**, landing pages and copy, $400 to $1,200", "Ranking the jobs"],
+      ["code", "Writing **proposals**", "**5 proposals**, each tailored to its brief", "Writing proposals"],
+      ["file", "Sending **proposals**", "Sent **5 proposals** from your account", "Sending them"],
+    ], reply: "Sent 5 proposals for landing page and copy jobs worth $400 to $1,200 each. I'll tell you when a client replies." },
+    { open: "Build a product people already buy and list it", steps: [
+      ["search", "Checking **Gumroad** best sellers", "**Notion planners** sell for $12 to $29", "Checking the market"],
+      ["code", "Building a **template pack**", "**Freelancer OS**, 6 Notion templates", "Building the pack"],
+      ["tag", "Writing the **listing**", "Cover, copy and a **$19** price", "Writing the listing"],
+      ["file", "Publishing on **Gumroad**", "**Freelancer OS** is live", "Publishing it"],
+    ], reply: "Freelancer OS is live on Gumroad at $19: six Notion templates with a cover and listing copy. Share the link and it starts selling." },
+    { open: "Find items selling under value and plan the flips", steps: [
+      ["search", "Scanning **eBay** listings", "**112 listings** under market price", "Scanning eBay"],
+      ["list", "Pricing **resale value**", "**9 items** clear 30% margin after fees", "Pricing them"],
+      ["tag", "Drafting **relistings**", "**9 listings** with fresh titles and prices", "Drafting listings"],
+      ["file", "Saving the **buy list**", "**$640** projected profit", "Saving the list"],
+    ], reply: "Found 9 underpriced items that clear 30% margin after fees. The buy list and relistings are ready, about $640 in projected profit." },
+    { open: "Set up a channel that posts on its own", steps: [
+      ["search", "Finding a **niche**", "**Space facts** shorts, high views per sub", "Finding a niche"],
+      ["code", "Writing **scripts**", "**7 scripts**, 45 seconds each", "Writing scripts"],
+      ["play", "Voicing and **editing**", "**7 shorts** with captions and music", "Editing the shorts"],
+      ["file", "Scheduling **uploads**", "One short a day for **7 days**", "Scheduling uploads"],
+    ], reply: "Seven space facts shorts are scripted, voiced and scheduled, one a day for the next week. I'll report views after the first three." },
   ];
-  const ASK_DWELL = 2600; // real ms before the demo picks the first row itself: the card is read, not skimmed, so it does not take the fifth-pace
-  let FILE_TITLE = "Sunday Bakery landing page";
-  const FILE_KIND = "Code · HTML", FILE_BUTTON = "Download and open";
+  // a typed strategy ("Other"): {custom} is the user's own words
+  const MONEY_CUSTOM = { open: "Work out how to make money with {custom}", steps: [
+    ["search", "Researching **{custom}**", "**3 ways** to start this week", "Researching it"],
+    ["list", "Picking the **fastest path**", "The one that pays out **first**", "Picking a path"],
+    ["file", "Setting it **up**", "First step is **running**", "Setting it up"],
+  ], reply: "Your {custom} plan is set up: three ways to start, and the first one is already running. I'll check back with numbers tomorrow." };
+  // typed text on its way into a label: trimmed, capped for display, and its
+  // asterisks dropped so it can never open a **bold** run (the labels are built
+  // with textContent, so it can never become markup either)
+  const typedShown = (t) => {
+    const s = String(t).trim().replace(/\*/g, "").replace(/\s+/g, " ");
+    return (s.length > 24 ? s.slice(0, 24).trimEnd() + "\u2026" : s) || "this";
+  };
+  // the picked music app: a row's own icon and web player, or the typed text
+  // with no icon (ICON.app falls back to the music glyph) and a web search
+  const appFromRow = (r) => ({ name: r.t, icon: r.icon, open: r.url + encodeURIComponent(TRACK + " " + ARTIST) });
+  const appFromText = (t) => ({ name: typedShown(t), icon: null, open: "https://www.google.com/search?q=" + encodeURIComponent(TRACK + " " + ARTIST + " " + String(t).trim()) });
+  let APP = appFromRow(MUSIC_ASK.rows[askDefault(MUSIC_ASK)]); // the picked app; tourBody sets it every run
+  // fills {app} / {custom} with a name; a function replacement, so a "$&" typed by the user stays literal
+  const fillName = (s, name) => s.replace(/\{(?:app|custom)\}/g, () => name);
+  const withApp = (s) => fillName(s, APP.name);
+  const FILE_KIND = "Playlist · 24 tracks";
   const STEP_MS = 1150, LABEL_MS = 4; // each call runs ~1.15s; labels type at 4ms a char (both scale with speed)
   const ICON = {
     pin: '<svg viewBox="0 0 12 12"><path d="M6 10.8S2.6 7.6 2.6 5.2a3.4 3.4 0 0 1 6.8 0C9.4 7.6 6 10.8 6 10.8z"/><circle cx="6" cy="5.2" r="1.2"/></svg>',
@@ -6373,6 +6550,9 @@ function chatScriptFor(title) {
     tag: '<svg viewBox="0 0 12 12"><path d="M1.8 1.8h4l4.6 4.6-4 4-4.6-4.6z"/><circle cx="4.1" cy="4.1" r=".8" fill="currentColor" stroke="none"/></svg>',
     code: '<svg viewBox="0 0 12 12"><path d="M4.4 3.2 1.8 6l2.6 2.8M7.6 3.2 10.2 6 7.6 8.8"/></svg>',
     file: '<svg viewBox="0 0 12 12"><path d="M7 1.6H3.4a.9.9 0 0 0-.9.9v7a.9.9 0 0 0 .9.9h5.2a.9.9 0 0 0 .9-.9V4.2z"/><path d="M7 1.6v2.6h2.5"/></svg>',
+    music: '<svg viewBox="0 0 12 12"><path d="M4.6 9V2.7l5-1.1v6"/><circle cx="3.2" cy="9" r="1.4"/><circle cx="8.2" cy="7.6" r="1.4"/></svg>',
+    play: '<svg viewBox="0 0 12 12"><path d="M3.6 2.2v7.6L9.8 6z"/></svg>',
+    get app() { return APP.icon ? '<img src="' + APP.icon + '" alt="">' : this.music; }, // the picked app's own icon on its tool call; a typed app has none, so the music glyph (user, 2026-10-10)
   };
   // ---- the kit's settings: speed, open --------------------------------------
   const KIT_KEY = "hero.thinkKit";
@@ -6380,6 +6560,12 @@ function chatScriptFor(title) {
   try { stored = JSON.parse(localStorage.getItem(KIT_KEY) || "{}"); } catch (e) { console.error("[think-kit] bad stored settings", e); }
   const KIT = Object.assign({ speed: 0.8, open: true }, stored); // 0.8x (2026-09-12, the user's pick)
   const saveKit = () => { try { localStorage.setItem(KIT_KEY, JSON.stringify(KIT)); } catch (e) { console.error("[think-kit] save failed", e); } };
+  // ---- the reopen variant (user, 2026-10-10) ---------------------------------
+  // a folded question card leaves the Peek variant (reopen-variants/peek.js) on
+  // the composer's top edge, PC and phone: its title row tucked behind the
+  // composer. Peek only (user, 2026-10-10: "remove all other variants").
+  const reopenVariants = () => (window.SBReopen && window.SBReopen.variants) || {};
+  const REOPEN = { name: "peek", refresh: null };
   // the hand-over runs at a fifth of its 2026-09-13 pace (user, 2026-09-14:
   // "over 80% faster"): every sleep, keystroke, thought and label beat, the
   // tool-call dwell, the reply's typing and the fold durations all scale by PACE
@@ -6412,8 +6598,10 @@ function chatScriptFor(title) {
     }
   }
 
-  // a demo "enter": user bubble in the thread, composer cleared, recents row
-  function demoSend(p, text) {
+  // a demo "enter": user bubble in the thread, composer cleared, recents row.
+  // followUp (user, 2026-10-10: the second ask): the chat is already open, so
+  // the bubble joins its thread and store and no second recents row is made
+  function demoSend(p, text, followUp) {
     const root = document.getElementById(p.root);
     const th = root.querySelector(p.thSel);
     const b = add("div", p.bub + " bc-app demo-t");
@@ -6421,7 +6609,7 @@ function chatScriptFor(title) {
     th.appendChild(b);
     const inp = root.querySelector(p.inSel);
     if (inp) { inp.value = ""; inp.blur(); }
-    panelAddRecent(p, text);
+    if (!followUp) panelAddRecent(p, text);
     if (!liveChat.get(p.key)) liveChat.set(p.key, text);
     const key = chatKey(p, liveChat.get(p.key));
     if (!threadStore.has(key)) threadStore.set(key, []);
@@ -6914,39 +7102,48 @@ function chatScriptFor(title) {
     while (alive(gen) && performance.now() - t0 < typed) { await sleep(120 * (KIT.speed || 1)); follow(th); }
   }
 
-  // the file card: the generated file, handed over under superbot's reply
-  // (a tilted code tile, the name and kind, a "Download and open" button).
-  // A click, Enter or Space opens the file popup. The phone gets its own copy.
+  // the now-playing card (music, 2026-10-10; was the file card): the playlist
+  // superbot started, handed over under its reply (the picked app's icon as a
+  // tilted tile, the playlist and its length, an "Open in <app>" button). A
+  // click, Enter or Space opens the track in that app's web player in a new
+  // tab. The phone gets its own copy.
+  // A typed app (Other) has no icon: the tile shows the music glyph in the
+  // neutral file-tile style, and the button carries the glyph too; its link is
+  // a web search (user, 2026-10-10).
   function buildFileCard(extraClass) {
     const card = add("div", "demo-file demo-t" + (extraClass ? " " + extraClass : ""));
     card.setAttribute("role", "button");
     card.tabIndex = 0;
-    card.setAttribute("aria-label", "Open " + (window.FILE_NAME || "the file"));
-    const ic = add("span", "demo-file-ic");
-    ic.insertAdjacentHTML("beforeend", ICON.code);
+    card.setAttribute("aria-label", "Open " + TRACK + " in " + APP.name);
+    const ic = add("span", "demo-file-ic" + (APP.icon ? " _app" : ""));
+    if (APP.icon) {
+      const tile = add("img");
+      tile.src = APP.icon;
+      tile.alt = "";
+      tile.draggable = false;
+      ic.appendChild(tile);
+    } else ic.insertAdjacentHTML("beforeend", ICON.music);
     const meta = add("div", "demo-file-meta");
     const title = add("div", "demo-file-title");
-    title.textContent = FILE_TITLE;
+    title.textContent = PLAYLIST;
     const kind = add("div", "demo-file-kind");
     kind.textContent = FILE_KIND;
     meta.append(title, kind);
     const btn = add("span", "demo-file-btn");
-    const img = add("img");
-    img.src = "hero-assets/chrome.svg";
-    img.alt = "";
-    img.draggable = false;
+    if (APP.icon) {
+      const img = add("img");
+      img.src = APP.icon;
+      img.alt = "";
+      img.draggable = false;
+      btn.appendChild(img);
+    } else btn.insertAdjacentHTML("beforeend", ICON.music.replace("<svg ", '<svg class="demo-file-glyph" '));
     const lbl = add("span");
-    lbl.textContent = FILE_BUTTON;
+    lbl.textContent = "Open in " + APP.name;
     const div = add("i");
-    btn.append(img, lbl, div);
+    btn.append(lbl, div);
     btn.insertAdjacentHTML("beforeend", '<svg class="demo-file-caret" viewBox="0 0 12 12"><path d="m3 4.6 3 3 3-3"/></svg>');
     card.append(ic, meta, btn);
-    const open = () => { // one popup at a time, like the sidebar rows
-      if (window.closeSavings) closeSavings();
-      if (window.closeUsage) closeUsage();
-      if (window.mcClose) mcClose();
-      if (window.openFile) window.openFile();
-    };
+    const open = () => window.open(APP.open, "_blank", "noopener");
     card.addEventListener("click", open);
     card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
     return card;
@@ -6965,53 +7162,123 @@ function chatScriptFor(title) {
     }));
   }
 
-  // the question card: the reference's format — the question with a chevron,
-  // numbered rows (title over a one-line sub), a Skip ⌘Enter button. One
-  // controller drives the PC's card and the phone's copy: pick(i) marks the
-  // row on both, skip() marks none; either resolves the wait.
-  function buildAskCard(extraClass, onPick, onSkip, onFold) {
+  // the question card: the reference's format, the question with a chevron,
+  // numbered rows (an optional icon, a bold title, an optional grey sub-line,
+  // a pill on the recommended one), a last "Other" row that is a real text box,
+  // and a Skip ⌘Enter button with the AUTO countdown bar beside it. One
+  // controller drives the PC's card and the phone's copy. Generalised to a
+  // spec { q, rows, other } (user, 2026-10-10) so the music card (icon rows, no
+  // sub) and the money card (sub rows, no icon) are one component. h carries
+  // the controller's hooks: select, skip (the footer button), fold, and for the
+  // Other row focus, input, blur, escape. A click or number key only SELECTS
+  // (select-then-submit, user, 2026-10-10); the footer button reads Skip until
+  // something is selected, then Submit (setSubmit). The Other row is the spec's
+  // last row (index spec.rows.length): its title area is an always-present
+  // <input> whose placeholder reads "Other" (field).
+  function buildAskCard(spec, extraClass, h) {
+    const phone = extraClass === "_ph";
     const card = add("div", "demo-ask demo-t" + (extraClass ? " " + extraClass : ""));
     card.setAttribute("role", "group");
-    card.setAttribute("aria-label", ASK_Q);
+    card.setAttribute("aria-label", spec.q);
     const q = add("div", "demo-ask-q");
-    q.textContent = ASK_Q;
+    q.textContent = spec.q;
     const fold = add("button", "demo-ask-fold");
     fold.type = "button";
     fold.setAttribute("aria-label", "Collapse the question");
     fold.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 12 12"><path d="m3 4.6 3 3 3-3"/></svg>');
-    fold.addEventListener("click", onFold);
+    fold.addEventListener("click", h.fold);
     q.appendChild(fold);
     card.appendChild(q);
-    const rows = ASK_OPTS.map(([title, sub], i) => {
-      const row = add("button", "demo-ask-opt");
-      row.type = "button";
+    // one row: n tile, optional icon, body (title [+ pill], optional sub)
+    const buildRow = (tag, r, i, slot) => {
+      const row = add(tag, "demo-ask-opt");
+      if (tag === "button") row.type = "button";
       const n = add("span", "demo-ask-n");
       n.textContent = String(i + 1);
+      row.appendChild(n);
+      if (slot) row.appendChild(slot);
       const body = add("span", "demo-ask-body");
       const t = add("span", "demo-ask-t");
-      t.textContent = title;
-      const s = add("span", "demo-ask-s");
-      s.textContent = sub;
-      body.append(t, s);
-      row.append(n, body);
-      row.addEventListener("click", () => onPick(i));
+      t.textContent = r.t;
+      if (r.badge) {
+        const b = add("span", "demo-ask-badge");
+        b.textContent = r.badge;
+        t.appendChild(b);
+      }
+      body.appendChild(t);
+      if (r.s) {
+        const sub = add("span", "demo-ask-s");
+        sub.textContent = r.s;
+        body.appendChild(sub);
+      }
+      row.appendChild(body);
       card.appendChild(row);
+      return { row, t };
+    };
+    const rows = spec.rows.map((r, i) => {
+      let slot = null;
+      if (r.icon) {
+        slot = add("img", "demo-ask-app");
+        slot.src = r.icon;
+        slot.alt = "";
+        slot.draggable = false;
+      }
+      const { row } = buildRow("button", r, i, slot);
+      row.addEventListener("click", () => h.select(i));
       return row;
     });
+    // the Other row: a div (a text box cannot live inside a button) with no icon
+    // tile. Its number or any press on the row focuses the box (the reference's
+    // plain text box in the row); the box reads "Other" as its placeholder
+    const oi = spec.rows.length;
+    const o = buildRow("div", spec.other, oi, null);
+    o.row.classList.add("_other");
+    const f = add("input", "demo-ask-in");
+    f.type = "text";
+    f.placeholder = spec.other.t;
+    f.maxLength = 80;
+    f.autocomplete = "off";
+    f.spellcheck = false;
+    f.setAttribute("aria-label", spec.q + " " + spec.other.t + ", type your own answer");
+    o.t.replaceWith(f);
+    rows.push(o.row);
+    o.row.addEventListener("mousedown", (e) => { if (e.target !== f) { e.preventDefault(); f.focus(); } }); // a press on the row's padding or tile focuses the box without blurring it first
+    f.addEventListener("focus", () => h.focus(c));
+    f.addEventListener("input", () => h.input(c));
+    f.addEventListener("blur", () => h.blur(c));
+    f.addEventListener("keydown", (e) => {
+      if (e.metaKey || e.ctrlKey) return; // ⌘Enter is the controller's (document level)
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); h.escape(c); }
+      else if (e.key === "Enter") { e.preventDefault(); h.submit(); }
+    });
     const foot = add("div", "demo-ask-foot");
-    const skip = add("button", "demo-ask-skip");
-    skip.type = "button";
-    const sl = add("span"); sl.textContent = "Skip";
-    const sk = add("small"); sk.textContent = "⌘Enter";
-    skip.append(sl, sk);
-    skip.addEventListener("click", onSkip);
-    foot.appendChild(skip);
+    const auto = add("div", "demo-ask-auto");
+    auto.setAttribute("role", "progressbar");
+    auto.setAttribute("aria-label", "Auto-pick " + spec.rows[askDefault(spec)].t);
+    auto.setAttribute("aria-valuemin", "0");
+    auto.setAttribute("aria-valuemax", String(AUTO_MS / 1000));
+    const al = add("span", "demo-ask-auto-l"); al.textContent = "AUTO";
+    const track = add("span", "demo-ask-auto-track");
+    const bar = add("i");
+    track.appendChild(bar);
+    auto.append(al, track);
+    // Skip, or Submit once something is selected; the phone has no ⌘Enter hint
+    const btn = add("button", "demo-ask-skip");
+    btn.type = "button";
+    const bl = add("span"); bl.textContent = "Skip";
+    btn.appendChild(bl);
+    if (!phone) { const sk = add("small"); sk.textContent = "⌘Enter"; btn.appendChild(sk); }
+    btn.addEventListener("click", h.button);
+    foot.append(auto, btn);
     card.appendChild(foot);
-    return { card, rows };
+    const c = { card, rows, auto, bar, field: f };
+    c.setSubmit = (on) => { btn.classList.toggle("_submit", on); bl.textContent = on ? "Submit" : "Skip"; };
+    return c;
   }
 
   // the answer, as the user's own bubble (no recents row: it belongs to the
-  // ask's chat); the phone re-renders the thread from the store, so it lands there too
+  // ask's chat); the phone appends the same bubble (phTourSend with the text),
+  // so the tool rows and cards of the exchange above it stay on screen there
   function demoAnswer(p, text) {
     const root = document.getElementById(p.root);
     const th = root.querySelector(p.thSel);
@@ -7020,30 +7287,88 @@ function chatScriptFor(title) {
     th.appendChild(b);
     const key = chatKey(p, liveChat.get(p.key));
     if (threadStore.has(key)) threadStore.get(key).push({ who: "user", text });
-    if (window.phTourSend) window.phTourSend("Superbot");
+    if (window.phTourSend) window.phTourSend("Superbot", text);
     follow(th);
   }
 
   // the card docks where the composer is (reference: the question sits on the
   // chat's bottom edge, the composer hidden behind it) on the PC and the
-  // phone, and waits for a pick (a click, 1/2/3, ⌘Enter to skip, or the
-  // demo's own pick after ASK_DWELL). The chevron folds it: the composer
-  // comes back with a "Reopen form ⌃" chip above it, which reopens the card.
-  // A pick marks the row, fades both copies away, restores the composers and
-  // posts the answer. Resolves with the pick's title, or null on a skip.
-  function askContents(th, gen) {
+  // phone, and waits for the user. SELECT THEN SUBMIT (user, 2026-10-10): a
+  // click or number key only selects a row (its number tile goes accent, on
+  // both copies; another click moves the selection) and the Other row's box
+  // takes focus on its number or a press anywhere on the row. With a row
+  // selected, or text in the Other box, the footer button becomes Submit; a
+  // click on it, Enter or ⌘Enter posts the selected title (or the typed text)
+  // as the answer. With nothing selected it stays Skip: ⌘Enter or a click
+  // plays the recommended row with no bubble, and plain Enter does nothing.
+  // AUTO: for the first AUTO_GRACE_MS of no answer nothing AUTO shows; then the
+  // label and the white bar fade in on both copies and fill over AUTO_MS, and
+  // the recommended row is picked as if submitted (never Other). Any selection
+  // or typing is a response: the clock stops for good and the bar hides. One
+  // clock holds both phases and is held by the chevron fold and by focus in the
+  // empty Other box (Escape or leaving it empty releases it). A folded card
+  // leaves the chosen reopen variant on both composers (the kit's Reopen row);
+  // its click, or a chips pick (which also selects that row), unfolds the card.
+  // Resolves { i, typed }: i is the answered row (the Other row is
+  // spec.rows.length, with typed set), or null on a skip.
+  function askContents(th, gen, spec) {
     return new Promise((resolve) => {
       let settled = false;
-      const cards = []; // { card, rows, composer, chip }
-      const restore = () => cards.forEach((c) => { c.composer.classList.remove("_asking"); if (c.chip) { c.chip.remove(); c.chip = null; } });
-      const finish = async (i) => {
+      const cards = []; // { card, rows, field, composer, folded, setSubmit }
+      const def = askDefault(spec);
+      const other = spec.rows.length;
+      let sel = null; // the selected row, or null
+      let responded = false; // a selection or typing: the AUTO clock is done for good
+      let prevSel = null; // the row selected before the Other box took focus: an empty box that loses focus gives it back
+      let folded = false;
+      // the reopen variants mounted on the composers while folded; busy holds every unmount still fading out, so a new mount never races an old cleanup
+      const reopens = [];
+      let reopenSeq = 0;
+      let busy = Promise.resolve();
+      const reopenDrop = () => {
+        const old = reopens.splice(0);
+        if (old.length) busy = Promise.all([busy].concat(old.map((inst) => new Promise((r) => inst.unmount(r)))));
+      };
+      const reopenHide = () => { reopenSeq++; reopenDrop(); };
+      const reopenShow = () => {
+        const seq = ++reopenSeq;
+        reopenDrop();
+        busy.then(() => {
+          if (seq !== reopenSeq || settled || !folded || !alive(gen)) return;
+          const V = reopenVariants()[REOPEN.name];
+          if (!V) return;
+          cards.forEach((c) => {
+            reopens.push(V.mount(c.composer, {
+              question: spec.q,
+              options: spec.rows.map((r) => r.t), // the titles, Other excluded
+              phone: c.ph,
+              fromRect: c.rect, // where this copy's open card sat (viewport rect), for variants that morph out of the card's frame
+              onReopen: unfoldAll,
+              onPick: (i) => { unfoldAll(); select(i); }, // reopen with that row selected; Submit still answers
+            }));
+          });
+        });
+      };
+      const refresh = () => { if (folded && !settled) reopenShow(); };
+      REOPEN.refresh = refresh;
+      const restore = () => {
+        reopenHide();
+        if (REOPEN.refresh === refresh) REOPEN.refresh = null;
+        cards.forEach((c) => c.composer.classList.remove("_asking"));
+      };
+      const typedText = () => cards[0].field.value.trim();
+      const finish = async (i, typed) => {
         if (settled || !alive(gen)) return;
         settled = true;
-        clearTimeout(auto);
+        cancelAnimationFrame(clockRaf); // the bar stops where the answer came in
         document.removeEventListener("keydown", onKey, true);
+        if (typeof dropRowListeners === "function") dropRowListeners();
+        reopenHide();
+        if (REOPEN.refresh === refresh) REOPEN.refresh = null;
         cards.forEach((c) => { // a folded copy comes back so the pick reads on it
-          if (c.chip) { c.chip.remove(); c.chip = null; c.composer.classList.add("_asking"); c.composer.parentNode.insertBefore(c.card, c.composer); c.card.classList.add("_on"); }
-          c.rows.forEach((r, j) => r.classList.toggle("_pick", j === i));
+          if (c.folded) { c.folded = false; c.composer.classList.add("_asking"); c.composer.parentNode.insertBefore(c.card, c.composer); c.card.classList.add("_on"); }
+          c.field.readOnly = true;
+          c.rows.forEach((r, j) => { r.classList.toggle("_sel", false); r.classList.toggle("_pick", j === i); });
         });
         await new Promise((r) => setTimeout(r, REDUCED_MOTION ? 0 : 340)); // the marked row reads before the fade
         if (!alive(gen)) return;
@@ -7052,64 +7377,188 @@ function chatScriptFor(title) {
         if (!alive(gen)) return;
         cards.forEach((c) => c.card.remove());
         restore();
-        const pick = i == null ? null : ASK_OPTS[i][0];
-        if (pick) demoAnswer(P.gg, pick);
-        resolve(pick);
+        if (i != null) demoAnswer(P.gg, i === other ? typed : spec.rows[i].t);
+        resolve({ i, typed: i === other ? typed : null });
       };
-      // fold: the card leaves, the composer returns under a reopen chip
-      const foldAll = () => { if (settled) return; cards.forEach((c) => {
-        if (c.chip) return;
+      // the clock: phase "grace" counts AUTO_GRACE_MS down, then phase "auto"
+      // shows the AUTO bar and counts AUTO_MS down, then the recommended row is
+      // picked. holds (fold, other) stop it; what is left is banked and goes on
+      const holds = new Set();
+      let phase = "grace", left = AUTO_GRACE_MS, from = 0, clockRaf = 0, landed = false, sec = -1;
+      const ready = () => sel != null && (sel !== other || typedText().length > 0); // Submit has something to post
+      const render = () => {
+        const on = phase === "auto" && !holds.has("other") && !responded;
+        const sub = ready();
+        cards.forEach((c) => {
+          c.rows.forEach((r, j) => r.classList.toggle("_sel", j === sel));
+          c.setSubmit(sub);
+          c.auto.classList.toggle("_show", on);
+        });
+      };
+      const tick = () => {
+        clockRaf = 0;
+        if (settled || !alive(gen) || responded) return;
+        const now = performance.now();
+        let rem = left - (now - from);
+        if (phase === "grace" && rem <= 0) { phase = "auto"; left = AUTO_MS; from = now; rem = left; render(); }
+        if (phase === "auto") {
+          const filled = Math.min(1, Math.max(0, 1 - rem / AUTO_MS));
+          cards.forEach((c) => { c.bar.style.transform = "scaleX(" + filled + ")"; });
+          const s = Math.max(0, Math.ceil(rem / 1000));
+          if (s !== sec) {
+            sec = s;
+            cards.forEach((c) => { c.auto.setAttribute("aria-valuenow", String(AUTO_MS / 1000 - s)); c.auto.setAttribute("aria-valuetext", "Picks " + spec.rows[def].t + " in " + s + " s"); });
+          }
+          if (rem <= 0) { finish(def); return; }
+        }
+        clockRaf = requestAnimationFrame(tick);
+      };
+      const clockGo = () => { if (!landed || holds.size || settled || responded || clockRaf) return; from = performance.now(); clockRaf = requestAnimationFrame(tick); };
+      const clockHold = (why) => {
+        if (clockRaf) { cancelAnimationFrame(clockRaf); clockRaf = 0; left = Math.max(0, left - (performance.now() - from)); }
+        holds.add(why);
+      };
+      const clockRelease = (why) => { holds.delete(why); clockGo(); };
+      // a selection or typing: the clock is over for good, the bar hides
+      const respond = () => { responded = true; cancelAnimationFrame(clockRaf); clockRaf = 0; };
+      // fold: the card leaves, the composer returns wearing the chosen reopen variant
+      const foldAll = () => { if (settled) return; clockHold("fold"); if (!typedText() && holds.has("other")) { holds.delete("other"); if (sel === other) sel = prevSel; } render(); cards.forEach((c) => { // an empty Other box loses focus with the card
+        c.field.blur();
+        if (c.folded) return;
+        c.rect = c.card.getBoundingClientRect(); // captured before the card leaves
         c.card.remove();
         c.card.classList.remove("_on");
-        const chip = add("div", "demo-ask-reopen demo-t" + (c.ph ? " _ph" : ""));
-        const b = add("button"); b.type = "button";
-        const lbl = add("span"); lbl.textContent = "Reopen form";
-        b.appendChild(lbl);
-        b.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 12 12"><path d="m3 7.4 3-3 3 3"/></svg>');
-        b.addEventListener("click", unfoldAll);
-        chip.appendChild(b);
-        c.composer.parentNode.insertBefore(chip, c.composer);
         c.composer.classList.remove("_asking");
-        c.chip = chip;
-      }); };
-      const unfoldAll = () => { if (settled) return; cards.forEach((c) => {
-        if (!c.chip) return;
-        c.chip.remove(); c.chip = null;
-        c.composer.classList.add("_asking");
-        c.composer.parentNode.insertBefore(c.card, c.composer);
-        requestAnimationFrame(() => requestAnimationFrame(() => c.card.classList.add("_on")));
-      }); };
-      const onKey = (e) => {
-        if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
-        const n = parseInt(e.key, 10);
-        if (n >= 1 && n <= ASK_OPTS.length) { e.preventDefault(); finish(n - 1); }
-        else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); finish(null); }
+        c.folded = true;
+      }); folded = true; reopenShow(); };
+      // unfold: each copy's variant unmounts FIRST (a variant may play a reverse morph into the card's frame) and its card comes back inside the unmount's done; the clock resumes once every copy is back
+      const unfoldAll = () => {
+        if (settled || !folded) return;
+        folded = false;
+        reopenSeq++;
+        const insts = reopens.splice(0);
+        const dones = cards.map((c, k) => new Promise((resolve) => {
+          const show = () => {
+            if (!settled && c.folded) {
+              c.folded = false;
+              c.composer.classList.add("_asking");
+              c.composer.parentNode.insertBefore(c.card, c.composer);
+              requestAnimationFrame(() => requestAnimationFrame(() => c.card.classList.add("_on")));
+            }
+            resolve();
+          };
+          if (insts[k]) insts[k].unmount(show); else show();
+        }));
+        busy = Promise.all([busy].concat(dones));
+        Promise.all(dones).then(() => { if (settled || folded) return; clockRelease("fold"); render(); });
       };
+      // a click or number key selects: the clock is over, the Other box lets go
+      const select = (i) => {
+        if (settled) return;
+        sel = i;
+        respond();
+        if (i !== other) cards.forEach((c) => { if (document.activeElement === c.field) c.field.blur(); });
+        render();
+      };
+      // the Other box: focus selects the row and holds the clock (the AUTO bar
+      // hides); typing is a response; Escape, or leaving it empty, lets go
+      const otherFocus = () => { if (settled) return; if (sel !== other) prevSel = sel; sel = other; clockHold("other"); render(); };
+      const otherInput = (c) => {
+        if (settled) return;
+        cards.forEach((x) => { if (x !== c) x.field.value = c.field.value; }); // the copy shows the same text
+        if (c.field.value.trim()) respond();
+        render();
+      };
+      // a press on another row blurs the Other box BEFORE its click selects
+      // (blur lands on pointerdown, the click on pointerup): rowDown marks
+      // that press so the blur does not paint the old selection in between
+      // (user, 2026-10-10: "click 3 then 1, it flashes on 2")
+      // (document capture: the cards are built after these hooks, so a listener on them here would miss)
+      let rowDown = false;
+      const onRowDown = (e) => {
+        const r = e.target && e.target.closest && e.target.closest(".demo-ask-opt");
+        rowDown = !!r && !r.querySelector("input");
+      };
+      const onRowUp = () => { setTimeout(() => { rowDown = false; }, 0); };
+      document.addEventListener("pointerdown", onRowDown, true);
+      document.addEventListener("pointerup", onRowUp, true);
+      const dropRowListeners = () => { document.removeEventListener("pointerdown", onRowDown, true); document.removeEventListener("pointerup", onRowUp, true); };
+      const otherBlur = (c) => {
+        if (settled || !c.card.isConnected) return;
+        if (c.field.value.trim()) return; // typed text stays selected
+        if (sel === other && !rowDown) sel = prevSel; // an empty box gives the previous selection back (none, if there was none); a row press is about to select instead
+        clockRelease("other");
+        render();
+      };
+      const otherEsc = (c) => {
+        c.field.value = "";
+        cards.forEach((x) => { x.field.value = ""; });
+        c.field.blur();
+      };
+      const submit = () => {
+        if (settled || !ready()) return;
+        if (sel === other) finish(other, typedText()); else finish(sel);
+      };
+      const press = () => { if (ready()) submit(); else finish(null); }; // the footer button: Submit with a selection, else Skip
+      const onKey = (e) => {
+        const tag = e.target && e.target.tagName;
+        const typing = tag === "INPUT" || tag === "TEXTAREA";
+        const ours = typing && e.target.classList.contains("demo-ask-in");
+        const mod = e.metaKey || e.ctrlKey;
+        if (e.key === "Enter") {
+          // folded: Enter in the chat bar answers the question with what was typed (as Other), never the panel's own send mid-question (user, 2026-10-10)
+          if (folded && typing && e.target.classList.contains("bc-ph")) {
+            e.preventDefault(); e.stopPropagation();
+            const text = e.target.value.trim();
+            if (!text) return;
+            e.target.value = "";
+            cards.forEach((c) => { c.field.value = text; });
+            sel = other; respond();
+            finish(other, text);
+            return;
+          }
+          if (typing && !ours) return; // another box on the page keeps its Enter
+          if (folded && e.target.closest && e.target.closest(".sbr-anchor") && tag === "BUTTON") return; // a focused reopen control keeps its own Enter: it reopens the card
+          // Enter, with or without ⌘/Ctrl, submits whatever is selected (or the Other text), whatever has focus:
+          // the clicked row, the Submit button, the body. Capture phase and stopped, so a focused row's own Enter never re-clicks it
+          if (ready()) { e.preventDefault(); e.stopPropagation(); submit(); return; }
+          // nothing selected: ⌘Enter skips, plain Enter does nothing (the empty Other box swallows it; a focused button keeps its own click)
+          if (mod) { e.preventDefault(); e.stopPropagation(); finish(null); }
+          else if (ours) e.preventDefault();
+          return;
+        }
+        if (typing) return; // typing: number keys stay text
+        const n = /^[0-9]$/.test(e.key) ? parseInt(e.key, 10) : 0;
+        if (n >= 1 && n <= other) { e.preventDefault(); select(n - 1); }
+        else if (n === other + 1) { e.preventDefault(); cards[0].field.focus(); }
+      };
+      const hooks = { select, button: press, submit, fold: foldAll, focus: otherFocus, input: otherInput, blur: otherBlur, escape: otherEsc };
       document.addEventListener("keydown", onKey, true);
       // the PC's card docks in the main column where the composer sits
       const pcComposer = th.parentNode.querySelector(".bc-softwrap");
-      const pc = buildAskCard("", finish, () => finish(null), foldAll);
-      pc.composer = pcComposer; pc.chip = null; pc.ph = false;
+      const pc = buildAskCard(spec, "", hooks);
+      pc.composer = pcComposer; pc.folded = false; pc.ph = false;
       pcComposer.classList.add("_asking");
       pcComposer.parentNode.insertBefore(pc.card, pcComposer);
       cards.push(pc);
       follow(th);
       const phCompose = document.querySelector("#phone .ph-compose, .ph-compose");
       if (phCompose) { // the phone gets its own copy, docked on its composer, driven by the same controller
-        const ph = buildAskCard("_ph", finish, () => finish(null), foldAll);
-        ph.composer = phCompose; ph.chip = null; ph.ph = true;
+        const ph = buildAskCard(spec, "_ph", hooks);
+        ph.composer = phCompose; ph.folded = false; ph.ph = true;
         phCompose.classList.add("_asking");
         phCompose.parentNode.insertBefore(ph.card, phCompose);
         cards.push(ph);
       }
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        if (!alive(gen)) return;
+        if (!alive(gen) || settled) return;
         cards.forEach((c) => c.card.classList.add("_on"));
         follow(th);
+        landed = true;
+        clockGo(); // the grace starts as the card lands
       }));
-      const auto = setTimeout(() => finish(0), ASK_DWELL / (KIT.speed || 1)); // the demo picks the first row unless the user beat it
-      // a reset mid-wait: the nodes go with clearTourState; drop the listener and let the promise hang (its tour is dead)
-      const watch = setInterval(() => { if (!alive(gen)) { clearInterval(watch); clearTimeout(auto); document.removeEventListener("keydown", onKey, true); restore(); } else if (settled) clearInterval(watch); }, 200);
+      // a reset mid-wait: the nodes go with clearTourState; drop the listener and the clock, and let the promise hang (its tour is dead)
+      const watch = setInterval(() => { if (!alive(gen)) { clearInterval(watch); cancelAnimationFrame(clockRaf); document.removeEventListener("keydown", onKey, true); dropRowListeners(); restore(); } else if (settled) clearInterval(watch); }, 200);
     });
   }
 
@@ -7140,28 +7589,57 @@ function chatScriptFor(title) {
     dockUi(-1, gen); // superbot docks straight away (the pill walks to its tile) — phone follows
     if (window.syncFromRail) window.syncFromRail(-1);
     await sleep(700); if (!alive(gen)) return;
-    // the ask, the thinking row, the tool calls, the reply and the file
+    // the ask, the question card, the thinking row, the tool calls, the reply and the now-playing card; then the second ask, "Make me money" (user, 2026-10-10)
     await demoType(P.gg, ASK, gen); if (!alive(gen)) return;
     await sleep(320); if (!alive(gen)) return;
     const th2 = demoSend(P.gg, ASK);
     if (window.phTourSend) window.phTourSend("Superbot"); // the phone mirrors the send
     await sleep(420); if (!alive(gen)) return;
-    // the question card: what should the page contain? (user, 2026-09-15)
-    const pick = await askContents(th2, gen); if (!alive(gen)) return;
-    FILE_TITLE = pick ? pick + " landing page" : "Sunday Bakery landing page"; // the file takes the pick's name
+    // the question card: which app plays it? (user, 2026-09-15; music, 2026-10-10)
+    // the demo waits here on the user; with no answer the AUTO bar shows after
+    // 10s and its auto-pick lands ~30s later in the recommended app. A skip plays
+    // there too; a typed "Other" answer stands in for the app (user, 2026-10-10)
+    const ans = await askContents(th2, gen, MUSIC_ASK); if (!alive(gen)) return;
+    APP = ans.typed != null ? appFromText(ans.typed) : appFromRow(MUSIC_ASK.rows[ans.i == null ? askDefault(MUSIC_ASK) : ans.i]);
     await sleep(420); if (!alive(gen)) return;
     const sb = openThink(P.gg, th2, gen); // the same pattern as ChatGPT's: the thread line says Thinking, the ring opens with the first thought
     await sb.open(); if (!alive(gen)) return;
     await sleep(700); if (!alive(gen)) return;
-    await sb.say(SB_OPEN); if (!alive(gen)) return;
+    await sb.say(withApp(SB_OPEN)); if (!alive(gen)) return;
     await sleep(600); if (!alive(gen)) return;
-    await runTools(th2, sb, gen, SB_STEPS); if (!alive(gen)) return;
+    await runTools(th2, sb, gen, SB_STEPS.map((s) => s.map(withApp))); if (!alive(gen)) return;
     await sleep(240); if (!alive(gen)) return;
     await sb.done(); if (!alive(gen)) return;
     await sleep(120); if (!alive(gen)) return;
-    await sbReply(th2, SB_REPLY, gen); if (!alive(gen)) return;
-    await sleep(260); if (!alive(gen)) return; // the reply settles, then the file lands under it
+    await sbReply(th2, withApp(SB_REPLY), gen); if (!alive(gen)) return;
+    await sleep(260); if (!alive(gen)) return; // the reply settles, then the now-playing card lands under it
     showFileCard(th2, gen);
+    // the second ask (user, 2026-10-10): after a pause the same chat goes on,
+    // "Make me money" types into the composer and joins the thread under the
+    // first exchange (the phone appends the same bubble), then the strategy card
+    await sleep(1200); if (!alive(gen)) return;
+    await demoType(P.gg, ASK2, gen); if (!alive(gen)) return;
+    await sleep(320); if (!alive(gen)) return;
+    demoSend(P.gg, ASK2, true);
+    if (window.phTourSend) window.phTourSend("Superbot", ASK2);
+    follow(th2);
+    await sleep(420); if (!alive(gen)) return;
+    const ans2 = await askContents(th2, gen, MONEY_ASK); if (!alive(gen)) return;
+    // a typed strategy runs the generic plan on its own words; the rest run their own
+    const typed = ans2.typed != null ? typedShown(ans2.typed) : null;
+    const plan = typed != null ? MONEY_CUSTOM : MONEY_PLANS[ans2.i == null ? askDefault(MONEY_ASK) : ans2.i];
+    const fill = (str) => (typed != null ? fillName(str, typed) : str);
+    await sleep(420); if (!alive(gen)) return;
+    const sb2 = openThink(P.gg, th2, gen);
+    await sb2.open(); if (!alive(gen)) return;
+    await sleep(700); if (!alive(gen)) return;
+    await sb2.say(fill(plan.open)); if (!alive(gen)) return;
+    await sleep(600); if (!alive(gen)) return;
+    await runTools(th2, sb2, gen, plan.steps.map((st) => st.map(fill))); if (!alive(gen)) return;
+    await sleep(240); if (!alive(gen)) return;
+    await sb2.done(); if (!alive(gen)) return;
+    await sleep(120); if (!alive(gen)) return;
+    await sbReply(th2, fill(plan.reply), gen);
   }
 
   // ---- the kit -------------------------------------------------------------

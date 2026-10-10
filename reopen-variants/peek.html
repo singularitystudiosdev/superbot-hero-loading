@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reopen variant: Peek</title>
+<style>
+/* ---- page shell: the hero's body, hero background and fonts (index.html) ---- */
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "SF Pro Text", "Inter", system-ui, sans-serif;
+  color: #f2f2f5;
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.05) 1.2px, transparent 1.4px) 0 0 / 20px 20px,
+    #0a0a0c;
+}
+.cl-ic { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+svg { display: block; }
+input { font-family: inherit; }
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes spin { to { --angle: 360deg; } }
+
+/* ---- the real PC composer CSS (index.html, verbatim) ---- */
+.bc-softwrap {
+  margin-top: auto;
+  margin-bottom: 18px;
+  width: 560px;
+  max-width: calc(100% - 48px);
+  flex-shrink: 0;
+  filter: saturate(0.35) brightness(0.6);
+  transition: filter 450ms ease;
+}
+.bc-softwrap:focus-within, .bc-softwrap._awake, .bc-softwrap._super { filter: none; } /* ._awake: the composer stays lit while the thinking tab rides on it (2026-09-12); ._super: and while the SUPER frame is open, so a click on one of its labels never washes it grey (2026-09-16) */
+.bc-softwrap .composer {
+  --surface: #1a1a1c;
+  --radius: 16px;
+  --speed: 3.5s;
+  --rainbow: conic-gradient(from var(--angle),
+    #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #2b6bff);
+  position: relative;
+  min-height: 46px; /* the bar grows when the thinking row opens inside it (2026-09-12) */
+  border-radius: var(--radius);
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--rainbow) border-box;
+  border: 1px solid transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  animation: spin var(--speed) linear infinite;
+  box-sizing: border-box;
+}
+/* the input row: the bar's original 46px flex row, now the bottom row */
+.bc-softwrap .composer-main { height: 44px; padding: 0 8px 0 14px; display: flex; align-items: center; gap: 10px; }
+/* Bloom layers: hug the border, sit behind the box */
+.bc-softwrap .composer::before,
+.bc-softwrap .composer::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius);
+  background: var(--rainbow);
+  z-index: -1;
+}
+/* bloom opacities are 30% of the demo's 0.6 / 0.35 (2026-09-12, user: "make the glow 70% less here") */
+.bc-softwrap .composer::before { filter: blur(16px); opacity: 0.18; animation: spin var(--speed) linear infinite; }
+.bc-softwrap .composer::after { inset: -10px; border-radius: calc(var(--radius) + 8px); filter: blur(40px); opacity: 0.105; animation: spin var(--speed) linear infinite; }
+.bc-plus { color: #8b90a0; display: inline-flex; flex-shrink: 0; }
+.bc-plus .cl-ic { width: 14px; height: 14px; }
+.bc-ph { flex: 1; color: #8b90a0; font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.bc-mic { color: #8b90a0; display: inline-flex; flex-shrink: 0; }
+.bc-mic .cl-ic { width: 12px; height: 12px; }
+
+/* platform selector chip - the .cu-mode slot of the Claude composer */
+.bc-plat {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; color: #8b90a0; white-space: nowrap;
+  background: none; border: none; padding: 0;
+  font-family: inherit; cursor: pointer;
+}
+.bc-plat:hover { color: #e6e8ee; }
+.bc-plat .cl-ic { width: 10px; height: 10px; }
+.bc-superwrap {
+  position: relative; display: inline-flex; flex-shrink: 0;
+  --super-grad: linear-gradient(135deg, #3fd6d0 0%, #4f7bff 48%, #c45cff 100%);
+  --super-ease: cubic-bezier(0.32, 0.72, 0, 1); /* the thinking rows' fold curve: one easing for every move in here */
+}
+.bc-super {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; line-height: 1;
+  color: #8b90a0; white-space: nowrap;
+  background: none; border: none; padding: 0;
+  font-family: inherit; cursor: pointer; flex-shrink: 0;
+  transition: color 260ms ease;
+}
+.bc-super:hover { color: #e6e8ee; }
+.bc-super-lab { position: relative; display: inline-block; }
+.bc-super-lab::after {
+  content: attr(data-text);
+  position: absolute; inset: 0;
+  background: var(--super-grad);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  opacity: 0;
+  transition: opacity 260ms var(--super-ease);
+}
+.bc-super[aria-pressed="true"] { color: transparent; }
+.bc-super[aria-pressed="true"]:hover { color: transparent; }
+.bc-super[aria-pressed="true"] .bc-super-lab::after { opacity: 1; }
+.bc-super-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #5c6070; flex-shrink: 0;
+  transition: background 260ms ease, box-shadow 260ms ease, transform 260ms var(--super-ease);
+}
+.bc-super[aria-pressed="true"] .bc-super-dot {
+  background: var(--super-grad);
+  box-shadow: 0 0 6px rgba(120, 100, 255, 0.85), 0 0 12px rgba(196, 92, 255, 0.45);
+  transform: scale(1.15);
+}
+
+.bc-ph { background: none; border: none; outline: none; font-family: inherit; padding: 0; margin: 0; min-width: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .bc-softwrap .composer, .bc-softwrap .composer::before, .bc-softwrap .composer::after { animation: none; }
+}
+
+/* ---- the real phone frame + composer CSS (index.html, verbatim) ---- */
+.phone {
+  /* fixed design space: 300×650 screen + 7px bezel each side */
+  width: 314px;
+  height: 664px;
+  border-radius: 48px;
+  background: #0b0b0d;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 40px 120px -40px rgba(0, 0, 0, 0.9);
+  padding: 7px;
+  box-sizing: border-box;
+  transform-origin: center;
+}
+.ph-screen {
+  position: relative;
+  width: 300px;
+  height: 650px;
+  border-radius: 41px;
+  background: #0d0d0d;
+  overflow: hidden;
+  color: #ececec;
+  font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, sans-serif;
+}
+/* the compacted mobile superbot chat - ChatGPT official mobile formatting */
+.ph-chat {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 50% 42%;
+}
+.ph-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 50px 16px 10px; /* clears the dynamic island */
+}
+.ph-head { display: grid; grid-template-columns: 1fr; justify-items: center; align-items: center; padding: 48px 12px 8px; }
+/* the platform dropdown: the current IDE's icon + name, dead center */
+.ph-title {
+  justify-self: center; /* shrink to content and center in the header column */
+  display: inline-flex; align-items: center; gap: 7px;
+  background: none; border: none; padding: 5px 10px; border-radius: 12px;
+  cursor: pointer; color: #ececec; font-family: inherit;
+}
+.ph-title img { width: 19px; height: 19px; border-radius: 5px; display: block; }
+.ph-title b { font-size: 16.5px; font-weight: 700; letter-spacing: -0.3px; }
+.ph-title svg { width: 11px; height: 11px; stroke: #9b9b9b; fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; transition: transform 160ms ease; }
+.ph-title[aria-expanded="true"] svg { transform: rotate(180deg); }
+.ph-title:hover { background: rgba(255, 255, 255, 0.05); }
+.ph-msgs {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 14px 0;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  overflow-y: auto;
+  scrollbar-width: none; /* the longer two-exchange thread scrolls here: hidden, still scrollable (user, 2026-10-10) */
+  -ms-overflow-style: none;
+}
+.ph-msgs::-webkit-scrollbar { display: none; }
+.ph-compose {
+  flex-shrink: 0;
+  margin: auto 12px 16px;
+}
+.ph-compose._rainbow {
+  filter: saturate(0.35) brightness(0.6);
+  transition: filter 450ms ease;
+}
+.ph-compose._rainbow:focus-within { filter: none; }
+.ph-ring {
+  --radius: 22px;
+  --speed: 3.5s;
+  position: relative;
+  min-height: 44px; /* the ring grows when the demo's thought row opens inside it (2026-09-13) */
+  border-radius: var(--radius);
+  background: #1f1f1f;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+/* the input row: what the ring was before the thought row moved in above it */
+.ph-ring-row { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 8px 0 14px; }
+/* the phone's popup thought row (user, 2026-09-13: "it isn't doing the popup
+   thinking like it is on pc"): the same grid track as the PC bar's, inside
+   the ring above the input row, opening with the first thought and folding
+   when the thinking is done; the content lifts and fades over the fold */
+.ph-compose._rainbow .ph-ring {
+  --ring: conic-gradient(from var(--angle), var(--ph-ringstops, #2b6bff, #6a1fd8, #c026d3, #ff3d9a, #2b6bff));
+  background:
+    linear-gradient(#1f1f1f, #1f1f1f) padding-box,
+    var(--ring) border-box;
+  border: 1px solid transparent;
+  animation: spin var(--speed) linear infinite;
+}
+.ph-compose._rainbow .ph-ring::before,
+.ph-compose._rainbow .ph-ring::after {
+  content: "";
+  position: absolute;
+  border-radius: var(--radius);
+  background: var(--ring);
+  z-index: -1;
+}
+.ph-compose._rainbow .ph-ring::before { inset: -1.5px; filter: blur(6px); opacity: 0.25; animation: spin var(--speed) linear infinite; }
+.ph-compose._rainbow .ph-ring::after { inset: -4px; border-radius: calc(var(--radius) + 3px); filter: blur(13px); opacity: 0.15; animation: spin var(--speed) linear infinite; }
+.ph-cplus { display: inline-flex; color: #9b9b9b; }
+.ph-cplus svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.4; stroke-linecap: round; }
+.ph-cph { flex: 1; min-width: 0; border: none; background: none; outline: none; padding: 0; font-family: inherit; font-size: 13px; color: #ececec; }
+.ph-cph::placeholder { color: #9b9b9b; }
+/* mic - the desktop composers' own mic glyph, replacing the stock waveform bars */
+.ph-cmic { display: inline-flex; color: #9b9b9b; flex-shrink: 0; }
+.ph-cmic svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.3; stroke-linecap: round; }
+/* circular send button - 1:1 with the reference composer (grey, white arrow) */
+.ph-csend {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #9b9b9b;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; cursor: pointer;
+}
+.ph-csend svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* static end state: the compacted chat, fully settled */
+  .ph-tile, .ph-bloom { display: none; }
+  .ph-chat { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .ph-chat { opacity: 1; } }
+
+/* ---- preview layout ---- */
+.pv { min-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 28px; padding: 28px 24px 48px; }
+.pv-bar { display: flex; align-items: center; gap: 14px; font-size: 13px; color: #8b90a0; }
+.pv-bar b { color: #f2f2f5; font-weight: 600; }
+.pv-btn { padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.1); background: #232429; color: #e6e8ee; font: 500 12.5px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; cursor: pointer; }
+.pv-btn:hover { background: #2b2c32; }
+.pv-btn:focus-visible { outline: 2px solid #2b6bff; outline-offset: 2px; }
+.pv-row { display: flex; align-items: flex-start; justify-content: center; gap: 48px; flex-wrap: wrap; }
+.pv-pc { width: 704px; height: 330px; border-radius: 24px; background: #0d0d0d; color: #e6e8ee; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 40px 120px -40px rgba(0, 0, 0, 0.9); display: flex; flex-direction: column; align-items: center; font-family: "SF Pro Text", "Inter", system-ui, sans-serif; }
+/* the anchor the integrator puts around the composer: the geometry the composer had, moved onto the wrapper */
+.pv-anchor { position: relative; margin-top: auto; margin-bottom: 18px; width: 560px; max-width: calc(100% - 48px); flex-shrink: 0; }
+.pv-anchor > .bc-softwrap { margin: 0; width: 100%; max-width: none; }
+.pv-anchor-ph { position: relative; margin: auto 12px 16px; flex-shrink: 0; }
+.pv-anchor-ph > .ph-compose { margin: 0; }
+.pv-note { max-width: 640px; text-align: center; font-size: 12px; line-height: 1.5; color: #8b90a0; }
+</style>
+<link rel="stylesheet" href="peek.css" />
+</head>
+<body>
+<div class="pv">
+  <div class="pv-bar">
+    <b>Reopen variant: Peek</b>
+    <button class="pv-btn" id="pv-toggle" type="button">Fold / Reopen</button>
+    <span id="pv-status">mounted</span>
+  </div>
+  <div class="pv-row">
+    <div class="pv-pc" id="bloom-ui">
+      <div class="pv-anchor" id="pv-anchor-pc">
+        <div class="bc-softwrap">
+          <div class="composer">
+            <div class="composer-main">
+              <span class="bc-plus"><svg class="cl-ic" viewBox="0 0 12 12"><path d="M6 1.5v9M1.5 6h9"/></svg></span>
+              <input class="bc-ph" type="text" placeholder="How can superbot help you today?" autocomplete="off" />
+              <span class="bc-superwrap">
+                <button class="bc-super" type="button" aria-pressed="false"><span class="bc-super-lab" data-text="SUPER">SUPER</span><span class="bc-super-dot" aria-hidden="true"></span></button>
+              </span>
+              <span class="bc-platwrap">
+                <button class="bc-plat" type="button"><span>Platforms</span> <svg class="cl-ic" viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg></button>
+              </span>
+              <span class="bc-mic"><svg class="cl-ic" viewBox="0 0 12 12"><rect x="4.4" y="1.3" width="3.2" height="6" rx="1.6"/><path d="M2.8 5.8a3.2 3.2 0 0 0 6.4 0M6 9v1.7"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="ph-screen">
+        <div class="ph-island"></div>
+        <div class="ph-chat" style="opacity:1">
+          <header class="ph-head">
+            <button class="ph-title" type="button">
+              <b>Superbot</b>
+              <svg viewBox="0 0 12 12"><path d="M3 4.5 6 7.5 9 4.5"/></svg>
+            </button>
+          </header>
+          <div class="ph-msgs"></div>
+          <div class="pv-anchor-ph" id="pv-anchor-ph">
+            <div class="ph-compose _rainbow">
+              <div class="ph-ring">
+                <div class="ph-ring-row">
+                  <span class="ph-cplus"><svg viewBox="0 0 15 15"><path d="M7.5 2.5v10M2.5 7.5h10"/></svg></span>
+                  <input class="ph-cph" type="text" placeholder="Message superbot…" autocomplete="off" />
+                  <span class="ph-cmic"><svg viewBox="0 0 12 12"><rect x="4.4" y="1.3" width="3.2" height="6" rx="1.6"/><path d="M2.8 5.8a3.2 3.2 0 0 0 6.4 0M6 9v1.7"/></svg></span>
+                  <span class="ph-csend"><svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="pv-note">Peek: the card's title row looks out from behind the composer. Click, Enter or Space reopens; hover or focus lifts it. The Fold / Reopen button replays the enter and exit.</p>
+</div>
+<script src="peek.js"></script>
+<script>
+(function () {
+  const V = window.SBReopen.variants["peek"];
+  const anchors = { pc: document.getElementById("pv-anchor-pc"), ph: document.getElementById("pv-anchor-ph") };
+  const status = document.getElementById("pv-status");
+  let handles = null;
+  window.__reopenCount = 0;
+  function mountAll() {
+    if (handles) return;
+    const base = { question: "Which app should play it?", options: ["Spotify", "Apple Music"], onPick() {} };
+    handles = {
+      pc: V.mount(anchors.pc, Object.assign({ phone: false, onReopen() { fired(); } }, base)),
+      ph: V.mount(anchors.ph, Object.assign({ phone: true, onReopen() { fired(); } }, base))
+    };
+    status.textContent = "mounted";
+  }
+  function fired() {
+    window.__reopenCount++;
+    unmountAll();
+    status.textContent = "onReopen fired (" + window.__reopenCount + "), the card would reopen; press Fold / Reopen to fold again";
+  }
+  function unmountAll() {
+    if (!handles) return;
+    const h = handles; handles = null;
+    h.pc.unmount(); h.ph.unmount();
+    status.textContent = "unmounted";
+  }
+  document.getElementById("pv-toggle").addEventListener("click", () => { if (handles) unmountAll(); else mountAll(); });
+  window.__pv = { mountAll, unmountAll, isMounted: () => !!handles };
+  mountAll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+/* Reopen variant 'Peek': the folded question card, reduced to its title row,
+   peeks out from BEHIND the composer (stacked-card look). Surface, border,
+   ring, radius, type and motion are the .demo-ask card's own. */
+
+/* the anchor becomes its own stacking context, so the peek can sit under the
+   composer (z-index -2, below the composer's own -1 glow layers) without
+   ever dropping behind an ancestor's background */
+.sbr-peek-host { isolation: isolate; }
+
+.sbr-peek {
+  --sbr-peek-inset: 14px;  /* equal on both sides: narrower than the composer */
+  --sbr-peek-tuck: 22px;   /* how far the card runs down behind the composer */
+  position: absolute;
+  z-index: -2;
+  /* compact (user, 2026-10-10): as wide as the question, centred, never past the inset */
+  left: 0;
+  right: 0;
+  width: max-content;
+  max-width: calc(100% - 2 * var(--sbr-peek-inset));
+  margin: 0 auto calc(var(--sbr-peek-tuck) * -1);
+  bottom: 100%;
+  /* enter = the card's fold-in (.demo-ask: opacity 420ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1)),
+     rising out from behind the composer */
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 420ms ease, transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sbr-peek._on { opacity: 1; transform: none; }
+/* exit = the card's ._off timing (260ms ease), sinking back behind the composer */
+.sbr-peek._off { opacity: 0; transform: translateY(10px); transition: opacity 260ms ease, transform 260ms ease; }
+
+.sbr-peek-btn {
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  /* title row (10px top pad + the 20px row + 8px) plus the tucked part */
+  height: calc(10px + 20px + 8px + var(--sbr-peek-tuck));
+  margin: 0;
+  padding: 10px 36px 0 38px; /* about 30% wider than the bare question (user, 2026-10-10) */
+  border-radius: 14px;
+  background: #17181c;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03);
+  color: #f0f0f0;
+  /* the composer placeholder's face and size (.bc-ph: 13px), bold (user, 2026-10-10) */
+  font-family: "SF Pro Text", Inter, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 140ms ease;
+}
+/* the lift: transform only */
+.sbr-peek-btn:hover, .sbr-peek-btn:focus-visible { transform: translateY(-3px); }
+.sbr-peek-btn:focus-visible { outline: 2px solid #2b6bff; outline-offset: 2px; }
+
+.sbr-peek-q { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+.sbr-peek-chev {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  transition: background 140ms ease;
+}
+.sbr-peek-btn:hover .sbr-peek-chev, .sbr-peek-btn:focus-visible .sbr-peek-chev { background: #26272c; }
+.sbr-peek-chev svg { width: 12px; height: 12px; stroke: #8b90a0; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* the tighter phone composer (the card's ._ph sizing) */
+.sbr-peek._ph { --sbr-peek-inset: 10px; }
+.sbr-peek._ph .sbr-peek-btn { padding: 9px 18px 0 20px; height: calc(9px + 20px + 8px + var(--sbr-peek-tuck)); font-family: ui-sans-serif, -apple-system, system-ui, "Segoe UI", Helvetica, Arial, sans-serif; } /* the phone placeholder's face (.ph-cph: 13px) */
+
+body.tour-lock .sbr-peek-btn { pointer-events: auto !important; } /* clickable while the demo's tour lock swallows input, like the card */
+@media (prefers-reduced-motion: reduce) {
+  .sbr-peek, .sbr-peek._on, .sbr-peek._off, .sbr-peek-btn, .sbr-peek-chev { transition: none; }
+}
